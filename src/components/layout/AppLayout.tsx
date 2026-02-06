@@ -81,6 +81,8 @@ import Link from 'next/link';
 import { useUserContext, type UserRole as DbUserRole } from '@/hooks/useUser';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { CommunicatorWidget } from '@/components/communicator/CommunicatorWidget';
+import { OrgSwitcher } from '@/components/admin/OrgSwitcher';
+import { IconBuilding } from '@tabler/icons-react';
 
 interface AppLayoutProps {
     children: React.ReactNode;
@@ -120,6 +122,9 @@ export function AppLayout({ children }: AppLayoutProps) {
     const [viewAsRole, setViewAsRole] = useState<NavRole>('student');
     const canSwitchRoles = isDevMode || isOwner;
     const role: NavRole = canSwitchRoles ? viewAsRole : actualRole;
+
+    // Org switcher state
+    const [orgSwitcherOpen, setOrgSwitcherOpen] = useState(false);
 
     // When owner loads, default to owner view
     useEffect(() => {
@@ -238,11 +243,18 @@ export function AppLayout({ children }: AppLayoutProps) {
                                     >
                                         Configurações
                                     </Menu.Item>
+                                    <Menu.Item
+                                        leftSection={<IconBuilding size={14} />}
+                                        onClick={() => setOrgSwitcherOpen(true)}
+                                    >
+                                        Trocar Organização
+                                    </Menu.Item>
                                     <Menu.Divider />
                                     <Menu.Item color="red" leftSection={<IconLogout size={14} />}>
                                         Sair
                                     </Menu.Item>
                                 </Menu.Dropdown>
+
                             </Menu>
                         </Group>
                     </Group>
@@ -1140,10 +1152,13 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <AppShell.Main>
                     {children}
                 </AppShell.Main>
+                {/* Org Switcher Modal */}
+                <OrgSwitcher opened={orgSwitcherOpen} onClose={() => setOrgSwitcherOpen(false)} />
 
                 {/* Floating Communicator Widget */}
                 <CommunicatorWidget />
             </AppShell>
+
         </AuthGuard >
     );
 }
