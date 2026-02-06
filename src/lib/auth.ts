@@ -32,13 +32,14 @@ export async function getApiAuth(): Promise<{ userId: string | null; orgId: stri
 }
 
 /**
- * Get auth for API routes with database fallback for orgId.
+ * Get auth for API routes with org switcher support.
+ * 
+ * Priority for resolving orgId:
+ * 1. Active org cookie (set via org switcher)
+ * 2. Clerk's orgId (if set)
+ * 3. User's organizationId from database
  * 
  * This is the PREFERRED method for API routes that need orgId.
- * It first tries Clerk's orgId, then falls back to the user's
- * organizationId stored in the users table.
- * 
- * This fixes 401 errors for platform users who don't have a Clerk organization.
  */
 export async function getApiAuthWithOrg(): Promise<{ userId: string | null; orgId: string | null }> {
     if (isDevMode) {
@@ -53,12 +54,51 @@ export async function getApiAuthWithOrg(): Promise<{ userId: string | null; orgI
             return { userId: null, orgId: null };
         }
 
-        // Try Clerk's orgId first
+        // Priority 1: Check for active org cookie (org switcher)
+        const { cookies } = await import('next/headers');
+        const cookieStore = await cookies();
+        const activeOrgCookie = cookieStore.get('nodezero_active_org')?.value;
+
+        if (activeOrgCookie) {
+            // Verify user still has access to this org before using it
+            const { db } = await import('@/lib/db');
+            const { users, organizationMemberships } = await import('@/lib/db/schema');
+            const { eq, and } = await import('drizzle-orm');
+
+            const user = await db.query.users.findFirst({
+                where: eq(users.id, result.userId),
+                columns: { personId: true, organizationId: true },
+            });
+
+            if (user) {
+                // Check if active org is user's default org
+                if (user.organizationId === activeOrgCookie) {
+                    return { userId: result.userId, orgId: activeOrgCookie };
+                }
+
+                // Check if user has membership to this org
+                if (user.personId) {
+                    const membership = await db.query.organizationMemberships.findFirst({
+                        where: and(
+                            eq(organizationMemberships.personId, user.personId),
+                            eq(organizationMemberships.organizationId, activeOrgCookie),
+                            eq(organizationMemberships.status, 'active')
+                        ),
+                    });
+                    if (membership) {
+                        return { userId: result.userId, orgId: activeOrgCookie };
+                    }
+                }
+            }
+            // Cookie org is invalid/inaccessible, fall through to other methods
+        }
+
+        // Priority 2: Try Clerk's orgId
         if (result.orgId) {
             return { userId: result.userId, orgId: result.orgId };
         }
 
-        // Fallback: look up org from users table
+        // Priority 3: Fallback to user's organizationId from database
         const { db } = await import('@/lib/db');
         const { users } = await import('@/lib/db/schema');
         const { eq } = await import('drizzle-orm');

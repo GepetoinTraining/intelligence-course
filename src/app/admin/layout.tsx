@@ -29,6 +29,7 @@ import { useUserContext } from '@/hooks/useUser';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { CommunicatorWidget } from '@/components/communicator/CommunicatorWidget';
+import { OrgSwitcher } from '@/components/admin/OrgSwitcher';
 
 interface AdminLayoutProps {
     children: React.ReactNode;
@@ -39,6 +40,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     const { colorScheme, toggleColorScheme, setColorScheme } = useMantineColorScheme();
     const { user, isLoading } = useUserContext();
     const [themeMode, setThemeMode] = useState<'brand' | 'light' | 'dark'>('brand');
+    const [orgSwitcherOpen, setOrgSwitcherOpen] = useState(false);
 
     // Get user initials for avatar
     const getUserInitials = () => {
@@ -150,8 +152,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                                     </Menu.Item>
                                     <Menu.Item
                                         leftSection={<IconBuilding size={14} />}
+                                        onClick={() => setOrgSwitcherOpen(true)}
                                     >
-                                        Trocar Escola
+                                        Trocar Organização
                                     </Menu.Item>
                                     <Menu.Divider />
                                     <Menu.Item color="red" leftSection={<IconLogout size={14} />}>
@@ -172,6 +175,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <AppShell.Main>
                     {children}
                 </AppShell.Main>
+
+                {/* Org Switcher Modal */}
+                <OrgSwitcher opened={orgSwitcherOpen} onClose={() => setOrgSwitcherOpen(false)} />
 
                 {/* Floating Communicator Widget */}
                 <CommunicatorWidget />
