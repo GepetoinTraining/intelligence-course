@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
@@ -17,7 +17,7 @@ const APPROVAL_HIERARCHY: Record<string, string[]> = {
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId: clerkUserId } = await auth();
+        const { userId: clerkUserId } = await getApiAuthWithOrg();
 
         if (!clerkUserId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
 // GET - Check onboarding status
 export async function GET(request: NextRequest) {
     try {
-        const { userId: clerkUserId } = await auth();
+        const { userId: clerkUserId } = await getApiAuthWithOrg();
 
         if (!clerkUserId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

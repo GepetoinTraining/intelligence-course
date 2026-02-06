@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/profile/payment-methods - List payment methods
 // Note: Payment methods would typically be managed via Stripe
 export async function GET(request: NextRequest) {
-    const { userId } = await auth();
+    const { userId } = await getApiAuthWithOrg();
     if (!userId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/profile/payment-methods - Add payment method
 export async function POST(request: NextRequest) {
-    const { userId } = await auth();
+    const { userId } = await getApiAuthWithOrg();
     if (!userId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
 // DELETE /api/profile/payment-methods - Delete payment method
 export async function DELETE(request: NextRequest) {
-    const { userId } = await auth();
+    const { userId } = await getApiAuthWithOrg();
     if (!userId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

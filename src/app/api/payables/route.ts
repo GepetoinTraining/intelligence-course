@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { payables } from '@/lib/db/schema';
 import { eq, and, desc, gte, lte } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/payables - List payables
 export async function GET(request: NextRequest) {
-    const { userId, orgId } = await auth();
+    const { userId, orgId } = await getApiAuthWithOrg();
     if (!userId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/payables - Create payable
 export async function POST(request: NextRequest) {
-    const { userId, orgId } = await auth();
+    const { userId, orgId } = await getApiAuthWithOrg();
     if (!userId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { promptRuns, userApiKeys } from '@/lib/db/schema';
 import { runPrompt, type Message } from '@/lib/ai/anthropic';
@@ -8,7 +8,7 @@ import { decrypt } from '@/lib/crypto';
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId } = await auth();
+        const { userId } = await getApiAuthWithOrg();
 
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
 // GET /api/runs - List user's recent runs
 export async function GET(request: NextRequest) {
     try {
-        const { userId } = await auth();
+        const { userId } = await getApiAuthWithOrg();
 
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

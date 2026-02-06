@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { users, rolePermissions, userPermissions, PERMISSION_MODULES } from '@/lib/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
@@ -94,7 +94,7 @@ const DEFAULT_ROLE_PERMISSIONS: Record<string, Record<string, { c: boolean; r: b
 
 export async function GET(request: NextRequest) {
     try {
-        const { userId: clerkUserId } = await auth();
+        const { userId: clerkUserId } = await getApiAuthWithOrg();
         if (!clerkUserId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -193,7 +193,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId: clerkUserId } = await auth();
+        const { userId: clerkUserId } = await getApiAuthWithOrg();
         if (!clerkUserId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -293,7 +293,7 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
     try {
-        const { userId: clerkUserId } = await auth();
+        const { userId: clerkUserId } = await getApiAuthWithOrg();
         if (!clerkUserId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }

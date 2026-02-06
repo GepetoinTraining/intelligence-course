@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { userApiKeys } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -8,7 +8,7 @@ import { encrypt, getKeyHint } from '@/lib/crypto';
 // POST /api/api-keys - Add or update an API key
 export async function POST(request: NextRequest) {
     try {
-        const { userId } = await auth();
+        const { userId } = await getApiAuthWithOrg();
 
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
 // GET /api/api-keys - List user's configured API keys (just metadata, not the keys)
 export async function GET() {
     try {
-        const { userId } = await auth();
+        const { userId } = await getApiAuthWithOrg();
 
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -133,7 +133,7 @@ export async function GET() {
 // DELETE /api/api-keys - Remove an API key
 export async function DELETE(request: NextRequest) {
     try {
-        const { userId } = await auth();
+        const { userId } = await getApiAuthWithOrg();
 
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

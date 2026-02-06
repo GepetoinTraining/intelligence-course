@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { chartOfAccounts } from '@/lib/db/schema';
 import { eq, and, asc, isNull } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/chart-of-accounts - List chart of accounts
 export async function GET(request: NextRequest) {
-    const { userId, orgId } = await auth();
+    const { userId, orgId } = await getApiAuthWithOrg();
     if (!userId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/chart-of-accounts - Create account
 export async function POST(request: NextRequest) {
-    const { userId, orgId } = await auth();
+    const { userId, orgId } = await getApiAuthWithOrg();
     if (!userId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

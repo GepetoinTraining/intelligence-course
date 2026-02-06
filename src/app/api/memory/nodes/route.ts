@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { memoryNodes, memoryGraphs, memoryAuditLog, users } from '@/lib/db/schema';
 import { eq, and, desc, gte, sql } from 'drizzle-orm';
@@ -8,7 +8,7 @@ import { createHash } from 'crypto';
 // GET /api/memory/nodes - Get memory nodes for current user's graph
 export async function GET(req: NextRequest) {
     try {
-        const { userId } = await auth();
+        const { userId } = await getApiAuthWithOrg();
         if (!userId) {
             return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, { status: 401 });
         }
@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
 // POST /api/memory/nodes - Add a new memory node
 export async function POST(req: NextRequest) {
     try {
-        const { userId } = await auth();
+        const { userId } = await getApiAuthWithOrg();
         if (!userId) {
             return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, { status: 401 });
         }

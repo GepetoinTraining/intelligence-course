@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { prompts } from '@/lib/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/prompts - List prompts
 export async function GET(request: NextRequest) {
-    const { userId, orgId } = await auth();
+    const { userId, orgId } = await getApiAuthWithOrg();
     if (!userId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/prompts - Create prompt
 export async function POST(request: NextRequest) {
-    const { userId, orgId } = await auth();
+    const { userId, orgId } = await getApiAuthWithOrg();
     if (!userId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import {
     leads,
@@ -16,7 +16,7 @@ import Anthropic from '@anthropic-ai/sdk';
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId, orgId } = await auth();
+        const { userId, orgId } = await getApiAuthWithOrg();
         if (!userId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -210,7 +210,7 @@ Important: Return ONLY the JSON, no additional text.`;
 
 export async function GET(request: NextRequest) {
     try {
-        const { userId, orgId } = await auth();
+        const { userId, orgId } = await getApiAuthWithOrg();
         if (!userId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }

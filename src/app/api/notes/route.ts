@@ -8,14 +8,14 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { notes, users, activityFeed } from '@/lib/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
     try {
-        const { userId, orgId } = await auth();
+        const { userId, orgId } = await getApiAuthWithOrg();
         if (!userId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId, orgId } = await auth();
+        const { userId, orgId } = await getApiAuthWithOrg();
         if (!userId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { progress } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -7,7 +7,7 @@ import { eq, and } from 'drizzle-orm';
 // POST /api/progress - Update progress
 export async function POST(request: NextRequest) {
     try {
-        const { userId } = await auth();
+        const { userId } = await getApiAuthWithOrg();
 
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
 // GET /api/progress - Get user progress
 export async function GET(request: NextRequest) {
     try {
-        const { userId } = await auth();
+        const { userId } = await getApiAuthWithOrg();
 
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

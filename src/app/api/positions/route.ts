@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { teamPositions, positionPermissions, actionTypes } from '@/lib/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
@@ -20,7 +20,7 @@ const positionSchema = z.object({
 // GET /api/positions - List all positions
 export async function GET(request: NextRequest) {
     try {
-        const { userId, orgId: organizationId } = await auth();
+        const { userId, orgId: organizationId } = await getApiAuthWithOrg();
         if (!userId || !organizationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
 // POST /api/positions - Create a new position
 export async function POST(request: NextRequest) {
     try {
-        const { userId, orgId: organizationId } = await auth();
+        const { userId, orgId: organizationId } = await getApiAuthWithOrg();
         if (!userId || !organizationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }

@@ -6,7 +6,7 @@ import {
     teamPositions,
     permissionAuditLog
 } from '@/lib/db/schema';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
@@ -33,7 +33,7 @@ const bulkPermissionSchema = z.object({
 // GET: List position permissions
 export async function GET(request: NextRequest) {
     try {
-        const { userId, orgId } = await auth();
+        const { userId, orgId } = await getApiAuthWithOrg();
         if (!userId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
 // POST: Create a single position permission
 export async function POST(request: NextRequest) {
     try {
-        const { userId, orgId } = await auth();
+        const { userId, orgId } = await getApiAuthWithOrg();
         if (!userId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
 // PUT: Bulk update permissions for a position
 export async function PUT(request: NextRequest) {
     try {
-        const { userId, orgId } = await auth();
+        const { userId, orgId } = await getApiAuthWithOrg();
         if (!userId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -294,7 +294,7 @@ export async function PUT(request: NextRequest) {
 // DELETE: Remove a position permission
 export async function DELETE(request: NextRequest) {
     try {
-        const { userId, orgId } = await auth();
+        const { userId, orgId } = await getApiAuthWithOrg();
         if (!userId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }

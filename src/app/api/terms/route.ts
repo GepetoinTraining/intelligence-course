@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { terms } from '@/lib/db/schema';
 import { eq, desc, and } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/terms - List terms
 export async function GET(request: NextRequest) {
-    const { userId, orgId } = await auth();
+    const { userId, orgId } = await getApiAuthWithOrg();
     if (!userId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/terms - Create term
 export async function POST(request: NextRequest) {
-    const { userId, orgId } = await auth();
+    const { userId, orgId } = await getApiAuthWithOrg();
     if (!userId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized - organization required' }, { status: 401 });
     }

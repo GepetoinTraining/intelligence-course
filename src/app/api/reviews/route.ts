@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { peerReviews } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/reviews - List peer reviews
 export async function GET(request: NextRequest) {
-    const { userId } = await auth();
+    const { userId } = await getApiAuthWithOrg();
     if (!userId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/reviews - Create peer review
 export async function POST(request: NextRequest) {
-    const { userId } = await auth();
+    const { userId } = await getApiAuthWithOrg();
     if (!userId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

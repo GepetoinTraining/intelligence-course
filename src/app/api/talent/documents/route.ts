@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { talentProfiles, talentEvidenceDocuments } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
@@ -16,7 +16,7 @@ const anthropic = new Anthropic();
 
 export async function GET() {
     try {
-        const { userId } = await auth();
+        const { userId } = await getApiAuthWithOrg();
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -47,7 +47,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId } = await auth();
+        const { userId } = await getApiAuthWithOrg();
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }

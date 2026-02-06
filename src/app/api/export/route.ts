@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { eq, and, gte, lte, desc } from 'drizzle-orm';
 import { chartOfAccounts, journalEntries, journalEntryLines, fiscalDocuments, staffPayroll, users } from '@/lib/db/schema';
@@ -24,7 +24,7 @@ interface ExportQuery {
 // GET /api/export?report=journal-entries&startDate=2026-01-01&endDate=2026-01-31
 export async function GET(request: NextRequest) {
     try {
-        const { userId, orgId } = await auth();
+        const { userId, orgId } = await getApiAuthWithOrg();
 
         if (!userId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

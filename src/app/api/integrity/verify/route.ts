@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { memoryGraphs, memoryNodes, memoryEdges } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 // POST /api/integrity/verify - Verify memory integrity
 export async function POST(request: NextRequest) {
-    const { userId } = await auth();
+    const { userId } = await getApiAuthWithOrg();
     if (!userId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { users, leads, enrollments, classes, courses } from '@/lib/db/schema';
 import { eq, and, isNotNull, sql } from 'drizzle-orm';
@@ -10,7 +10,7 @@ import { eq, and, isNotNull, sql } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
     try {
-        const { userId: clerkUserId } = await auth();
+        const { userId: clerkUserId } = await getApiAuthWithOrg();
         if (!clerkUserId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -226,7 +226,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId: clerkUserId } = await auth();
+        const { userId: clerkUserId } = await getApiAuthWithOrg();
         if (!clerkUserId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }

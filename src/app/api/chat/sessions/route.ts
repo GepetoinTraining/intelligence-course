@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { chatSessions, chatMessages, users } from '@/lib/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
@@ -8,7 +8,7 @@ import { encrypt, decrypt, deriveStudentKey } from '@/lib/crypto';
 // GET /api/chat/sessions - Get user's chat sessions
 export async function GET(req: NextRequest) {
     try {
-        const { userId } = await auth();
+        const { userId } = await getApiAuthWithOrg();
         if (!userId) {
             return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, { status: 401 });
         }
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
 // POST /api/chat/sessions - Start a new chat session
 export async function POST(req: NextRequest) {
     try {
-        const { userId } = await auth();
+        const { userId } = await getApiAuthWithOrg();
         if (!userId) {
             return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, { status: 401 });
         }

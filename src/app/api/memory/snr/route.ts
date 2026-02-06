@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/memory/snr/[content] - Calculate SNR for content
 // Note: This is a utility endpoint for evaluating content quality
 export async function GET(request: NextRequest) {
-    const { userId } = await auth();
+    const { userId } = await getApiAuthWithOrg();
     if (!userId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

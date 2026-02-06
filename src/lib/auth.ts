@@ -32,6 +32,52 @@ export async function getApiAuth(): Promise<{ userId: string | null; orgId: stri
 }
 
 /**
+ * Get auth for API routes with database fallback for orgId.
+ * 
+ * This is the PREFERRED method for API routes that need orgId.
+ * It first tries Clerk's orgId, then falls back to the user's
+ * organizationId stored in the users table.
+ * 
+ * This fixes 401 errors for platform users who don't have a Clerk organization.
+ */
+export async function getApiAuthWithOrg(): Promise<{ userId: string | null; orgId: string | null }> {
+    if (isDevMode) {
+        return { userId: DEV_USER.id, orgId: DEV_ORG_ID };
+    }
+
+    try {
+        const { auth } = await import('@clerk/nextjs/server');
+        const result = await auth();
+
+        if (!result.userId) {
+            return { userId: null, orgId: null };
+        }
+
+        // Try Clerk's orgId first
+        if (result.orgId) {
+            return { userId: result.userId, orgId: result.orgId };
+        }
+
+        // Fallback: look up org from users table
+        const { db } = await import('@/lib/db');
+        const { users } = await import('@/lib/db/schema');
+        const { eq } = await import('drizzle-orm');
+
+        const user = await db.query.users.findFirst({
+            where: eq(users.id, result.userId),
+            columns: { organizationId: true },
+        });
+
+        return {
+            userId: result.userId,
+            orgId: user?.organizationId ?? null
+        };
+    } catch {
+        return { userId: null, orgId: null };
+    }
+}
+
+/**
  * Get the current user ID.
  * In dev mode, returns a mock user ID.
  * In production, uses Clerk.
@@ -86,5 +132,4 @@ export async function requireAuth(): Promise<string> {
 
     return userId;
 }
-
 

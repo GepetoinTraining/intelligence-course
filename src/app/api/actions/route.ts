@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { actionTypes, positionPermissions } from '@/lib/db/schema';
 import { eq, and, desc, like, or } from 'drizzle-orm';
@@ -19,7 +19,7 @@ const actionTypeSchema = z.object({
 // GET /api/actions - List all action types
 export async function GET(request: NextRequest) {
     try {
-        const { userId, orgId: organizationId } = await auth();
+        const { userId, orgId: organizationId } = await getApiAuthWithOrg();
         if (!userId || !organizationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
 // POST /api/actions - Create a new action type
 export async function POST(request: NextRequest) {
     try {
-        const { userId, orgId: organizationId } = await auth();
+        const { userId, orgId: organizationId } = await getApiAuthWithOrg();
         if (!userId || !organizationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
 // Seed default action types
 export async function PUT(request: NextRequest) {
     try {
-        const { userId, orgId: organizationId } = await auth();
+        const { userId, orgId: organizationId } = await getApiAuthWithOrg();
         if (!userId || !organizationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }

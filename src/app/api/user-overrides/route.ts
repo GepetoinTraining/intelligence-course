@@ -6,7 +6,7 @@ import {
     users,
     permissionAuditLog
 } from '@/lib/db/schema';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { eq, and, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
@@ -25,7 +25,7 @@ const userOverrideSchema = z.object({
 // GET: List user permission overrides
 export async function GET(request: NextRequest) {
     try {
-        const { userId: authUserId, orgId } = await auth();
+        const { userId: authUserId, orgId } = await getApiAuthWithOrg();
         if (!authUserId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
 // POST: Create or update a user override
 export async function POST(request: NextRequest) {
     try {
-        const { userId: authUserId, orgId } = await auth();
+        const { userId: authUserId, orgId } = await getApiAuthWithOrg();
         if (!authUserId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
 // DELETE: Revoke a user override
 export async function DELETE(request: NextRequest) {
     try {
-        const { userId: authUserId, orgId } = await auth();
+        const { userId: authUserId, orgId } = await getApiAuthWithOrg();
         if (!authUserId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { teams, teamMembers, teamPositions, users } from '@/lib/db/schema';
 import { eq, and, desc, isNull, count, sql } from 'drizzle-orm';
@@ -20,10 +20,11 @@ const teamSchema = z.object({
 // GET /api/teams - List all teams
 export async function GET(request: NextRequest) {
     try {
-        const { userId, orgId: organizationId } = await auth();
+        const { userId, orgId: organizationId } = await getApiAuthWithOrg();
         if (!userId || !organizationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+
 
         const { searchParams } = new URL(request.url);
         const includeMembers = searchParams.get('includeMembers') === 'true';
@@ -100,7 +101,7 @@ export async function GET(request: NextRequest) {
 // POST /api/teams - Create a new team
 export async function POST(request: NextRequest) {
     try {
-        const { userId, orgId: organizationId } = await auth();
+        const { userId, orgId: organizationId } = await getApiAuthWithOrg();
         if (!userId || !organizationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }

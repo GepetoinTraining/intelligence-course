@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { memoryEdges, memoryNodes, memoryGraphs, memoryAuditLog, users } from '@/lib/db/schema';
 import { eq, and, or, sql } from 'drizzle-orm';
@@ -7,7 +7,7 @@ import { eq, and, or, sql } from 'drizzle-orm';
 // GET /api/memory/edges - Get edges for current user's graph
 export async function GET(req: NextRequest) {
     try {
-        const { userId } = await auth();
+        const { userId } = await getApiAuthWithOrg();
         if (!userId) {
             return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, { status: 401 });
         }
@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
 // POST /api/memory/edges - Create a new edge between nodes
 export async function POST(req: NextRequest) {
     try {
-        const { userId } = await auth();
+        const { userId } = await getApiAuthWithOrg();
         if (!userId) {
             return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, { status: 401 });
         }
@@ -155,7 +155,7 @@ export async function POST(req: NextRequest) {
 // DELETE /api/memory/edges?id=xxx - Delete an edge
 export async function DELETE(req: NextRequest) {
     try {
-        const { userId } = await auth();
+        const { userId } = await getApiAuthWithOrg();
         if (!userId) {
             return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, { status: 401 });
         }

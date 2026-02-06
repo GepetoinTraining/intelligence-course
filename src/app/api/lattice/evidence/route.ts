@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import {
     captureEvidence,
     queryEvidence,
@@ -16,7 +16,7 @@ import { EvidenceCreateSchema, EvidenceQuerySchema } from '@/lib/lattice/schemas
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId } = await auth();
+        const { userId } = await getApiAuthWithOrg();
         if (!userId) {
             return NextResponse.json(
                 { error: 'Unauthorized' },
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
     try {
-        const { userId } = await auth();
+        const { userId } = await getApiAuthWithOrg();
         if (!userId) {
             return NextResponse.json(
                 { error: 'Unauthorized' },
