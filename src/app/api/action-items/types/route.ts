@@ -8,8 +8,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { actionItemTypes, users } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { actionItemTypes, organizationMemberships } from '@/lib/db/schema';
+import { eq, and, inArray } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
     try {
@@ -53,13 +53,16 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Check if user is owner/admin
-        const user = await db.query.users.findFirst({
-            where: eq(users.id, personId),
-            columns: { role: true },
+        // Check if user is owner/admin via org membership
+        const membership = await db.query.organizationMemberships.findFirst({
+            where: and(
+                eq(organizationMemberships.personId, personId),
+                eq(organizationMemberships.organizationId, orgId),
+                inArray(organizationMemberships.role, ['owner', 'admin'])
+            ),
         });
 
-        if (!user || !['owner', 'admin'].includes(user.role || '')) {
+        if (!membership) {
             return NextResponse.json({ error: 'Only owners/admins can create action item types' }, { status: 403 });
         }
 
