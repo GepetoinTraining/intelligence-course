@@ -1,0 +1,60 @@
+ÔÜá Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\Users\CLIENTE\Desktop\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\CLIENTE\Desktop\NodeZero\intelligence-course\package-lock.json
+
+Ôû▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local, .env
+
+ÔÜá The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+Turbopack build encountered 1 warnings:
+./NodeZero/intelligence-course/src/lib/export/exportService.ts:172:28
+Module not found: Can't resolve 'xlsx'
+  170 |         // Dynamic import to avoid SSR issues - xlsx is an optional dependency
+  171 |         // @ts-ignore - xlsx may not be installed
+> 172 |         const XLSX = await import('xlsx').catch(() => null);
+      |                            ^^^^^^^^^^^^^^
+  173 |
+  174 |         if (!XLSX) {
+  175 |             // Fallback to CSV if xlsx is not available
+
+
+
+Import traces:
+  Client Component Browser:
+    ./NodeZero/intelligence-course/src/lib/export/exportService.ts [Client Component Browser]
+    ./NodeZero/intelligence-course/src/app/accountant/page.tsx [Client Component Browser]
+    ./NodeZero/intelligence-course/src/app/accountant/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./NodeZero/intelligence-course/src/lib/export/exportService.ts [Client Component SSR]
+    ./NodeZero/intelligence-course/src/app/accountant/page.tsx [Client Component SSR]
+    ./NodeZero/intelligence-course/src/app/accountant/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+Ô£ô Compiled successfully in 33.9s
+  Running TypeScript ...
+Failed to compile.
+
+.next/types/validator.ts:3618:31
+Type error: Type 'typeof import("C:/Users/CLIENTE/Desktop/NodeZero/intelligence-course/src/app/api/qr/scan/[code]/route")' does not satisfy the constraint 'RouteHandlerConfig<"/api/qr/scan/[code]">'.
+  Types of property 'GET' are incompatible.
+    Type '(request: NextRequest, { params }: { params: { code: string; }; }) => Promise<NextResponse<unknown>>' is not assignable to type '(request: NextRequest, context: { params: Promise<{ code: string; }>; }) => void | Response | Promise<void | Response>'.
+      Types of parameters '__1' and 'context' are incompatible.
+        Type '{ params: Promise<{ code: string; }>; }' is not assignable to type '{ params: { code: string; }; }'.
+          Types of property 'params' are incompatible.
+            Property 'code' is missing in type 'Promise<{ code: string; }>' but required in type '{ code: string; }'.
+
+  3616 |   type __IsExpected<Specific extends RouteHandlerConfig<"/api/qr/scan/[code]">> = Specific
+  3617 |   const handler = {} as typeof import("../../src/app/api/qr/scan/[code]/route.js")
+> 3618 |   type __Check = __IsExpected<typeof handler>
+       |                               ^
+  3619 |   // @ts-ignore
+  3620 |   type __Unused = __Check
+  3621 | }
+Next.js build worker exited with code: 1 and signal: null

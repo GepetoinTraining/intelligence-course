@@ -1,0 +1,54 @@
+ÔÜá Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\Users\CLIENTE\Desktop\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\CLIENTE\Desktop\NodeZero\intelligence-course\package-lock.json
+
+Ôû▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local, .env
+
+ÔÜá The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+Turbopack build encountered 1 warnings:
+./NodeZero/intelligence-course/src/lib/export/exportService.ts:172:28
+Module not found: Can't resolve 'xlsx'
+  170 |         // Dynamic import to avoid SSR issues - xlsx is an optional dependency
+  171 |         // @ts-ignore - xlsx may not be installed
+> 172 |         const XLSX = await import('xlsx').catch(() => null);
+      |                            ^^^^^^^^^^^^^^
+  173 |
+  174 |         if (!XLSX) {
+  175 |             // Fallback to CSV if xlsx is not available
+
+
+
+Import traces:
+  Client Component Browser:
+    ./NodeZero/intelligence-course/src/lib/export/exportService.ts [Client Component Browser]
+    ./NodeZero/intelligence-course/src/app/accountant/page.tsx [Client Component Browser]
+    ./NodeZero/intelligence-course/src/app/accountant/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./NodeZero/intelligence-course/src/lib/export/exportService.ts [Client Component SSR]
+    ./NodeZero/intelligence-course/src/app/accountant/page.tsx [Client Component SSR]
+    ./NodeZero/intelligence-course/src/app/accountant/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+Ô£ô Compiled successfully in 33.5s
+  Running TypeScript ...
+Failed to compile.
+
+./src/app/api/position-permissions/route.ts:20:19
+Type error: Expected 2-3 arguments, but got 1.
+
+  18 |     scope: z.enum(['own', 'team', 'department', 'organization', 'global']).default('team'),
+  19 |     canDelegate: z.boolean().default(false),
+> 20 |     conditions: z.record(z.any()).optional(),
+     |                   ^
+  21 | });
+  22 |
+  23 | const bulkPermissionSchema = z.object({
+Next.js build worker exited with code: 1 and signal: null
