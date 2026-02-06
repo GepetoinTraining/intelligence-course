@@ -64,9 +64,9 @@ export async function GET(request: NextRequest) {
 
         // Get current user with their org
         const [currentUser] = await db.select({
-            role: users.role,
-            name: users.name,
-            organizationId: users.organizationId,
+            role: organizationMemberships.role,
+            name: persons.firstName,
+            organizationId: organizationMemberships.organizationId,
         })
             .from(users)
             .where(eq(users.id, userId))
@@ -97,18 +97,18 @@ export async function GET(request: NextRequest) {
             // Using isNull(archivedAt) instead of isActive since schema uses archivedAt for soft delete
             const humanContacts = await db.select({
                 id: users.id,
-                name: users.name,
-                email: users.email,
-                avatarUrl: users.avatarUrl,
-                role: users.role,
+                name: persons.firstName,
+                email: persons.primaryEmail,
+                avatarUrl: persons.avatarUrl,
+                role: organizationMemberships.role,
             })
                 .from(users)
                 .where(and(
-                    eq(users.organizationId, orgId),
+                    eq(organizationMemberships.organizationId, orgId),
                     ne(users.id, userId), // Exclude self
                     isNull(users.archivedAt) // Only active users
                 ))
-                .orderBy(users.name)
+                .orderBy(persons.firstName)
                 .limit(100);
 
             // 3. Enrich with conversation counts
@@ -185,6 +185,8 @@ async function getConversationCount(userId1: string, userId2: string): Promise<n
         return 0;
     }
 }
+
+
 
 
 

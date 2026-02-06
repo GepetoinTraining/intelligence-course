@@ -48,9 +48,9 @@ export async function GET(request: NextRequest) {
                 updatedAt: talentProfiles.updatedAt,
                 userId: talentProfiles.userId,
                 // User info
-                userName: users.name,
-                userEmail: users.email,
-                userAvatarUrl: users.avatarUrl,
+                userName: persons.firstName,
+                personEmail: persons.primaryEmail,
+                userAvatarUrl: persons.avatarUrl,
             })
             .from(talentProfiles)
             .leftJoin(users, eq(talentProfiles.userId, users.id))
@@ -146,6 +146,7 @@ export async function GET(request: NextRequest) {
         );
     }
 }
+
 
 
 

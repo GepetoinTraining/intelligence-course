@@ -153,7 +153,7 @@ export async function GET(request: NextRequest) {
             // List all users with summary
             const orgUsers = await db.select().from(users)
                 .where(requestingUser.organizationId
-                    ? eq(users.organizationId, requestingUser.organizationId)
+                    ? eq(organizationMemberships.organizationId, requestingUser.organizationId)
                     : undefined
                 );
 
@@ -323,6 +323,7 @@ export async function DELETE(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to reset permissions' }, { status: 500 });
     }
 }
+
 
 
 

@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
         // Get user's organization from database
         const [currentUser] = await db.select({
-            organizationId: users.organizationId,
+            organizationId: organizationMemberships.organizationId,
         })
             .from(users)
             .where(eq(users.id, userId))
@@ -142,8 +142,8 @@ export async function GET(request: NextRequest) {
                 // Get participants
                 const participants = await db.select({
                     id: conversationParticipants.userId,
-                    name: users.name,
-                    avatarUrl: users.avatarUrl,
+                    name: persons.firstName,
+                    avatarUrl: persons.avatarUrl,
                     role: conversationParticipants.role,
                 })
                     .from(conversationParticipants)
@@ -157,7 +157,7 @@ export async function GET(request: NextRequest) {
                 // Get last message
                 const [lastMessage] = await db.select({
                     content: messages.content,
-                    senderName: users.name,
+                    senderName: persons.firstName,
                     senderId: messages.senderId,
                     senderType: messages.senderType,
                     createdAt: messages.createdAt,
@@ -275,9 +275,9 @@ export async function POST(request: NextRequest) {
 
         // Get user's organization from database
         const [currentUser] = await db.select({
-            organizationId: users.organizationId,
-            email: users.email,
-            name: users.name,
+            organizationId: organizationMemberships.organizationId,
+            email: persons.primaryEmail,
+            name: persons.firstName,
         })
             .from(users)
             .where(eq(users.id, userId))
@@ -449,14 +449,14 @@ export async function POST(request: NextRequest) {
                 if (broadcastScope === 'all') {
                     const allUsers = await db.select({ id: users.id })
                         .from(users)
-                        .where(eq(users.organizationId, orgId));
+                        .where(eq(organizationMemberships.organizationId, orgId));
                     recipientIds = allUsers.map(u => u.id);
                 } else if (broadcastScope === 'role' && broadcastRoleFilter) {
                     const roleUsers = await db.select({ id: users.id })
                         .from(users)
                         .where(and(
-                            eq(users.organizationId, orgId),
-                            inArray(users.role, broadcastRoleFilter as any)
+                            eq(organizationMemberships.organizationId, orgId),
+                            inArray(organizationMemberships.role, broadcastRoleFilter as any)
                         ));
                     recipientIds = roleUsers.map(u => u.id);
                 } else if (broadcastScope === 'custom' && customRecipientIds) {
@@ -677,6 +677,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create conversation' }, { status: 500 });
     }
 }
+
+
 
 
 

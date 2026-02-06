@@ -52,8 +52,8 @@ export async function GET(request: NextRequest) {
         const assignedUsers = assignedUserIds.length > 0
             ? await db.select({
                 id: users.id,
-                name: users.name,
-                avatarUrl: users.avatarUrl,
+                name: persons.firstName,
+                avatarUrl: persons.avatarUrl,
             }).from(users).where(sql`${users.id} IN (${sql.join(assignedUserIds.map(id => sql`${id}`), sql`, `)})`)
             : [];
 
@@ -79,9 +79,9 @@ export async function GET(request: NextRequest) {
         const enrolledUsers = enrolledUserIds.length > 0
             ? await db.select({
                 id: users.id,
-                name: users.name,
-                email: users.email,
-                avatarUrl: users.avatarUrl,
+                name: persons.firstName,
+                email: persons.primaryEmail,
+                avatarUrl: persons.avatarUrl,
             }).from(users).where(sql`${users.id} IN (${sql.join(enrolledUserIds.map(id => sql`${id}`), sql`, `)})`)
             : [];
 
@@ -262,5 +262,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
     }
 }
+
 
 

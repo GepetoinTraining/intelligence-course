@@ -22,15 +22,15 @@ export async function GET(request: NextRequest) {
         const conditions = [];
 
         if (orgId) {
-            conditions.push(eq(users.organizationId, orgId));
+            conditions.push(eq(organizationMemberships.organizationId, orgId));
         }
 
         if (role) {
-            conditions.push(eq(users.role, role as any));
+            conditions.push(eq(organizationMemberships.role, role as any));
         }
 
         if (search) {
-            conditions.push(like(users.name, `%${search}%`));
+            conditions.push(like(persons.firstName, `%${search}%`));
         }
 
         const result = await db
@@ -74,6 +74,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
     }
 }
+
+
 
 
 

@@ -18,7 +18,7 @@ interface ExpiringPermission {
     type: 'override' | 'group';
     userId: string;
     userName: string | null;
-    userEmail: string | null;
+    personEmail: string | null;
     description: string;
     expiresAt: number;
     expiresInDays: number;
@@ -58,8 +58,8 @@ export async function GET(request: NextRequest) {
                 actionTypeId: userPermissionOverrides.actionTypeId,
                 expiresAt: userPermissionOverrides.expiresAt,
                 scope: userPermissionOverrides.scope,
-                userName: users.name,
-                userEmail: users.email,
+                userName: persons.firstName,
+                personEmail: persons.primaryEmail,
                 actionName: actionTypes.name,
                 actionCode: actionTypes.code,
             })
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
                 type: 'override',
                 userId: override.userId,
                 userName: override.userName,
-                userEmail: override.userEmail,
+                personEmail: override.userEmail,
                 description: `Permission "${override.actionName || override.actionCode}" (${override.scope})`,
                 expiresAt: override.expiresAt,
                 expiresInDays,
@@ -104,8 +104,8 @@ export async function GET(request: NextRequest) {
                 userId: userGroupAssignments.userId,
                 groupId: userGroupAssignments.groupId,
                 expiresAt: userGroupAssignments.expiresAt,
-                userName: users.name,
-                userEmail: users.email,
+                userName: persons.firstName,
+                personEmail: persons.primaryEmail,
                 groupName: permissionGroups.name,
             })
             .from(userGroupAssignments)
@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
                 type: 'group',
                 userId: assignment.userId,
                 userName: assignment.userName,
-                userEmail: assignment.userEmail,
+                personEmail: assignment.userEmail,
                 description: `Group "${assignment.groupName}" membership`,
                 expiresAt: assignment.expiresAt,
                 expiresInDays,
@@ -252,6 +252,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
+
 
 
 

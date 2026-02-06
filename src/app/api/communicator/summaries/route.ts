@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
 
             const messageList = await db.select({
                 content: messages.content,
-                senderName: users.name,
+                senderName: persons.firstName,
                 senderType: messages.senderType,
                 isSolution: messages.isSolution,
                 createdAt: messages.createdAt,
@@ -344,6 +344,7 @@ function extractSentiment(content: string): { type: string; score: number } {
     if (positiveCount > 0 && negativeCount > 0) return { type: 'mixed', score };
     return { type: 'neutral', score };
 }
+
 
 
 

@@ -32,8 +32,8 @@ export async function GET(request: NextRequest) {
                 costCenter: costCenters,
                 manager: {
                     id: users.id,
-                    name: users.name,
-                    email: users.email,
+                    name: persons.firstName,
+                    email: persons.primaryEmail,
                 }
             })
             .from(costCenters)
@@ -126,6 +126,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create cost center' }, { status: 500 });
     }
 }
+
 
 
 

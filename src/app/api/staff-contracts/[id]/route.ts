@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { staffContracts, users } from '@/lib/db/schema';
+import { staffContracts, users, persons } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { auth } from '@clerk/nextjs/server';
 
@@ -21,15 +21,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         const result = await db
             .select({
                 contract: staffContracts,
-                user: {
-                    id: users.id,
-                    name: users.name,
-                    email: users.email,
-                    avatarUrl: users.avatarUrl,
+                person: {
+                    firstName: persons.firstName,
+                    lastName: persons.lastName,
+                    email: persons.primaryEmail,
+                    avatarUrl: persons.avatarUrl,
                 }
             })
             .from(staffContracts)
-            .leftJoin(users, eq(staffContracts.userId, users.id))
+            .leftJoin(persons, eq(staffContracts.personId, persons.id))
             .where(eq(staffContracts.id, id))
             .limit(1);
 
@@ -39,9 +39,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
         const contract = {
             ...result[0].contract,
-            name: result[0].user?.name,
-            email: result[0].user?.email,
-            avatarUrl: result[0].user?.avatarUrl,
+            name: result[0].person?.firstName,
+            email: result[0].person?.email,
+            avatarUrl: result[0].person?.avatarUrl,
         };
 
         return NextResponse.json({ data: contract });

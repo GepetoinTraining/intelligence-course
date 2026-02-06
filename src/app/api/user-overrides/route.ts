@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
             const orgUsers = await db
                 .select({ id: users.id })
                 .from(users)
-                .where(eq(users.organizationId, orgId));
+                .where(eq(organizationMemberships.organizationId, orgId));
 
             const userIds = orgUsers.map(u => u.id);
 
@@ -88,8 +88,8 @@ export async function GET(request: NextRequest) {
                     actionCode: actionTypes.code,
                     actionName: actionTypes.name,
                     actionCategory: actionTypes.category,
-                    userName: users.name,
-                    userEmail: users.email,
+                    userName: persons.firstName,
+                    personEmail: persons.primaryEmail,
                 })
                 .from(userPermissionOverrides)
                 .leftJoin(actionTypes, eq(userPermissionOverrides.actionTypeId, actionTypes.id))
@@ -279,5 +279,7 @@ export async function DELETE(request: NextRequest) {
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
+
+
 
 

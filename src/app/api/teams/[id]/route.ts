@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
-import { teams, teamMembers, teamPositions, users } from '@/lib/db/schema';
+import { teams, teamMembers, teamPositions, users, persons } from '@/lib/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -60,7 +60,7 @@ export async function GET(
         const members = await db
             .select({
                 id: teamMembers.id,
-                userId: teamMembers.userId,
+                personId: teamMembers.personId,
                 positionId: teamMembers.positionId,
                 memberRole: teamMembers.memberRole,
                 customTitle: teamMembers.customTitle,
@@ -70,15 +70,15 @@ export async function GET(
                 isActive: teamMembers.isActive,
                 startDate: teamMembers.startDate,
                 endDate: teamMembers.endDate,
-                userName: users.name,
-                userEmail: users.email,
-                userAvatar: users.avatarUrl,
+                personName: persons.firstName,
+                personEmail: persons.primaryEmail,
+                personAvatar: persons.avatarUrl,
                 positionName: teamPositions.name,
                 positionLevel: teamPositions.level,
                 positionType: teamPositions.positionType,
             })
             .from(teamMembers)
-            .leftJoin(users, eq(teamMembers.userId, users.id))
+            .leftJoin(persons, eq(teamMembers.personId, persons.id))
             .leftJoin(teamPositions, eq(teamMembers.positionId, teamPositions.id))
             .where(eq(teamMembers.teamId, id));
 

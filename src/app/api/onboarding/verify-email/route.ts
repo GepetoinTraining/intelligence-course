@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
         const user = await db
             .select()
             .from(users)
-            .where(eq(users.email, email))
+            .where(eq(persons.primaryEmail, email))
             .limit(1);
 
         if (user.length === 0) {
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
                 preferences: JSON.stringify(preferences),
                 updatedAt: Math.floor(Date.now() / 1000),
             })
-            .where(eq(users.email, email));
+            .where(eq(persons.primaryEmail, email));
 
         return NextResponse.json({
             data: {
@@ -54,5 +54,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to verify email' }, { status: 500 });
     }
 }
+
 
 

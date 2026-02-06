@@ -6,7 +6,8 @@ import {
     teamPositions,
     positionPermissions,
     permissionAuditLog,
-    users
+    users,
+    persons
 } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
@@ -39,7 +40,7 @@ export async function GET(
             .select({
                 id: teamMembers.id,
                 teamId: teamMembers.teamId,
-                userId: teamMembers.userId,
+                personId: teamMembers.personId,
                 positionId: teamMembers.positionId,
                 memberRole: teamMembers.memberRole,
                 customTitle: teamMembers.customTitle,
@@ -49,15 +50,15 @@ export async function GET(
                 isActive: teamMembers.isActive,
                 startDate: teamMembers.startDate,
                 endDate: teamMembers.endDate,
-                userName: users.name,
-                userEmail: users.email,
-                userAvatar: users.avatarUrl,
+                personName: persons.firstName,
+                personEmail: persons.primaryEmail,
+                personAvatar: persons.avatarUrl,
                 positionName: teamPositions.name,
                 positionLevel: teamPositions.level,
                 positionType: teamPositions.positionType,
             })
             .from(teamMembers)
-            .leftJoin(users, eq(teamMembers.userId, users.id))
+            .leftJoin(persons, eq(teamMembers.personId, persons.id))
             .leftJoin(teamPositions, eq(teamMembers.positionId, teamPositions.id))
             .where(eq(teamMembers.id, id))
             .limit(1);

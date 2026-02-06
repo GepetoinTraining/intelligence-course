@@ -48,8 +48,8 @@ export async function GET(request: NextRequest) {
                 leave: staffLeave,
                 user: {
                     id: users.id,
-                    name: users.name,
-                    email: users.email,
+                    name: persons.firstName,
+                    email: persons.primaryEmail,
                 }
             })
             .from(staffLeave)
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
         const flattened = result.map(r => ({
             ...r.leave,
             userName: r.user?.name,
-            userEmail: r.user?.email,
+            personEmail: r.user?.email,
         }));
 
         return NextResponse.json({ data: flattened });
@@ -98,6 +98,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create staff leave' }, { status: 500 });
     }
 }
+
 
 
 

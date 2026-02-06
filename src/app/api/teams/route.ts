@@ -71,9 +71,9 @@ export async function GET(request: NextRequest) {
                             memberRole: teamMembers.memberRole,
                             customTitle: teamMembers.customTitle,
                             allocation: teamMembers.allocation,
-                            userName: users.name,
-                            userEmail: users.email,
-                            userAvatar: users.avatarUrl,
+                            userName: persons.firstName,
+                            personEmail: persons.primaryEmail,
+                            userAvatar: persons.avatarUrl,
                             positionName: teamPositions.name,
                         })
                         .from(teamMembers)
@@ -176,6 +176,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create team' }, { status: 500 });
     }
 }
+
 
 
 

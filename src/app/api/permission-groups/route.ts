@@ -87,9 +87,9 @@ export async function GET(request: NextRequest) {
                     .select({
                         assignmentId: userGroupAssignments.id,
                         userId: users.id,
-                        userName: users.name,
-                        userEmail: users.email,
-                        userAvatar: users.avatarUrl,
+                        userName: persons.firstName,
+                        personEmail: persons.primaryEmail,
+                        userAvatar: persons.avatarUrl,
                         grantedAt: userGroupAssignments.grantedAt,
                         expiresAt: userGroupAssignments.expiresAt,
                     })
@@ -448,6 +448,7 @@ export async function DELETE(request: NextRequest) {
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
+
 
 
 

@@ -38,9 +38,9 @@ export async function GET(request: NextRequest) {
                 contract: staffContracts,
                 user: {
                     id: users.id,
-                    name: users.name,
-                    email: users.email,
-                    avatarUrl: users.avatarUrl,
+                    name: persons.firstName,
+                    email: persons.primaryEmail,
+                    avatarUrl: persons.avatarUrl,
                 }
             })
             .from(staffContracts)
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
             const existingUser = await db
                 .select()
                 .from(users)
-                .where(eq(users.email, body.email))
+                .where(eq(persons.primaryEmail, body.email))
                 .limit(1);
 
             if (existingUser.length > 0) {
@@ -128,6 +128,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create staff contract' }, { status: 500 });
     }
 }
+
 
 
 

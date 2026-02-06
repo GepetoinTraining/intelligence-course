@@ -145,7 +145,7 @@ export async function GET(request: NextRequest) {
         if (submitterIds.length > 0) {
             const submitters = await db.select({
                 id: users.id,
-                name: users.name,
+                name: persons.firstName,
             })
                 .from(users)
                 .where(inArray(users.id, submitterIds));
@@ -250,6 +250,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create suggestion' }, { status: 500 });
     }
 }
+
 
 
 

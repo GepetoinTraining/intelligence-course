@@ -91,8 +91,8 @@ export async function GET(request: NextRequest) {
                 isGranted: userPermissionOverrides.isGranted,
                 expiresAt: userPermissionOverrides.expiresAt,
                 grantedBy: userPermissionOverrides.grantedBy,
-                targetUserName: users.name,
-                targetUserEmail: users.email,
+                targetUserName: persons.firstName,
+                targetpersonEmail: persons.primaryEmail,
             })
             .from(userPermissionOverrides)
             .leftJoin(users, eq(userPermissionOverrides.userId, users.id))
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
 
         // Verify target user exists
         const [targetUser] = await db
-            .select({ id: users.id, name: users.name })
+            .select({ id: users.id, name: persons.firstName })
             .from(users)
             .where(eq(users.id, targetUserId))
             .limit(1);
@@ -344,6 +344,7 @@ export async function DELETE(request: NextRequest) {
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
+
 
 
 

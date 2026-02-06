@@ -58,8 +58,8 @@ export async function GET(request: NextRequest) {
                 },
                 user: {
                     id: users.id,
-                    name: users.name,
-                    email: users.email,
+                    name: persons.firstName,
+                    email: persons.primaryEmail,
                 }
             })
             .from(staffPayroll)
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
         const flattened = result.map(r => ({
             ...r.payroll,
             userName: r.user?.name,
-            userEmail: r.user?.email,
+            personEmail: r.user?.email,
             jobTitle: r.contract?.jobTitle,
             department: r.contract?.department,
             contractType: r.contract?.contractType,
@@ -132,6 +132,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create payroll' }, { status: 500 });
     }
 }
+
 
 
 
