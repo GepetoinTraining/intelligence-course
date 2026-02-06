@@ -6,8 +6,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/journal-entries - List journal entries
 export async function GET(request: NextRequest) {
-    const { userId, orgId } = await getApiAuthWithOrg();
-    if (!userId || !orgId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -70,8 +70,8 @@ export async function GET(request: NextRequest) {
 
 // POST /api/journal-entries - Create journal entry with lines
 export async function POST(request: NextRequest) {
-    const { userId, orgId } = await getApiAuthWithOrg();
-    if (!userId || !orgId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -175,4 +175,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create journal entry' }, { status: 500 });
     }
 }
+
+
 

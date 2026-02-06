@@ -6,8 +6,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/templates - List email templates
 export async function GET(request: NextRequest) {
-    const { userId, orgId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -47,8 +47,8 @@ export async function GET(request: NextRequest) {
 
 // POST /api/templates - Create template
 export async function POST(request: NextRequest) {
-    const { userId, orgId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -73,4 +73,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create template' }, { status: 500 });
     }
 }
+
+
 

@@ -6,8 +6,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/invoices - List invoices
 export async function GET(request: NextRequest) {
-    const { userId, orgId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -52,8 +52,8 @@ export async function GET(request: NextRequest) {
 
 // POST /api/invoices - Create invoice
 export async function POST(request: NextRequest) {
-    const { userId, orgId } = await getApiAuthWithOrg();
-    if (!userId || !orgId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -94,4 +94,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create invoice' }, { status: 500 });
     }
 }
+
+
 

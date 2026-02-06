@@ -7,9 +7,9 @@ import { eq, and } from 'drizzle-orm';
 // POST /api/progress - Update progress
 export async function POST(request: NextRequest) {
     try {
-        const { userId } = await getApiAuthWithOrg();
+        const { personId } = await getApiAuthWithOrg();
 
-        if (!userId) {
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -39,8 +39,8 @@ export async function POST(request: NextRequest) {
 
         // Check if progress record exists
         const whereClause = taskId
-            ? and(eq(progress.userId, userId), eq(progress.taskId, taskId))
-            : and(eq(progress.userId, userId), eq(progress.lessonId, lessonId!));
+            ? and(eq(progress.personId, personId), eq(progress.taskId, taskId))
+            : and(eq(progress.personId, personId), eq(progress.lessonId, lessonId!));
 
         const [existing] = await db
             .select()
@@ -90,9 +90,9 @@ export async function POST(request: NextRequest) {
 // GET /api/progress - Get user progress
 export async function GET(request: NextRequest) {
     try {
-        const { userId } = await getApiAuthWithOrg();
+        const { personId } = await getApiAuthWithOrg();
 
-        if (!userId) {
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -100,18 +100,18 @@ export async function GET(request: NextRequest) {
         const moduleId = url.searchParams.get('moduleId');
         const lessonId = url.searchParams.get('lessonId');
 
-        let whereClause = eq(progress.userId, userId);
+        let whereClause = eq(progress.personId, personId);
 
         if (moduleId) {
             whereClause = and(
-                eq(progress.userId, userId),
+                eq(progress.personId, personId),
                 eq(progress.moduleId, moduleId)
             )!;
         }
 
         if (lessonId) {
             whereClause = and(
-                eq(progress.userId, userId),
+                eq(progress.personId, personId),
                 eq(progress.lessonId, lessonId)
             )!;
         }
@@ -130,4 +130,6 @@ export async function GET(request: NextRequest) {
         );
     }
 }
+
+
 

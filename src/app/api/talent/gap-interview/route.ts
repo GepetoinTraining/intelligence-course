@@ -28,8 +28,8 @@ const SKILL_DEFINITIONS: Record<string, string> = {
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId } = await getApiAuthWithOrg();
-        if (!userId) {
+        const { personId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
         // Get profile
         const profile = await db.query.talentProfiles.findFirst({
-            where: eq(talentProfiles.userId, userId),
+            where: eq(talentProfiles.personId, personId),
         });
 
         if (!profile) {
@@ -280,4 +280,6 @@ Only assess these skills: ${targetSkills.join(', ')}`,
         console.error('Error extracting skills:', error);
     }
 }
+
+
 

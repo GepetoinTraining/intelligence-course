@@ -467,40 +467,38 @@ export const personContacts = sqliteTable('person_contacts', {
 
 
 /**
- * User = Auth identity linked to a Person
- * The 'role' field is DEPRECATED - use role junction tables instead
+ * User = Thin auth bridge linking Clerk to a Person
+ * 
+ * This table contains ONLY auth-related state. All identity data is in `persons`.
+ * The id is the Clerk user_id, personId links to the canonical identity.
  */
 export const users = sqliteTable('users', {
     id: text('id').primaryKey(), // Clerk user_id
-    personId: text('person_id').references(() => persons.id),  // NEW: Link to person
-
-    // DEPRECATED: Keep for backwards compat during migration
-    email: text('email').notNull(),
-    name: text('name'),
-    avatarUrl: text('avatar_url'),
-    role: text('role', { enum: ['student', 'parent', 'teacher', 'staff', 'admin', 'owner', 'talent'] }).default('student'),
-
-    organizationId: text('organization_id').references(() => organizations.id),
+    personId: text('person_id').notNull().references(() => persons.id),  // Canonical identity
 
     // Onboarding state
     onboardingCompleted: integer('onboarding_completed').default(0),
     latticeInterviewPending: integer('lattice_interview_pending').default(1),  // First AI chat = interview
 
+    // Client-side preferences (theme, layout, etc.)
     preferences: text('preferences').default('{}'),
 
+    // Timestamps
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
     lastSeenAt: integer('last_seen_at'),
     archivedAt: integer('archived_at'),
 }, (table) => [
-    index('idx_users_email').on(table.email),
-    index('idx_users_org').on(table.organizationId),
     index('idx_users_person').on(table.personId),
 ]);
 
+/**
+ * User API Keys - Personal AI provider keys
+ * Now references personId (canonical identity) instead of userId
+ */
 export const userApiKeys = sqliteTable('user_api_keys', {
     id: text('id').primaryKey().default(uuid()),
-    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
 
     provider: text('provider').notNull(), // 'anthropic', 'openai', 'google', 'groq'
     encryptedKey: text('encrypted_key').notNull(),
@@ -511,7 +509,7 @@ export const userApiKeys = sqliteTable('user_api_keys', {
 
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
-    uniqueIndex('idx_user_api_keys_unique').on(table.userId, table.provider),
+    uniqueIndex('idx_user_api_keys_unique').on(table.personId, table.provider),
 ]);
 
 // ============================================================================
@@ -932,7 +930,7 @@ export const leadRoles = sqliteTable('lead_roles', {
     utmCampaign: text('utm_campaign'),
 
     // Assignment
-    assignedToUserId: text('assigned_to_user_id').references(() => users.id),
+    assignedToUserId: text('assigned_to_user_id').references(() => persons.id),
 
     // Interests
     interestedCourses: text('interested_courses').default('[]'),  // JSON array
@@ -1092,7 +1090,7 @@ export const aiProviders = sqliteTable('ai_providers', {
 export const courses = sqliteTable('courses', {
     id: text('id').primaryKey().default(uuid()),
     organizationId: text('organization_id').references(() => organizations.id),
-    createdBy: text('created_by').notNull().references(() => users.id),
+    createdBy: text('created_by').notNull().references(() => persons.id),
 
     title: text('title').notNull().default('{}'),
     description: text('description').default('{}'),
@@ -1174,7 +1172,7 @@ export const tasks = sqliteTable('tasks', {
 
 export const prompts = sqliteTable('prompts', {
     id: text('id').primaryKey().default(uuid()),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
     organizationId: text('organization_id').references(() => organizations.id),
 
     name: text('name').notNull(),
@@ -1204,7 +1202,7 @@ export const prompts = sqliteTable('prompts', {
     updatedAt: integer('updated_at').default(timestamp()),
     archivedAt: integer('archived_at'),
 }, (table) => [
-    index('idx_prompts_user').on(table.userId),
+    index('idx_prompts_person').on(table.personId),
     index('idx_prompts_org').on(table.organizationId),
     index('idx_prompts_share').on(table.sharedWith),
     uniqueIndex('idx_prompts_token').on(table.shareToken),
@@ -1218,7 +1216,7 @@ export const promptDeltas = sqliteTable('prompt_deltas', {
     patch: text('patch').notNull(), // RFC 6902 JSON Patch
 
     changeSummary: text('change_summary'),
-    changedBy: text('changed_by').references(() => users.id),
+    changedBy: text('changed_by').references(() => persons.id),
 
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
@@ -1232,7 +1230,7 @@ export const promptDeltas = sqliteTable('prompt_deltas', {
 export const promptRuns = sqliteTable('prompt_runs', {
     id: text('id').primaryKey().default(uuid()),
     promptId: text('prompt_id').references(() => prompts.id),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
 
     provider: text('provider').notNull(),
     model: text('model').notNull(),
@@ -1262,7 +1260,7 @@ export const promptRuns = sqliteTable('prompt_runs', {
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
     index('idx_runs_prompt').on(table.promptId, table.createdAt),
-    index('idx_runs_user').on(table.userId, table.createdAt),
+    index('idx_runs_person').on(table.personId, table.createdAt),
     index('idx_runs_benchmark').on(table.benchmarkId),
 ]);
 
@@ -1272,7 +1270,7 @@ export const promptRuns = sqliteTable('prompt_runs', {
 
 export const progress = sqliteTable('progress', {
     id: text('id').primaryKey().default(uuid()),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
     classId: text('class_id'),
 
     courseId: text('course_id').references(() => courses.id),
@@ -1292,8 +1290,8 @@ export const progress = sqliteTable('progress', {
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
-    uniqueIndex('idx_progress_unique').on(table.userId, table.classId, table.taskId),
-    index('idx_progress_user').on(table.userId, table.classId),
+    uniqueIndex('idx_progress_unique').on(table.personId, table.classId, table.taskId),
+    index('idx_progress_person').on(table.personId, table.classId),
 ]);
 
 // ============================================================================
@@ -1302,7 +1300,7 @@ export const progress = sqliteTable('progress', {
 
 export const studentPrompts = sqliteTable('student_prompts', {
     id: text('id').primaryKey().default(uuid()),
-    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
 
     title: text('title').notNull(),
     systemPrompt: text('system_prompt'),
@@ -1330,7 +1328,7 @@ export const studentPrompts = sqliteTable('student_prompts', {
     updatedAt: integer('updated_at').default(timestamp()),
     archivedAt: integer('archived_at'),
 }, (table) => [
-    index('idx_student_prompts_user').on(table.userId),
+    index('idx_student_prompts_person').on(table.personId),
     index('idx_student_prompts_public').on(table.isPublic, table.createdAt),
 ]);
 
@@ -1341,7 +1339,7 @@ export const studentPrompts = sqliteTable('student_prompts', {
 export const runAnnotations = sqliteTable('run_annotations', {
     id: text('id').primaryKey().default(uuid()),
     runId: text('run_id').notNull().references(() => promptRuns.id, { onDelete: 'cascade' }),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
 
     annotation: text('annotation').notNull(), // "This worked because..." or "Failed because..."
 
@@ -1357,7 +1355,7 @@ export const runAnnotations = sqliteTable('run_annotations', {
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
     index('idx_run_annotations_run').on(table.runId),
-    index('idx_run_annotations_user').on(table.userId, table.createdAt),
+    index('idx_run_annotations_person').on(table.personId, table.createdAt),
 ]);
 
 // ============================================================================
@@ -1366,7 +1364,7 @@ export const runAnnotations = sqliteTable('run_annotations', {
 
 export const graveyardEntries = sqliteTable('graveyard_entries', {
     id: text('id').primaryKey().default(uuid()),
-    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
     runId: text('run_id').notNull().references(() => promptRuns.id),
 
     characterName: text('character_name').notNull(), // "Grumpy Blacksmith"
@@ -1382,7 +1380,7 @@ export const graveyardEntries = sqliteTable('graveyard_entries', {
 
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
-    index('idx_graveyard_user').on(table.userId, table.createdAt),
+    index('idx_graveyard_person').on(table.personId, table.createdAt),
 ]);
 
 // ============================================================================
@@ -1391,7 +1389,7 @@ export const graveyardEntries = sqliteTable('graveyard_entries', {
 
 export const techniqueUsage = sqliteTable('technique_usage', {
     id: text('id').primaryKey().default(uuid()),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
     runId: text('run_id').notNull().references(() => promptRuns.id),
 
     technique: text('technique', {
@@ -1402,7 +1400,7 @@ export const techniqueUsage = sqliteTable('technique_usage', {
 
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
-    index('idx_technique_user').on(table.userId, table.technique),
+    index('idx_technique_person').on(table.personId, table.technique),
     index('idx_technique_run').on(table.runId),
 ]);
 
@@ -1412,7 +1410,7 @@ export const techniqueUsage = sqliteTable('technique_usage', {
 
 export const todoItems = sqliteTable('todo_items', {
     id: text('id').primaryKey().default(uuid()),
-    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
 
     title: text('title').notNull(),
     description: text('description'),
@@ -1438,7 +1436,7 @@ export const todoItems = sqliteTable('todo_items', {
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
-    index('idx_todo_user').on(table.userId, table.status),
+    index('idx_todo_person').on(table.personId, table.status),
 ]);
 
 // ============================================================================
@@ -1447,7 +1445,7 @@ export const todoItems = sqliteTable('todo_items', {
 
 export const problemWorkshops = sqliteTable('problem_workshops', {
     id: text('id').primaryKey().default(uuid()),
-    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
 
     // Step 1: Raw Problem Capture
     rawProblem: text('raw_problem').notNull(), // Messy, emotional initial description
@@ -1482,7 +1480,7 @@ export const problemWorkshops = sqliteTable('problem_workshops', {
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
-    index('idx_workshop_user').on(table.userId, table.status),
+    index('idx_workshop_person').on(table.personId, table.status),
 ]);
 
 // ============================================================================
@@ -1491,7 +1489,7 @@ export const problemWorkshops = sqliteTable('problem_workshops', {
 
 export const capstoneSubmissions = sqliteTable('capstone_submissions', {
     id: text('id').primaryKey().default(uuid()),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
     classId: text('class_id'),
 
     moduleId: text('module_id').notNull().references(() => modules.id),
@@ -1533,12 +1531,12 @@ export const capstoneSubmissions = sqliteTable('capstone_submissions', {
     finalScore: real('final_score'),
 
     gradedAt: integer('graded_at'),
-    gradedBy: text('graded_by').references(() => users.id),
+    gradedBy: text('graded_by').references(() => persons.id),
 
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
-    index('idx_capstone_user').on(table.userId, table.moduleId),
+    index('idx_capstone_person').on(table.personId, table.moduleId),
     index('idx_capstone_class').on(table.classId, table.moduleId),
     index('idx_capstone_status').on(table.status),
 ]);
@@ -1550,7 +1548,7 @@ export const capstoneSubmissions = sqliteTable('capstone_submissions', {
 export const peerReviews = sqliteTable('peer_reviews', {
     id: text('id').primaryKey().default(uuid()),
     submissionId: text('submission_id').notNull().references(() => capstoneSubmissions.id, { onDelete: 'cascade' }),
-    reviewerId: text('reviewer_id').notNull().references(() => users.id),
+    reviewerId: text('reviewer_id').notNull().references(() => persons.id),
 
     // Structured rubric (1-5 scale each)
     heldCharacter: integer('held_character'), // Did the AI stay in character?
@@ -1576,7 +1574,7 @@ export const peerReviews = sqliteTable('peer_reviews', {
 
 export const challenges = sqliteTable('challenges', {
     id: text('id').primaryKey().default(uuid()),
-    authorId: text('author_id').notNull().references(() => users.id),
+    authorId: text('author_id').notNull().references(() => persons.id),
     classId: text('class_id'), // Scope to class, or null for global
 
     title: text('title').notNull(),
@@ -1603,18 +1601,18 @@ export const challenges = sqliteTable('challenges', {
 export const challengeAttempts = sqliteTable('challenge_attempts', {
     id: text('id').primaryKey().default(uuid()),
     challengeId: text('challenge_id').notNull().references(() => challenges.id, { onDelete: 'cascade' }),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
     runId: text('run_id').notNull().references(() => promptRuns.id),
 
     // Verification
     solved: integer('solved').default(0), // Verified by challenge author
-    verifiedBy: text('verified_by').references(() => users.id),
+    verifiedBy: text('verified_by').references(() => persons.id),
     verifiedAt: integer('verified_at'),
 
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
     index('idx_attempts_challenge').on(table.challengeId),
-    index('idx_attempts_user').on(table.userId),
+    index('idx_attempts_person').on(table.personId),
 ]);
 
 // ============================================================================
@@ -1623,7 +1621,7 @@ export const challengeAttempts = sqliteTable('challenge_attempts', {
 
 export const knowledgeNodes = sqliteTable('knowledge_nodes', {
     id: text('id').primaryKey().default(uuid()),
-    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
 
     // Content
     title: text('title').notNull(),
@@ -1648,12 +1646,12 @@ export const knowledgeNodes = sqliteTable('knowledge_nodes', {
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
-    index('idx_knowledge_user').on(table.userId, table.nodeType),
+    index('idx_knowledge_person').on(table.personId, table.nodeType),
 ]);
 
 export const knowledgeEdges = sqliteTable('knowledge_edges', {
     id: text('id').primaryKey().default(uuid()),
-    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
 
     fromNodeId: text('from_node_id').notNull().references(() => knowledgeNodes.id, { onDelete: 'cascade' }),
     toNodeId: text('to_node_id').notNull().references(() => knowledgeNodes.id, { onDelete: 'cascade' }),
@@ -1669,7 +1667,7 @@ export const knowledgeEdges = sqliteTable('knowledge_edges', {
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
     uniqueIndex('idx_edge_unique').on(table.fromNodeId, table.toNodeId),
-    index('idx_edge_user').on(table.userId),
+    index('idx_edge_person').on(table.personId),
 ]);
 
 // ============================================================================
@@ -1697,7 +1695,7 @@ export const badges = sqliteTable('badges', {
 
 export const userBadges = sqliteTable('user_badges', {
     id: text('id').primaryKey().default(uuid()),
-    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
     badgeId: text('badge_id').notNull().references(() => badges.id),
 
     earnedAt: integer('earned_at').default(timestamp()),
@@ -1705,7 +1703,7 @@ export const userBadges = sqliteTable('user_badges', {
     // Context for how it was earned
     context: text('context'), // JSON with details
 }, (table) => [
-    uniqueIndex('idx_user_badge_unique').on(table.userId, table.badgeId),
+    uniqueIndex('idx_user_badge_unique').on(table.personId, table.badgeId),
 ]);
 
 // ============================================================================
@@ -1714,7 +1712,7 @@ export const userBadges = sqliteTable('user_badges', {
 
 export const teacherProfiles = sqliteTable('teacher_profiles', {
     id: text('id').primaryKey().default(uuid()),
-    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
     organizationId: text('organization_id').references(() => organizations.id),
 
     // Payment model: 'school_employee' | 'hired_percentage' | 'external_rental'
@@ -1745,7 +1743,7 @@ export const teacherProfiles = sqliteTable('teacher_profiles', {
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
-    uniqueIndex('idx_teacher_profiles_user').on(table.userId),
+    uniqueIndex('idx_teacher_profiles_person').on(table.personId),
 ]);
 
 // ============================================================================
@@ -1773,7 +1771,7 @@ export const coursePricing = sqliteTable('course_pricing', {
     latePaymentFeeFixed: real('late_payment_fee_fixed').default(0),
 
     // Payment split configuration (for courses taught by teachers)
-    teacherId: text('teacher_id').references(() => users.id),
+    teacherId: text('teacher_id').references(() => persons.id),
     teacherPercentage: real('teacher_percentage').default(0), // Override from teacher profile
     schoolPercentage: real('school_percentage').default(100),
 
@@ -1899,7 +1897,7 @@ export const costCenters = sqliteTable('cost_centers', {
     }).default('department'),
 
     // Responsible
-    managerId: text('manager_id').references(() => users.id),
+    managerId: text('manager_id').references(() => persons.id),
 
     // Budget tracking
     annualBudgetCents: integer('annual_budget_cents'),
@@ -1952,8 +1950,8 @@ export const journalEntries = sqliteTable('journal_entries', {
     reversedByEntryId: text('reversed_by_entry_id'),
 
     // Audit trail
-    createdBy: text('created_by').notNull().references(() => users.id),
-    postedBy: text('posted_by').references(() => users.id),
+    createdBy: text('created_by').notNull().references(() => persons.id),
+    postedBy: text('posted_by').references(() => persons.id),
     postedAt: integer('posted_at'),
 
     createdAt: integer('created_at').default(timestamp()),
@@ -2030,11 +2028,11 @@ export const fiscalDocuments = sqliteTable('fiscal_documents', {
     competenceDate: integer('competence_date'), // For services (NFS-e)
 
     // Parties
-    issuerId: text('issuer_id').references(() => users.id), // Can be org or individual
+    issuerId: text('issuer_id').references(() => persons.id), // Can be org or individual
     issuerDocument: text('issuer_document'), // CNPJ/CPF
     issuerName: text('issuer_name'),
 
-    recipientId: text('recipient_id').references(() => users.id),
+    recipientId: text('recipient_id').references(() => persons.id),
     recipientDocument: text('recipient_document'),
     recipientName: text('recipient_name'),
 
@@ -2106,7 +2104,7 @@ export const taxWithholdings = sqliteTable('tax_withholdings', {
     fiscalMonth: integer('fiscal_month').notNull(),
 
     // Beneficiary (recipient of payment)
-    beneficiaryId: text('beneficiary_id').references(() => users.id),
+    beneficiaryId: text('beneficiary_id').references(() => persons.id),
     beneficiaryDocument: text('beneficiary_document').notNull(), // CPF/CNPJ
     beneficiaryName: text('beneficiary_name').notNull(),
 
@@ -2153,13 +2151,13 @@ export const invoices = sqliteTable('invoices', {
     organizationId: text('organization_id').references(() => organizations.id),
 
     // Who pays
-    payerUserId: text('payer_user_id').notNull().references(() => users.id),
+    payerUserId: text('payer_user_id').notNull().references(() => persons.id),
     payerName: text('payer_name').notNull(),
     payerEmail: text('payer_email'),
     payerTaxId: text('payer_tax_id'), // CPF/CNPJ
 
     // For whom (student)
-    studentUserId: text('student_user_id').references(() => users.id),
+    studentUserId: text('student_user_id').references(() => persons.id),
     studentName: text('student_name'),
 
     // What
@@ -2218,7 +2216,7 @@ export const transactions = sqliteTable('transactions', {
     }).notNull(),
 
     // Related user (teacher for payouts, school for revenue)
-    userId: text('user_id').references(() => users.id),
+    personId: text('person_id').references(() => persons.id),
 
     // Amounts
     amount: real('amount').notNull(),
@@ -2242,7 +2240,7 @@ export const transactions = sqliteTable('transactions', {
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
     index('idx_transactions_invoice').on(table.invoiceId),
-    index('idx_transactions_user').on(table.userId, table.createdAt),
+    index('idx_transactions_person').on(table.personId, table.createdAt),
     index('idx_transactions_type').on(table.type, table.status),
 ]);
 
@@ -2323,7 +2321,7 @@ export const splitRecipients = sqliteTable('split_recipients', {
     }).notNull(),
 
     // User reference (if applicable)
-    userId: text('user_id').references(() => users.id),
+    personId: text('person_id').references(() => persons.id),
 
     // Display
     name: text('name').notNull(),
@@ -2368,7 +2366,7 @@ export const splitRecipients = sqliteTable('split_recipients', {
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
     index('idx_split_recipients_org').on(table.organizationId),
-    index('idx_split_recipients_user').on(table.userId),
+    index('idx_split_recipients_person').on(table.personId),
     index('idx_split_recipients_type').on(table.recipientType),
 ]);
 
@@ -2468,8 +2466,8 @@ export const receivables = sqliteTable('receivables', {
     invoiceId: text('invoice_id').references(() => invoices.id),
 
     // Who owes / for whom
-    payerUserId: text('payer_user_id').references(() => users.id),  // Who pays (parent/guardian)
-    studentUserId: text('student_user_id').references(() => users.id),  // The student
+    payerUserId: text('payer_user_id').references(() => persons.id),  // Who pays (parent/guardian)
+    studentUserId: text('student_user_id').references(() => persons.id),  // The student
 
     // Installment info
     installmentNumber: integer('installment_number'),
@@ -2566,7 +2564,7 @@ export const receivablePayments = sqliteTable('receivable_payments', {
     failureReason: text('failure_reason'),
 
     // Received by (for cash/check)
-    receivedBy: text('received_by').references(() => users.id),
+    receivedBy: text('received_by').references(() => persons.id),
 
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
@@ -2634,7 +2632,7 @@ export const moneyFlows = sqliteTable('money_flows', {
     // Reconciliation
     isReconciled: integer('is_reconciled', { mode: 'boolean' }).default(false),
     reconciledAt: integer('reconciled_at'),
-    reconciledBy: text('reconciled_by').references(() => users.id),
+    reconciledBy: text('reconciled_by').references(() => persons.id),
     bankStatementRef: text('bank_statement_ref'),
 
     createdAt: integer('created_at').default(timestamp()),
@@ -2655,7 +2653,7 @@ export const commissionPayouts = sqliteTable('commission_payouts', {
     organizationId: text('organization_id').notNull().references(() => organizations.id),
 
     // Recipient
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
     recipientId: text('recipient_id').references(() => splitRecipients.id),
 
     // Commission type
@@ -2693,7 +2691,7 @@ export const commissionPayouts = sqliteTable('commission_payouts', {
     }).default('pending'),
 
     // Approval
-    approvedBy: text('approved_by').references(() => users.id),
+    approvedBy: text('approved_by').references(() => persons.id),
     approvedAt: integer('approved_at'),
 
     // Payment
@@ -2709,7 +2707,7 @@ export const commissionPayouts = sqliteTable('commission_payouts', {
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
-    index('idx_commission_payouts_user').on(table.userId, table.status),
+    index('idx_commission_payouts_person').on(table.personId, table.status),
     index('idx_commission_payouts_type').on(table.commissionType),
     index('idx_commission_payouts_status').on(table.status),
 ]);
@@ -2776,7 +2774,7 @@ export const financialGoals = sqliteTable('financial_goals', {
     alertThreshold: real('alert_threshold'),      // Percent of period elapsed when to alert
     alertSent: integer('alert_sent', { mode: 'boolean' }).default(false),
 
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
@@ -2844,7 +2842,7 @@ export const organizationFinancialSettings = sqliteTable('organization_financial
 
 export const teacherPayouts = sqliteTable('teacher_payouts', {
     id: text('id').primaryKey().default(uuid()),
-    teacherId: text('teacher_id').notNull().references(() => users.id),
+    teacherId: text('teacher_id').notNull().references(() => persons.id),
     organizationId: text('organization_id').references(() => organizations.id),
 
     // Period
@@ -2870,7 +2868,7 @@ export const teacherPayouts = sqliteTable('teacher_payouts', {
     payoutReference: text('payout_reference'),
 
     // Approval
-    approvedBy: text('approved_by').references(() => users.id),
+    approvedBy: text('approved_by').references(() => persons.id),
     approvedAt: integer('approved_at'),
 
     createdAt: integer('created_at').default(timestamp()),
@@ -2930,7 +2928,7 @@ export const payables = sqliteTable('payables', {
     // Notes
     notes: text('notes'),
 
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
@@ -2946,7 +2944,7 @@ export const payables = sqliteTable('payables', {
 export const staffContracts = sqliteTable('staff_contracts', {
     id: text('id').primaryKey().default(uuid()),
     organizationId: text('organization_id').notNull().references(() => organizations.id),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
 
     // Role and Department
     jobTitle: text('job_title').notNull(),
@@ -2987,7 +2985,7 @@ export const staffContracts = sqliteTable('staff_contracts', {
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
-    index('idx_staff_contracts_user').on(table.userId),
+    index('idx_staff_contracts_person').on(table.personId),
     index('idx_staff_contracts_org').on(table.organizationId),
     index('idx_staff_contracts_dept').on(table.department),
 ]);
@@ -2998,7 +2996,7 @@ export const staffContracts = sqliteTable('staff_contracts', {
 
 export const staffLeave = sqliteTable('staff_leave', {
     id: text('id').primaryKey().default(uuid()),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
     contractId: text('contract_id').references(() => staffContracts.id),
 
     leaveType: text('leave_type', {
@@ -3013,12 +3011,12 @@ export const staffLeave = sqliteTable('staff_leave', {
     }).default('pending'),
 
     reason: text('reason'),
-    approvedBy: text('approved_by').references(() => users.id),
+    approvedBy: text('approved_by').references(() => persons.id),
     approvedAt: integer('approved_at'),
 
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
-    index('idx_staff_leave_user').on(table.userId, table.startDate),
+    index('idx_staff_leave_person').on(table.personId, table.startDate),
 ]);
 
 // ============================================================================
@@ -3029,7 +3027,7 @@ export const staffPayroll = sqliteTable('staff_payroll', {
     id: text('id').primaryKey().default(uuid()),
     organizationId: text('organization_id').notNull().references(() => organizations.id),
     contractId: text('contract_id').notNull().references(() => staffContracts.id),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
 
     // Period (for salary/hourly calculations)
     periodStart: integer('period_start').notNull(),
@@ -3069,9 +3067,9 @@ export const staffPayroll = sqliteTable('staff_payroll', {
     }).default('draft'),
 
     // Approval chain
-    calculatedBy: text('calculated_by').references(() => users.id),
+    calculatedBy: text('calculated_by').references(() => persons.id),
     calculatedAt: integer('calculated_at'),
-    approvedBy: text('approved_by').references(() => users.id),
+    approvedBy: text('approved_by').references(() => persons.id),
     approvedAt: integer('approved_at'),
 
     // Payment completion
@@ -3085,7 +3083,7 @@ export const staffPayroll = sqliteTable('staff_payroll', {
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
-    index('idx_staff_payroll_user').on(table.userId, table.periodStart),
+    index('idx_staff_payroll_person').on(table.personId, table.periodStart),
     index('idx_staff_payroll_contract').on(table.contractId),
     index('idx_staff_payroll_status').on(table.status, table.paymentDueDate),
     index('idx_staff_payroll_org').on(table.organizationId, table.periodStart),
@@ -3097,7 +3095,7 @@ export const staffPayroll = sqliteTable('staff_payroll', {
 
 export const paymentMethods = sqliteTable('payment_methods', {
     id: text('id').primaryKey().default(uuid()),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
     organizationId: text('organization_id').references(() => organizations.id), // Optional, for org-level methods
 
     // Method type
@@ -3142,7 +3140,7 @@ export const paymentMethods = sqliteTable('payment_methods', {
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
-    index('idx_payment_methods_user').on(table.userId, table.methodType),
+    index('idx_payment_methods_person').on(table.personId, table.methodType),
     index('idx_payment_methods_org').on(table.organizationId),
 ]);
 
@@ -3153,7 +3151,7 @@ export const paymentMethods = sqliteTable('payment_methods', {
 export const payrollPayments = sqliteTable('payroll_payments', {
     id: text('id').primaryKey().default(uuid()),
     payrollId: text('payroll_id').notNull().references(() => staffPayroll.id),
-    userId: text('user_id').notNull().references(() => users.id), // Recipient
+    personId: text('person_id').notNull().references(() => persons.id), // Recipient
     paymentMethodId: text('payment_method_id').references(() => paymentMethods.id),
 
     // Amount for this specific payment
@@ -3190,8 +3188,8 @@ export const payrollPayments = sqliteTable('payroll_payments', {
     receiptNumber: text('receipt_number'),
 
     // For cash/manual payments
-    paidBy: text('paid_by').references(() => users.id), // Who gave the cash
-    confirmedBy: text('confirmed_by').references(() => users.id), // Who confirmed receipt
+    paidBy: text('paid_by').references(() => persons.id), // Who gave the cash
+    confirmedBy: text('confirmed_by').references(() => persons.id), // Who confirmed receipt
 
     notes: text('notes'),
 
@@ -3199,7 +3197,7 @@ export const payrollPayments = sqliteTable('payroll_payments', {
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
     index('idx_payroll_payments_payroll').on(table.payrollId),
-    index('idx_payroll_payments_user').on(table.userId, table.status),
+    index('idx_payroll_payments_person').on(table.personId, table.status),
     index('idx_payroll_payments_status').on(table.status, table.scheduledFor),
     index('idx_payroll_payments_external').on(table.externalPaymentId),
 ]);
@@ -3261,7 +3259,7 @@ export const organizationLocations = sqliteTable('organization_locations', {
 export const timeClockEntries = sqliteTable('time_clock_entries', {
     id: text('id').primaryKey().default(uuid()),
     organizationId: text('organization_id').notNull().references(() => organizations.id),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
     contractId: text('contract_id').references(() => staffContracts.id),
 
     // Clock type
@@ -3292,7 +3290,7 @@ export const timeClockEntries = sqliteTable('time_clock_entries', {
     // Override/correction
     isManualEntry: integer('is_manual_entry', { mode: 'boolean' }).default(false),
     manualEntryReason: text('manual_entry_reason'),
-    approvedBy: text('approved_by').references(() => users.id),
+    approvedBy: text('approved_by').references(() => persons.id),
     approvedAt: integer('approved_at'),
 
     // Photo proof (optional selfie for verification)
@@ -3301,7 +3299,7 @@ export const timeClockEntries = sqliteTable('time_clock_entries', {
     notes: text('notes'),
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
-    index('idx_time_clock_user').on(table.userId, table.clockedAt),
+    index('idx_time_clock_person').on(table.personId, table.clockedAt),
     index('idx_time_clock_org').on(table.organizationId, table.clockedAt),
     index('idx_time_clock_location').on(table.locationId),
 ]);
@@ -3313,7 +3311,7 @@ export const timeClockEntries = sqliteTable('time_clock_entries', {
 export const timeSheets = sqliteTable('time_sheets', {
     id: text('id').primaryKey().default(uuid()),
     organizationId: text('organization_id').notNull().references(() => organizations.id),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
     contractId: text('contract_id').references(() => staffContracts.id),
 
     // Period
@@ -3342,7 +3340,7 @@ export const timeSheets = sqliteTable('time_sheets', {
 
     // Approval
     submittedAt: integer('submitted_at'),
-    approvedBy: text('approved_by').references(() => users.id),
+    approvedBy: text('approved_by').references(() => persons.id),
     approvedAt: integer('approved_at'),
     rejectionReason: text('rejection_reason'),
 
@@ -3353,7 +3351,7 @@ export const timeSheets = sqliteTable('time_sheets', {
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
-    index('idx_time_sheets_user').on(table.userId, table.periodStart),
+    index('idx_time_sheets_person').on(table.personId, table.periodStart),
     index('idx_time_sheets_org').on(table.organizationId, table.periodStart),
     index('idx_time_sheets_status').on(table.status),
 ]);
@@ -3410,7 +3408,7 @@ export const orgChartPositions = sqliteTable('org_chart_positions', {
 export const positionAssignments = sqliteTable('position_assignments', {
     id: text('id').primaryKey().default(uuid()),
     positionId: text('position_id').notNull().references(() => orgChartPositions.id),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
     contractId: text('contract_id').references(() => staffContracts.id),
 
     // Assignment period
@@ -3428,7 +3426,7 @@ export const positionAssignments = sqliteTable('position_assignments', {
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
     index('idx_position_assignments_position').on(table.positionId),
-    index('idx_position_assignments_user').on(table.userId),
+    index('idx_position_assignments_person').on(table.personId),
 ]);
 
 // ============================================================================
@@ -3469,7 +3467,7 @@ export const talentPoolCandidates = sqliteTable('talent_pool_candidates', {
     source: text('source', {
         enum: ['job_board', 'referral', 'direct', 'linkedin', 'agency', 'internal', 'other']
     }),
-    referredBy: text('referred_by').references(() => users.id),
+    referredBy: text('referred_by').references(() => persons.id),
 
     // Evaluation
     evaluationScore: integer('evaluation_score'),    // 1-100
@@ -3485,7 +3483,7 @@ export const talentPoolCandidates = sqliteTable('talent_pool_candidates', {
     }).default('new'),
 
     // If hired
-    hiredAsUserId: text('hired_as_user_id').references(() => users.id),
+    hiredAsUserId: text('hired_as_user_id').references(() => persons.id),
     hiredAt: integer('hired_at'),
 
     createdAt: integer('created_at').default(timestamp()),
@@ -3541,7 +3539,7 @@ export const laborProvisionSettings = sqliteTable('labor_provision_settings', {
 export const laborProvisionBalances = sqliteTable('labor_provision_balances', {
     id: text('id').primaryKey().default(uuid()),
     organizationId: text('organization_id').notNull().references(() => organizations.id),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
     contractId: text('contract_id').notNull().references(() => staffContracts.id),
 
     // Reference month
@@ -3571,7 +3569,7 @@ export const laborProvisionBalances = sqliteTable('labor_provision_balances', {
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
     uniqueIndex('idx_provision_balances_unique').on(table.contractId, table.year, table.month),
-    index('idx_provision_balances_user').on(table.userId),
+    index('idx_provision_balances_person').on(table.personId),
     index('idx_provision_balances_period').on(table.year, table.month),
 ]);
 
@@ -3582,11 +3580,11 @@ export const laborProvisionBalances = sqliteTable('labor_provision_balances', {
 export const terminationPlans = sqliteTable('termination_plans', {
     id: text('id').primaryKey().default(uuid()),
     organizationId: text('organization_id').notNull().references(() => organizations.id),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
     contractId: text('contract_id').notNull().references(() => staffContracts.id),
 
     // Who created the plan
-    createdBy: text('created_by').notNull().references(() => users.id),
+    createdBy: text('created_by').notNull().references(() => persons.id),
 
     // Planned termination type
     terminationType: text('termination_type', {
@@ -3643,7 +3641,7 @@ export const terminationPlans = sqliteTable('termination_plans', {
     }).default('draft'),
 
     // Approval chain
-    approvedBy: text('approved_by').references(() => users.id),
+    approvedBy: text('approved_by').references(() => persons.id),
     approvedAt: integer('approved_at'),
 
     // Execution
@@ -3658,7 +3656,7 @@ export const terminationPlans = sqliteTable('termination_plans', {
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
     index('idx_termination_plans_org').on(table.organizationId, table.status),
-    index('idx_termination_plans_user').on(table.userId),
+    index('idx_termination_plans_person').on(table.personId),
     index('idx_termination_plans_contract').on(table.contractId),
 ]);
 
@@ -3700,7 +3698,7 @@ export const workScheduleTemplates = sqliteTable('work_schedule_templates', {
 export const employeeBenefits = sqliteTable('employee_benefits', {
     id: text('id').primaryKey().default(uuid()),
     organizationId: text('organization_id').notNull().references(() => organizations.id),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
     contractId: text('contract_id').references(() => staffContracts.id),
 
     // Benefit type
@@ -3742,7 +3740,7 @@ export const employeeBenefits = sqliteTable('employee_benefits', {
     isActive: integer('is_active', { mode: 'boolean' }).default(true),
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
-    index('idx_employee_benefits_user').on(table.userId),
+    index('idx_employee_benefits_person').on(table.personId),
     index('idx_employee_benefits_type').on(table.benefitType),
 ]);
 
@@ -3844,7 +3842,7 @@ export const classes = sqliteTable('classes', {
     levelId: text('level_id').references(() => levels.id),
     termId: text('term_id').references(() => terms.id),
 
-    teacherId: text('teacher_id').references(() => users.id),
+    teacherId: text('teacher_id').references(() => persons.id),
 
     maxStudents: integer('max_students').default(15),
     currentStudents: integer('current_students').default(0),
@@ -3930,7 +3928,7 @@ export const classSessions = sqliteTable('class_sessions', {
 
     lessonId: text('lesson_id').references(() => lessons.id),
     notes: text('notes'),
-    teacherId: text('teacher_id').references(() => users.id),
+    teacherId: text('teacher_id').references(() => persons.id),
 
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
@@ -3942,7 +3940,7 @@ export const classSessions = sqliteTable('class_sessions', {
 export const attendance = sqliteTable('attendance', {
     id: text('id').primaryKey().default(uuid()),
     sessionId: text('session_id').notNull().references(() => classSessions.id, { onDelete: 'cascade' }),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
 
     status: text('status', {
         enum: ['present', 'absent', 'late', 'excused', 'makeup']
@@ -3954,11 +3952,11 @@ export const attendance = sqliteTable('attendance', {
     notes: text('notes'),
     excuseReason: text('excuse_reason'),
 
-    markedBy: text('marked_by').references(() => users.id),
+    markedBy: text('marked_by').references(() => persons.id),
     markedAt: integer('marked_at').default(timestamp()),
 }, (table) => [
-    uniqueIndex('idx_attendance_unique').on(table.sessionId, table.userId),
-    index('idx_attendance_user').on(table.userId, table.status),
+    uniqueIndex('idx_attendance_unique').on(table.sessionId, table.personId),
+    index('idx_attendance_person').on(table.personId, table.status),
 ]);
 
 // ============================================================================
@@ -3984,7 +3982,7 @@ export const placementTests = sqliteTable('placement_tests', {
 export const placementResults = sqliteTable('placement_results', {
     id: text('id').primaryKey().default(uuid()),
     testId: text('test_id').notNull().references(() => placementTests.id),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
 
     score: integer('score').notNull(),
     maxScore: integer('max_score').notNull(),
@@ -3994,11 +3992,11 @@ export const placementResults = sqliteTable('placement_results', {
 
     finalLevelId: text('final_level_id').references(() => levels.id),
     overrideReason: text('override_reason'),
-    overriddenBy: text('overridden_by').references(() => users.id),
+    overriddenBy: text('overridden_by').references(() => persons.id),
 
     takenAt: integer('taken_at').default(timestamp()),
 }, (table) => [
-    index('idx_placement_user').on(table.userId),
+    index('idx_placement_person').on(table.personId),
 ]);
 
 // ============================================================================
@@ -4099,7 +4097,7 @@ export const invoiceItems = sqliteTable('invoice_items', {
 export const teacherContracts = sqliteTable('teacher_contracts', {
     id: text('id').primaryKey().default(uuid()),
     organizationId: text('organization_id').notNull().references(() => organizations.id),
-    teacherId: text('teacher_id').notNull().references(() => users.id),
+    teacherId: text('teacher_id').notNull().references(() => persons.id),
 
     contractType: text('contract_type', {
         enum: ['clt', 'pj', 'freelance', 'volunteer']
@@ -4213,10 +4211,10 @@ export const leads = sqliteTable('leads', {
     hasPersona: integer('has_persona', { mode: 'boolean' }).default(false),
     personaGeneratedAt: integer('persona_generated_at'),
 
-    assignedTo: text('assigned_to').references(() => users.id),
-    referredByUserId: text('referred_by_user_id').references(() => users.id),
+    assignedTo: text('assigned_to').references(() => persons.id),
+    referredByUserId: text('referred_by_user_id').references(() => persons.id),
 
-    convertedToUserId: text('converted_to_user_id').references(() => users.id),
+    convertedToUserId: text('converted_to_user_id').references(() => persons.id),
     convertedAt: integer('converted_at'),
 
     notes: text('notes'),
@@ -4251,7 +4249,7 @@ export const leadInteractions = sqliteTable('lead_interactions', {
     content: text('content'),
     outcome: text('outcome'),
 
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
     index('idx_interactions_lead').on(table.leadId, table.createdAt),
@@ -4265,7 +4263,7 @@ export const trialClasses = sqliteTable('trial_classes', {
     id: text('id').primaryKey().default(uuid()),
     organizationId: text('organization_id').notNull().references(() => organizations.id),
     leadId: text('lead_id').references(() => leads.id),
-    userId: text('user_id').references(() => users.id),
+    personId: text('person_id').references(() => persons.id),
 
     classId: text('class_id').references(() => classes.id),
     sessionId: text('session_id').references(() => classSessions.id),
@@ -4273,7 +4271,7 @@ export const trialClasses = sqliteTable('trial_classes', {
     scheduledDate: integer('scheduled_date'),
     scheduledTime: text('scheduled_time'),
     roomId: text('room_id').references(() => rooms.id),
-    teacherId: text('teacher_id').references(() => users.id),
+    teacherId: text('teacher_id').references(() => persons.id),
 
     status: text('status', {
         enum: ['scheduled', 'confirmed', 'attended', 'no_show', 'cancelled', 'rescheduled']
@@ -4358,7 +4356,7 @@ export const campaigns = sqliteTable('campaigns', {
         enum: ['draft', 'scheduled', 'active', 'paused', 'completed', 'cancelled']
     }).default('draft'),
 
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
@@ -4410,9 +4408,9 @@ export const referrals = sqliteTable('referrals', {
     id: text('id').primaryKey().default(uuid()),
     organizationId: text('organization_id').notNull().references(() => organizations.id),
 
-    referrerId: text('referrer_id').notNull().references(() => users.id),
+    referrerId: text('referrer_id').notNull().references(() => persons.id),
     leadId: text('lead_id').references(() => leads.id),
-    referredUserId: text('referred_user_id').references(() => users.id),
+    referredUserId: text('referred_user_id').references(() => persons.id),
 
     status: text('status', {
         enum: ['pending', 'qualified', 'enrolled', 'rewarded']
@@ -4662,7 +4660,7 @@ export const contentAssets = sqliteTable('content_assets', {
     status: text('status', {
         enum: ['draft', 'in_review', 'approved', 'rejected', 'live', 'archived']
     }).default('draft'),
-    approvedBy: text('approved_by').references(() => users.id),
+    approvedBy: text('approved_by').references(() => persons.id),
     approvedAt: integer('approved_at'),
     rejectionReason: text('rejection_reason'),
 
@@ -4678,7 +4676,7 @@ export const contentAssets = sqliteTable('content_assets', {
     aiGenerated: integer('ai_generated', { mode: 'boolean' }).default(false),
     aiPrompt: text('ai_prompt'),
 
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
@@ -4736,7 +4734,7 @@ export const marketingEvents = sqliteTable('marketing_events', {
     attendedCount: integer('attended_count').default(0),
 
     // Staff assignment
-    leadStaffId: text('lead_staff_id').references(() => users.id),
+    leadStaffId: text('lead_staff_id').references(() => persons.id),
     staffIds: text('staff_ids').default('[]'),  // JSON array of user IDs
 
     // Materials needed
@@ -4776,7 +4774,7 @@ export const eventRegistrations = sqliteTable('event_registrations', {
 
     // Attendee (lead or existing contact)
     leadId: text('lead_id').references(() => leads.id),
-    userId: text('user_id').references(() => users.id),
+    personId: text('person_id').references(() => persons.id),
 
     // If not existing contact
     name: text('name'),
@@ -4887,7 +4885,7 @@ export const contentCalendar = sqliteTable('content_calendar', {
     deadline: integer('deadline'),                       // Internal deadline
 
     // Who
-    assignedTo: text('assigned_to').references(() => users.id),
+    assignedTo: text('assigned_to').references(() => persons.id),
 
     // Status
     status: text('status', {
@@ -4979,7 +4977,7 @@ export const qrCodes = sqliteTable('qr_codes', {
         enum: ['active', 'paused', 'expired', 'archived']
     }).default('active'),
 
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
@@ -5192,7 +5190,7 @@ export const salesTeams = sqliteTable('sales_teams', {
     // Hybrid = both
 
     // Team lead
-    leaderId: text('leader_id').references(() => users.id),
+    leaderId: text('leader_id').references(() => persons.id),
 
     // Color for calendar/UI
     color: text('color').default('#7048e8'),
@@ -5218,7 +5216,7 @@ export const salesTeams = sqliteTable('sales_teams', {
 export const salesTeamMembers = sqliteTable('sales_team_members', {
     id: text('id').primaryKey().default(uuid()),
     teamId: text('team_id').notNull().references(() => salesTeams.id, { onDelete: 'cascade' }),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
 
     // Role in the team
     role: text('role', {
@@ -5242,8 +5240,8 @@ export const salesTeamMembers = sqliteTable('sales_team_members', {
     isActive: integer('is_active', { mode: 'boolean' }).default(true),
     joinedAt: integer('joined_at').default(timestamp()),
 }, (table) => [
-    uniqueIndex('idx_sales_team_members_unique').on(table.teamId, table.userId),
-    index('idx_sales_team_members_user').on(table.userId),
+    uniqueIndex('idx_sales_team_members_unique').on(table.teamId, table.personId),
+    index('idx_sales_team_members_person').on(table.personId),
 ]);
 
 // ============================================================================
@@ -5302,7 +5300,7 @@ export const salesCalendar = sqliteTable('sales_calendar', {
     coordinates: text('coordinates'),     // JSON: { lat, lng }
 
     // Assignment
-    assignedToId: text('assigned_to_id').references(() => users.id),
+    assignedToId: text('assigned_to_id').references(() => persons.id),
     participants: text('participants').default('[]'),  // JSON array of user IDs
 
     // Resources needed
@@ -5325,7 +5323,7 @@ export const salesCalendar = sqliteTable('sales_calendar', {
     recurrenceRule: text('recurrence_rule'),  // iCal RRULE
     parentEventId: text('parent_event_id'),   // For recurring event instances
 
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
@@ -5385,7 +5383,7 @@ export const salesActions = sqliteTable('sales_actions', {
     }).default('medium'),
 
     // Assignment
-    assignedToId: text('assigned_to_id').references(() => users.id),
+    assignedToId: text('assigned_to_id').references(() => persons.id),
 
     // Timing
     dueAt: integer('due_at'),
@@ -5403,7 +5401,7 @@ export const salesActions = sqliteTable('sales_actions', {
     }),
     nextActionId: text('next_action_id'),  // Chain to next action
 
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
@@ -5455,7 +5453,7 @@ export const brandActivations = sqliteTable('brand_activations', {
     setupTime: integer('setup_time'),     // Minutes before for prep
 
     // Team
-    leaderId: text('leader_id').references(() => users.id),
+    leaderId: text('leader_id').references(() => persons.id),
     teamMembers: text('team_members').default('[]'),  // JSON array of user IDs
 
     // Materials & Resources
@@ -5550,14 +5548,14 @@ export const couponRedemptions = sqliteTable('coupon_redemptions', {
 
     // Who redeemed
     leadId: text('lead_id').references(() => leads.id),
-    userId: text('user_id').references(() => users.id),
+    personId: text('person_id').references(() => persons.id),
     enrollmentId: text('enrollment_id'),  // References enrollments
 
     // Value
     discountAppliedCents: integer('discount_applied_cents'),
 
     // How
-    redeemedBy: text('redeemed_by').references(() => users.id),  // Staff who processed
+    redeemedBy: text('redeemed_by').references(() => persons.id),  // Staff who processed
     redeemedAt: integer('redeemed_at').default(timestamp()),
 
     notes: text('notes'),
@@ -5628,8 +5626,8 @@ export const salesPipeline = sqliteTable('sales_pipeline', {
     }).notNull().default('new'),
 
     // Assignment
-    preSalesOwnerId: text('pre_sales_owner_id').references(() => users.id),
-    closerOwnerId: text('closer_owner_id').references(() => users.id),
+    preSalesOwnerId: text('pre_sales_owner_id').references(() => persons.id),
+    closerOwnerId: text('closer_owner_id').references(() => persons.id),
 
     // Scores
     leadScore: integer('lead_score').default(0),          // 0-100
@@ -5679,7 +5677,7 @@ export const pipelineStageHistory = sqliteTable('pipeline_stage_history', {
     fromStage: text('from_stage'),
     toStage: text('to_stage').notNull(),
 
-    changedBy: text('changed_by').references(() => users.id),
+    changedBy: text('changed_by').references(() => persons.id),
     changedAt: integer('changed_at').default(timestamp()),
 
     reason: text('reason'),
@@ -5735,7 +5733,7 @@ export const salesTouches = sqliteTable('sales_touches', {
     keyInsights: text('key_insights').default('[]'),  // JSON array
 
     // Attribution
-    performedBy: text('performed_by').references(() => users.id),
+    performedBy: text('performed_by').references(() => persons.id),
     touchedAt: integer('touched_at').default(timestamp()),
 
     // Next action scheduled
@@ -5754,7 +5752,7 @@ export const salesTouches = sqliteTable('sales_touches', {
 export const salesTeamDailyMetrics = sqliteTable('sales_team_daily_metrics', {
     id: text('id').primaryKey().default(uuid()),
     teamId: text('team_id').notNull().references(() => salesTeams.id),
-    userId: text('user_id').references(() => users.id),  // null = team total
+    personId: text('person_id').references(() => persons.id),  // null = team total
     date: integer('date').notNull(),  // YYYYMMDD
 
     // Activity metrics
@@ -5785,7 +5783,7 @@ export const salesTeamDailyMetrics = sqliteTable('sales_team_daily_metrics', {
 
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
-    uniqueIndex('idx_sales_metrics_date').on(table.teamId, table.userId, table.date),
+    uniqueIndex('idx_sales_metrics_date').on(table.teamId, table.personId, table.date),
 ]);
 
 // ============================================================================
@@ -5802,7 +5800,7 @@ export const salesTeamDailyMetrics = sqliteTable('sales_team_daily_metrics', {
 export const cashiers = sqliteTable('cashiers', {
     id: text('id').primaryKey().default(uuid()),
     organizationId: text('organization_id').notNull().references(() => organizations.id),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
 
     // Cashier identity
     name: text('name').notNull(),            // "Caixa Maria", "Caixa Recepção 1"
@@ -5810,7 +5808,7 @@ export const cashiers = sqliteTable('cashiers', {
     // Current status
     isOpen: integer('is_open', { mode: 'boolean' }).default(false),
     openedAt: integer('opened_at'),
-    openedBy: text('opened_by').references(() => users.id),
+    openedBy: text('opened_by').references(() => persons.id),
 
     // Opening balance (when opened)
     openingBalanceCents: integer('opening_balance_cents').default(0),
@@ -5825,7 +5823,7 @@ export const cashiers = sqliteTable('cashiers', {
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
     index('idx_cashiers_org').on(table.organizationId),
-    index('idx_cashiers_user').on(table.userId),
+    index('idx_cashiers_person').on(table.personId),
 ]);
 
 // ============================================================================
@@ -5842,8 +5840,8 @@ export const cashierSessions = sqliteTable('cashier_sessions', {
     closedAt: integer('closed_at'),
 
     // Who operated
-    openedBy: text('opened_by').notNull().references(() => users.id),
-    closedBy: text('closed_by').references(() => users.id),
+    openedBy: text('opened_by').notNull().references(() => persons.id),
+    closedBy: text('closed_by').references(() => persons.id),
 
     // Balances
     openingBalanceCents: integer('opening_balance_cents').notNull(),
@@ -5864,7 +5862,7 @@ export const cashierSessions = sqliteTable('cashier_sessions', {
         enum: ['open', 'closing', 'closed', 'audited']
     }).default('open'),
 
-    auditedBy: text('audited_by').references(() => users.id),
+    auditedBy: text('audited_by').references(() => persons.id),
     auditedAt: integer('audited_at'),
     auditNotes: text('audit_notes'),
 }, (table) => [
@@ -5912,7 +5910,7 @@ export const cashTransactions = sqliteTable('cash_transactions', {
     receiptNumber: text('receipt_number'),
 
     // Who processed
-    processedBy: text('processed_by').notNull().references(() => users.id),
+    processedBy: text('processed_by').notNull().references(() => persons.id),
     processedAt: integer('processed_at').default(timestamp()),
 }, (table) => [
     index('idx_cash_transactions_session').on(table.sessionId),
@@ -5930,7 +5928,7 @@ export const receptionVisits = sqliteTable('reception_visits', {
 
     // Who is visiting
     leadId: text('lead_id').references(() => leads.id),
-    userId: text('user_id').references(() => users.id),  // If existing client/student
+    personId: text('person_id').references(() => persons.id),  // If existing client/student
 
     // If walk-in (no lead yet)
     visitorName: text('visitor_name'),
@@ -5956,11 +5954,11 @@ export const receptionVisits = sqliteTable('reception_visits', {
     // Check-in/out
     checkedInAt: integer('checked_in_at').default(timestamp()),
     checkedOutAt: integer('checked_out_at'),
-    checkedInBy: text('checked_in_by').references(() => users.id),
-    checkedOutBy: text('checked_out_by').references(() => users.id),
+    checkedInBy: text('checked_in_by').references(() => persons.id),
+    checkedOutBy: text('checked_out_by').references(() => persons.id),
 
     // Who will attend them
-    assignedToId: text('assigned_to_id').references(() => users.id),  // Closer, teacher, etc.
+    assignedToId: text('assigned_to_id').references(() => persons.id),  // Closer, teacher, etc.
 
     // For appointments
     appointmentId: text('appointment_id'),   // If they had a scheduled appointment
@@ -5995,7 +5993,7 @@ export const intakeInterviews = sqliteTable('intake_interviews', {
     leadId: text('lead_id').notNull().references(() => leads.id),
 
     // Interviewer
-    conductedBy: text('conducted_by').notNull().references(() => users.id),
+    conductedBy: text('conducted_by').notNull().references(() => persons.id),
     conductedAt: integer('conducted_at').default(timestamp()),
     durationMinutes: integer('duration_minutes'),
 
@@ -6067,11 +6065,11 @@ export const checkoutRecords = sqliteTable('checkout_records', {
     leadId: text('lead_id').references(() => leads.id),
 
     // Processed by
-    processedBy: text('processed_by').notNull().references(() => users.id),
+    processedBy: text('processed_by').notNull().references(() => persons.id),
     processedAt: integer('processed_at').default(timestamp()),
 
     // Closer feedback (if sales visit)
-    closerId: text('closer_id').references(() => users.id),
+    closerId: text('closer_id').references(() => persons.id),
     closerFeedback: text('closer_feedback'),
 
     // Outcome
@@ -6103,7 +6101,7 @@ export const checkoutRecords = sqliteTable('checkout_records', {
     // Follow-up scheduled
     followUpScheduled: integer('follow_up_scheduled', { mode: 'boolean' }).default(false),
     followUpDate: integer('follow_up_date'),
-    followUpAssignedTo: text('follow_up_assigned_to').references(() => users.id),
+    followUpAssignedTo: text('follow_up_assigned_to').references(() => persons.id),
 }, (table) => [
     index('idx_checkout_records_visit').on(table.visitId),
     index('idx_checkout_records_outcome').on(table.outcome),
@@ -6121,7 +6119,7 @@ export const contracts = sqliteTable('contracts', {
     // Related entities
     enrollmentId: text('enrollment_id'),          // Reference to enrollment
     leadId: text('lead_id').references(() => leads.id),
-    userId: text('user_id').references(() => users.id),  // If existing user
+    personId: text('person_id').references(() => persons.id),  // If existing user
 
     // Contract template used
     templateId: text('template_id'),
@@ -6182,7 +6180,7 @@ export const contracts = sqliteTable('contracts', {
     // Final document
     signedDocumentUrl: text('signed_document_url'),
 
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
@@ -6201,7 +6199,7 @@ export const paymentReminders = sqliteTable('payment_reminders', {
     organizationId: text('organization_id').notNull().references(() => organizations.id),
 
     // Who to remind
-    userId: text('user_id').references(() => users.id),
+    personId: text('person_id').references(() => persons.id),
     enrollmentId: text('enrollment_id'),
     paymentId: text('payment_id'),               // Specific payment due
 
@@ -6253,10 +6251,10 @@ export const paymentReminders = sqliteTable('payment_reminders', {
     resultedInPayment: integer('resulted_in_payment', { mode: 'boolean' }).default(false),
     paymentReceivedAt: integer('payment_received_at'),
 
-    sentBy: text('sent_by').references(() => users.id),
+    sentBy: text('sent_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
-    index('idx_payment_reminders_user').on(table.userId),
+    index('idx_payment_reminders_person').on(table.personId),
     index('idx_payment_reminders_scheduled').on(table.scheduledFor, table.status),
 ]);
 
@@ -6272,7 +6270,7 @@ export const lateFeeNegotiations = sqliteTable('late_fee_negotiations', {
     // Related payment
     paymentId: text('payment_id').notNull(),     // Reference to overdue payment
     enrollmentId: text('enrollment_id'),
-    userId: text('user_id').references(() => users.id),  // Client
+    personId: text('person_id').references(() => persons.id),  // Client
 
     // Original amounts
     originalAmountCents: integer('original_amount_cents').notNull(),
@@ -6285,8 +6283,8 @@ export const lateFeeNegotiations = sqliteTable('late_fee_negotiations', {
     finalAmountCents: integer('final_amount_cents').notNull(),
 
     // Negotiation details
-    negotiatedBy: text('negotiated_by').notNull().references(() => users.id),
-    approvedBy: text('approved_by').references(() => users.id),  // If above authority
+    negotiatedBy: text('negotiated_by').notNull().references(() => persons.id),
+    approvedBy: text('approved_by').references(() => persons.id),  // If above authority
     negotiatedAt: integer('negotiated_at').default(timestamp()),
 
     // Authority check
@@ -6323,7 +6321,7 @@ export const makeupClasses = sqliteTable('makeup_classes', {
 
     // Student/Enrollment
     enrollmentId: text('enrollment_id').notNull(),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
 
     // Original missed class
     originalClassId: text('original_class_id'),  // Reference to class instance
@@ -6337,7 +6335,7 @@ export const makeupClasses = sqliteTable('makeup_classes', {
     scheduledDate: integer('scheduled_date'),
     scheduledTime: text('scheduled_time'),       // "14:00"
     roomId: text('room_id').references(() => rooms.id),
-    teacherId: text('teacher_id').references(() => users.id),
+    teacherId: text('teacher_id').references(() => persons.id),
 
     // Validity
     validUntil: integer('valid_until'),          // Must use before this date
@@ -6356,7 +6354,7 @@ export const makeupClasses = sqliteTable('makeup_classes', {
     }).default('pending'),
 
     // Tracking
-    scheduledBy: text('scheduled_by').references(() => users.id),
+    scheduledBy: text('scheduled_by').references(() => persons.id),
     scheduledAt: integer('scheduled_at'),
     completedAt: integer('completed_at'),
 
@@ -6364,7 +6362,7 @@ export const makeupClasses = sqliteTable('makeup_classes', {
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
     index('idx_makeup_classes_enrollment').on(table.enrollmentId),
-    index('idx_makeup_classes_user').on(table.userId, table.status),
+    index('idx_makeup_classes_person').on(table.personId, table.status),
     index('idx_makeup_classes_scheduled').on(table.scheduledDate),
 ]);
 
@@ -6376,7 +6374,7 @@ export const makeupClasses = sqliteTable('makeup_classes', {
 export const staffAuthorityLevels = sqliteTable('staff_authority_levels', {
     id: text('id').primaryKey().default(uuid()),
     organizationId: text('organization_id').notNull().references(() => organizations.id),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
 
     // Late fee negotiation authority
     canNegotiateLateFees: integer('can_negotiate_late_fees', { mode: 'boolean' }).default(true),
@@ -6404,7 +6402,7 @@ export const staffAuthorityLevels = sqliteTable('staff_authority_levels', {
 
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
-    uniqueIndex('idx_staff_authority_user').on(table.userId),
+    uniqueIndex('idx_staff_authority_person').on(table.personId),
 ]);
 
 // ============================================================================
@@ -7137,7 +7135,7 @@ export const classGroups = sqliteTable('class_groups', {
 export const teacherAssignments = sqliteTable('teacher_assignments', {
     id: text('id').primaryKey().default(uuid()),
     classGroupId: text('class_group_id').notNull().references(() => classGroups.id, { onDelete: 'cascade' }),
-    teacherId: text('teacher_id').notNull().references(() => users.id),
+    teacherId: text('teacher_id').notNull().references(() => persons.id),
 
     // Role
     role: text('role', {
@@ -7181,7 +7179,7 @@ export const programClassSchedules = sqliteTable('program_class_schedules', {
     roomId: text('room_id').references(() => rooms.id),
 
     // Teacher (can override class default)
-    teacherId: text('teacher_id').references(() => users.id),
+    teacherId: text('teacher_id').references(() => persons.id),
 
     // Effective dates (for schedule changes mid-term)
     effectiveFrom: integer('effective_from'),
@@ -7212,7 +7210,7 @@ export const programClassSessions = sqliteTable('program_class_sessions', {
     endTime: text('end_time').notNull(),
 
     // Who's teaching this specific session
-    teacherId: text('teacher_id').references(() => users.id),
+    teacherId: text('teacher_id').references(() => persons.id),
 
     // Where
     roomId: text('room_id').references(() => rooms.id),
@@ -7258,7 +7256,7 @@ export const programClassSessions = sqliteTable('program_class_sessions', {
 export const classEnrollments = sqliteTable('class_enrollments', {
     id: text('id').primaryKey().default(uuid()),
     classGroupId: text('class_group_id').notNull().references(() => classGroups.id),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
 
     // Link to original enrollment/payment
     enrollmentId: text('enrollment_id'),         // Reference to enrollment record
@@ -7282,8 +7280,8 @@ export const classEnrollments = sqliteTable('class_enrollments', {
 
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
-    uniqueIndex('idx_class_enrollments_unique').on(table.classGroupId, table.userId),
-    index('idx_class_enrollments_user').on(table.userId),
+    uniqueIndex('idx_class_enrollments_unique').on(table.classGroupId, table.personId),
+    index('idx_class_enrollments_person').on(table.personId),
     index('idx_class_enrollments_status').on(table.status),
 ]);
 
@@ -7295,7 +7293,7 @@ export const classEnrollments = sqliteTable('class_enrollments', {
 export const attendanceRecords = sqliteTable('attendance_records', {
     id: text('id').primaryKey().default(uuid()),
     sessionId: text('session_id').notNull().references(() => programClassSessions.id, { onDelete: 'cascade' }),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
     classEnrollmentId: text('class_enrollment_id').references(() => classEnrollments.id),
 
     // Attendance status
@@ -7325,11 +7323,11 @@ export const attendanceRecords = sqliteTable('attendance_records', {
     notes: text('notes'),
 
     // Who recorded
-    recordedBy: text('recorded_by').references(() => users.id),
+    recordedBy: text('recorded_by').references(() => persons.id),
     recordedAt: integer('recorded_at').default(timestamp()),
 }, (table) => [
-    uniqueIndex('idx_attendance_session_user').on(table.sessionId, table.userId),
-    index('idx_attendance_user').on(table.userId),
+    uniqueIndex('idx_attendance_session_person').on(table.sessionId, table.personId),
+    index('idx_attendance_person').on(table.personId),
     index('idx_attendance_status').on(table.status),
 ]);
 
@@ -7375,7 +7373,7 @@ export const studentAssessments = sqliteTable('student_assessments', {
     maxRetakes: integer('max_retakes').default(0),
     showGradeToStudent: integer('show_grade_to_student', { mode: 'boolean' }).default(true),
 
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
     index('idx_student_assessments_class').on(table.classGroupId),
@@ -7390,7 +7388,7 @@ export const studentAssessments = sqliteTable('student_assessments', {
 export const studentGrades = sqliteTable('student_grades', {
     id: text('id').primaryKey().default(uuid()),
     assessmentId: text('assessment_id').notNull().references(() => studentAssessments.id, { onDelete: 'cascade' }),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
     classEnrollmentId: text('class_enrollment_id').references(() => classEnrollments.id),
 
     // Score
@@ -7419,13 +7417,13 @@ export const studentGrades = sqliteTable('student_grades', {
     rubricScores: text('rubric_scores').default('{}'),   // JSON: criterion_id -> score
 
     // Who graded
-    gradedBy: text('graded_by').references(() => users.id),
+    gradedBy: text('graded_by').references(() => persons.id),
 
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
-    uniqueIndex('idx_student_grades_unique').on(table.assessmentId, table.userId, table.attemptNumber),
-    index('idx_student_grades_user').on(table.userId),
+    uniqueIndex('idx_student_grades_unique').on(table.assessmentId, table.personId, table.attemptNumber),
+    index('idx_student_grades_person').on(table.personId),
 ]);
 
 // ============================================================================
@@ -7436,7 +7434,7 @@ export const studentGrades = sqliteTable('student_grades', {
 export const gradebookEntries = sqliteTable('gradebook_entries', {
     id: text('id').primaryKey().default(uuid()),
     classGroupId: text('class_group_id').notNull().references(() => classGroups.id),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
     classEnrollmentId: text('class_enrollment_id').references(() => classEnrollments.id),
 
     // Attendance metrics
@@ -7474,8 +7472,8 @@ export const gradebookEntries = sqliteTable('gradebook_entries', {
     lastUpdated: integer('last_updated').default(timestamp()),
     finalizedAt: integer('finalized_at'),
 }, (table) => [
-    uniqueIndex('idx_gradebook_unique').on(table.classGroupId, table.userId),
-    index('idx_gradebook_user').on(table.userId),
+    uniqueIndex('idx_gradebook_unique').on(table.classGroupId, table.personId),
+    index('idx_gradebook_person').on(table.personId),
 ]);
 
 // ============================================================================
@@ -7486,7 +7484,7 @@ export const gradebookEntries = sqliteTable('gradebook_entries', {
 export const teacherWorkload = sqliteTable('teacher_workload', {
     id: text('id').primaryKey().default(uuid()),
     organizationId: text('organization_id').notNull().references(() => organizations.id),
-    teacherId: text('teacher_id').notNull().references(() => users.id),
+    teacherId: text('teacher_id').notNull().references(() => persons.id),
     date: integer('date').notNull(),
 
     // Sessions
@@ -7550,7 +7548,7 @@ export const homeworkAssignments = sqliteTable('homework_assignments', {
     // Resources
     resourceUrls: text('resource_urls').default('[]'),   // JSON array
 
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
     index('idx_homework_class').on(table.classGroupId),
@@ -7565,7 +7563,7 @@ export const homeworkAssignments = sqliteTable('homework_assignments', {
 export const homeworkSubmissions = sqliteTable('homework_submissions', {
     id: text('id').primaryKey().default(uuid()),
     homeworkId: text('homework_id').notNull().references(() => homeworkAssignments.id, { onDelete: 'cascade' }),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
     classEnrollmentId: text('class_enrollment_id').references(() => classEnrollments.id),
 
     // Submission
@@ -7591,14 +7589,14 @@ export const homeworkSubmissions = sqliteTable('homework_submissions', {
         enum: ['not_started', 'in_progress', 'submitted', 'graded', 'returned', 'excused']
     }).default('not_started'),
 
-    gradedBy: text('graded_by').references(() => users.id),
+    gradedBy: text('graded_by').references(() => persons.id),
     gradedAt: integer('graded_at'),
 
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
-    uniqueIndex('idx_homework_submission_unique').on(table.homeworkId, table.userId),
-    index('idx_homework_submission_user').on(table.userId),
+    uniqueIndex('idx_homework_submission_unique').on(table.homeworkId, table.personId),
+    index('idx_homework_submission_person').on(table.personId),
 ]);
 
 // ============================================================================
@@ -7608,7 +7606,7 @@ export const homeworkSubmissions = sqliteTable('homework_submissions', {
 
 export const studentProgressions = sqliteTable('student_progressions', {
     id: text('id').primaryKey().default(uuid()),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
     organizationId: text('organization_id').notNull().references(() => organizations.id),
 
     // From level
@@ -7632,11 +7630,11 @@ export const studentProgressions = sqliteTable('student_progressions', {
     notes: text('notes'),
 
     // Who approved
-    approvedBy: text('approved_by').references(() => users.id),
+    approvedBy: text('approved_by').references(() => persons.id),
 
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
-    index('idx_student_progressions_user').on(table.userId),
+    index('idx_student_progressions_person').on(table.personId),
     index('idx_student_progressions_date').on(table.progressionDate),
 ]);
 
@@ -7656,7 +7654,7 @@ export const pedagogicalNotes = sqliteTable('pedagogical_notes', {
     organizationId: text('organization_id').notNull().references(() => organizations.id),
 
     // Who is this note about?
-    userId: text('user_id').notNull().references(() => users.id),   // The student
+    personId: text('person_id').notNull().references(() => persons.id),   // The student
 
     // Context (optional - can be general or tied to specific context)
     classGroupId: text('class_group_id').references(() => classGroups.id),
@@ -7709,18 +7707,18 @@ export const pedagogicalNotes = sqliteTable('pedagogical_notes', {
     requiresAction: integer('requires_action', { mode: 'boolean' }).default(false),
     actionDescription: text('action_description'),
     actionCompletedAt: integer('action_completed_at'),
-    actionCompletedBy: text('action_completed_by').references(() => users.id),
+    actionCompletedBy: text('action_completed_by').references(() => persons.id),
 
     // Follow-up
     followUpDate: integer('follow_up_date'),
-    followUpAssignedTo: text('follow_up_assigned_to').references(() => users.id),
+    followUpAssignedTo: text('follow_up_assigned_to').references(() => persons.id),
 
     // Who wrote this note
-    createdBy: text('created_by').notNull().references(() => users.id),
+    createdBy: text('created_by').notNull().references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
-    index('idx_pedagogical_notes_user').on(table.userId),
+    index('idx_pedagogical_notes_person').on(table.personId),
     index('idx_pedagogical_notes_class').on(table.classGroupId),
     index('idx_pedagogical_notes_visibility').on(table.visibility),
     index('idx_pedagogical_notes_flagged').on(table.isFlagged),
@@ -7740,7 +7738,7 @@ export const pedagogicalNoteReplies = sqliteTable('pedagogical_note_replies', {
     content: text('content').notNull(),
 
     // Always internal (staff only)
-    createdBy: text('created_by').notNull().references(() => users.id),
+    createdBy: text('created_by').notNull().references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
     index('idx_note_replies_note').on(table.noteId),
@@ -7756,7 +7754,7 @@ export const pedagogicalNoteAcknowledgements = sqliteTable('pedagogical_note_ack
     noteId: text('note_id').notNull().references(() => pedagogicalNotes.id, { onDelete: 'cascade' }),
 
     // Who acknowledged
-    acknowledgedBy: text('acknowledged_by').notNull().references(() => users.id),
+    acknowledgedBy: text('acknowledged_by').notNull().references(() => persons.id),
 
     // Type of acknowledgement
     acknowledgerType: text('acknowledger_type', {
@@ -7778,7 +7776,7 @@ export const progressReports = sqliteTable('progress_reports', {
     organizationId: text('organization_id').notNull().references(() => organizations.id),
 
     // Who is this report for?
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
 
     // Context
     classGroupId: text('class_group_id').references(() => classGroups.id),
@@ -7814,15 +7812,15 @@ export const progressReports = sqliteTable('progress_reports', {
 
     // Signatures
     teacherSignedAt: integer('teacher_signed_at'),
-    teacherSignedBy: text('teacher_signed_by').references(() => users.id),
+    teacherSignedBy: text('teacher_signed_by').references(() => persons.id),
     coordinatorSignedAt: integer('coordinator_signed_at'),
-    coordinatorSignedBy: text('coordinator_signed_by').references(() => users.id),
+    coordinatorSignedBy: text('coordinator_signed_by').references(() => persons.id),
 
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
-    index('idx_progress_reports_user').on(table.userId),
+    index('idx_progress_reports_person').on(table.personId),
     index('idx_progress_reports_class').on(table.classGroupId),
     index('idx_progress_reports_period').on(table.periodStart, table.periodEnd),
 ]);
@@ -7837,10 +7835,10 @@ export const parentCommunications = sqliteTable('parent_communications', {
     organizationId: text('organization_id').notNull().references(() => organizations.id),
 
     // About which student
-    studentId: text('student_id').notNull().references(() => users.id),
+    studentId: text('student_id').notNull().references(() => persons.id),
 
     // With which parent/guardian
-    parentId: text('parent_id').references(() => users.id),
+    parentId: text('parent_id').references(() => persons.id),
     parentName: text('parent_name'),                 // If not in system yet
     parentContact: text('parent_contact'),           // Phone/email used
 
@@ -7875,7 +7873,7 @@ export const parentCommunications = sqliteTable('parent_communications', {
     relatedNoteId: text('related_note_id').references(() => pedagogicalNotes.id),
 
     // Who logged this
-    loggedBy: text('logged_by').notNull().references(() => users.id),
+    loggedBy: text('logged_by').notNull().references(() => persons.id),
     communicationDate: integer('communication_date').default(timestamp()),
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
@@ -7898,7 +7896,7 @@ export const parentCommunications = sqliteTable('parent_communications', {
 export const teacherAvailability = sqliteTable('teacher_availability', {
     id: text('id').primaryKey().default(uuid()),
     organizationId: text('organization_id').notNull().references(() => organizations.id),
-    teacherId: text('teacher_id').notNull().references(() => users.id),
+    teacherId: text('teacher_id').notNull().references(() => persons.id),
 
     // Type
     availabilityType: text('availability_type', {
@@ -7977,7 +7975,7 @@ export const lessonPlans = sqliteTable('lesson_plans', {
     reflection: text('reflection'),               // What worked, what didn't
     adjustmentsForNext: text('adjustments_for_next'),
 
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
@@ -8104,7 +8102,7 @@ export const classroomIncidents = sqliteTable('classroom_incidents', {
     resolvedAt: integer('resolved_at'),
     resolution: text('resolution'),
 
-    reportedBy: text('reported_by').notNull().references(() => users.id),
+    reportedBy: text('reported_by').notNull().references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
@@ -8122,10 +8120,10 @@ export const classroomIncidents = sqliteTable('classroom_incidents', {
 export const teacherEvaluations = sqliteTable('teacher_evaluations', {
     id: text('id').primaryKey().default(uuid()),
     organizationId: text('organization_id').notNull().references(() => organizations.id),
-    teacherId: text('teacher_id').notNull().references(() => users.id),
+    teacherId: text('teacher_id').notNull().references(() => persons.id),
 
     // Evaluator
-    evaluatorId: text('evaluator_id').notNull().references(() => users.id),
+    evaluatorId: text('evaluator_id').notNull().references(() => persons.id),
     evaluatorRole: text('evaluator_role', {
         enum: ['coordinator', 'director', 'peer', 'self', 'external']
     }).notNull(),
@@ -8232,7 +8230,7 @@ export const academicActivities = sqliteTable('academic_activities', {
     materialsNeeded: text('materials_needed').default('[]'),
 
     // Staff
-    leadTeacherId: text('lead_teacher_id').references(() => users.id),
+    leadTeacherId: text('lead_teacher_id').references(() => persons.id),
     chaperones: text('chaperones').default('[]'),   // JSON array of user IDs
 
     // Status
@@ -8245,7 +8243,7 @@ export const academicActivities = sqliteTable('academic_activities', {
     summary: text('summary'),
     photosUrl: text('photos_url'),
 
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
@@ -8262,7 +8260,7 @@ export const academicActivities = sqliteTable('academic_activities', {
 export const activityRegistrations = sqliteTable('activity_registrations', {
     id: text('id').primaryKey().default(uuid()),
     activityId: text('activity_id').notNull().references(() => academicActivities.id, { onDelete: 'cascade' }),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
 
     // Status
     status: text('status', {
@@ -8288,8 +8286,8 @@ export const activityRegistrations = sqliteTable('activity_registrations', {
 
     registeredAt: integer('registered_at').default(timestamp()),
 }, (table) => [
-    uniqueIndex('idx_activity_registration_unique').on(table.activityId, table.userId),
-    index('idx_activity_registrations_user').on(table.userId),
+    uniqueIndex('idx_activity_registration_unique').on(table.activityId, table.personId),
+    index('idx_activity_registrations_person').on(table.personId),
 ]);
 
 // ============================================================================
@@ -8300,7 +8298,7 @@ export const activityRegistrations = sqliteTable('activity_registrations', {
 export const studentCertificates = sqliteTable('student_certificates', {
     id: text('id').primaryKey().default(uuid()),
     organizationId: text('organization_id').notNull().references(() => organizations.id),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
 
     // What was completed
     programId: text('program_id').references(() => schoolPrograms.id),
@@ -8344,13 +8342,13 @@ export const studentCertificates = sqliteTable('student_certificates', {
     }),
 
     // Signed by
-    signedBy: text('signed_by').references(() => users.id),
+    signedBy: text('signed_by').references(() => persons.id),
     signedByTitle: text('signed_by_title'),
 
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
     uniqueIndex('idx_certificate_number').on(table.certificateNumber),
-    index('idx_student_certificates_user').on(table.userId),
+    index('idx_student_certificates_person').on(table.personId),
     index('idx_student_certificates_program').on(table.programId),
 ]);
 
@@ -8367,8 +8365,8 @@ export const substituteTeacherLogs = sqliteTable('substitute_teacher_logs', {
     classGroupId: text('class_group_id').notNull().references(() => classGroups.id),
 
     // Teachers
-    originalTeacherId: text('original_teacher_id').notNull().references(() => users.id),
-    substituteTeacherId: text('substitute_teacher_id').notNull().references(() => users.id),
+    originalTeacherId: text('original_teacher_id').notNull().references(() => persons.id),
+    substituteTeacherId: text('substitute_teacher_id').notNull().references(() => persons.id),
 
     // Reason for substitution
     reason: text('reason', {
@@ -8417,7 +8415,7 @@ export const substituteTeacherLogs = sqliteTable('substitute_teacher_logs', {
 export const studentLearningProfiles = sqliteTable('student_learning_profiles', {
     id: text('id').primaryKey().default(uuid()),
     organizationId: text('organization_id').notNull().references(() => organizations.id),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
 
     // VARK Scores (0-100 each, percentages of preference)
     visualScore: integer('visual_score').default(25),        // Diagrams, charts, colors, spatial
@@ -8472,7 +8470,7 @@ export const studentLearningProfiles = sqliteTable('student_learning_profiles', 
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
-    uniqueIndex('idx_learning_profile_user').on(table.userId, table.organizationId),
+    uniqueIndex('idx_learning_profile_person').on(table.personId, table.organizationId),
     index('idx_learning_profiles_modality').on(table.primaryModality),
 ]);
 
@@ -8483,7 +8481,7 @@ export const studentLearningProfiles = sqliteTable('student_learning_profiles', 
 
 export const varkAssessmentResponses = sqliteTable('vark_assessment_responses', {
     id: text('id').primaryKey().default(uuid()),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
     profileId: text('profile_id').notNull().references(() => studentLearningProfiles.id, { onDelete: 'cascade' }),
 
     // Assessment metadata
@@ -8504,7 +8502,7 @@ export const varkAssessmentResponses = sqliteTable('vark_assessment_responses', 
 
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
-    index('idx_vark_responses_user').on(table.userId),
+    index('idx_vark_responses_person').on(table.personId),
     index('idx_vark_responses_profile').on(table.profileId),
 ]);
 
@@ -8518,7 +8516,7 @@ export const generatedStudentMaterials = sqliteTable('generated_student_material
     organizationId: text('organization_id').notNull().references(() => organizations.id),
 
     // For which student and session
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
     sessionId: text('session_id').notNull().references(() => programClassSessions.id),
     lessonPlanId: text('lesson_plan_id').references(() => lessonPlans.id),
 
@@ -8587,10 +8585,10 @@ export const generatedStudentMaterials = sqliteTable('generated_student_material
 
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
-    uniqueIndex('idx_generated_materials_unique').on(table.userId, table.sessionId),
+    uniqueIndex('idx_generated_materials_unique').on(table.personId, table.sessionId),
     uniqueIndex('idx_generated_materials_code').on(table.submissionCode),
     index('idx_generated_materials_session').on(table.sessionId),
-    index('idx_generated_materials_user').on(table.userId),
+    index('idx_generated_materials_person').on(table.personId),
 ]);
 
 // ============================================================================
@@ -8601,7 +8599,7 @@ export const generatedStudentMaterials = sqliteTable('generated_student_material
 export const materialSubmissions = sqliteTable('material_submissions', {
     id: text('id').primaryKey().default(uuid()),
     materialId: text('material_id').notNull().references(() => generatedStudentMaterials.id, { onDelete: 'cascade' }),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
 
     // Submission method
     submissionMethod: text('submission_method', {
@@ -8632,7 +8630,7 @@ export const materialSubmissions = sqliteTable('material_submissions', {
     }).default('submitted'),
 
     // Teacher review
-    reviewedBy: text('reviewed_by').references(() => users.id),
+    reviewedBy: text('reviewed_by').references(() => persons.id),
     reviewedAt: integer('reviewed_at'),
     teacherFeedback: text('teacher_feedback'),
 
@@ -8646,7 +8644,7 @@ export const materialSubmissions = sqliteTable('material_submissions', {
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
     index('idx_material_submissions_material').on(table.materialId),
-    index('idx_material_submissions_user').on(table.userId),
+    index('idx_material_submissions_person').on(table.personId),
     index('idx_material_submissions_status').on(table.status),
 ]);
 
@@ -8700,7 +8698,7 @@ export const materialTemplates = sqliteTable('material_templates', {
     }),
 
     isActive: integer('is_active', { mode: 'boolean' }).default(true),
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
@@ -8731,7 +8729,7 @@ export const leadInsights = sqliteTable('lead_insights', {
     // Ordering within the 3 of each type
     position: integer('position').default(0),
 
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
@@ -8747,7 +8745,7 @@ export const insightCommunications = sqliteTable('insight_communications', {
     id: text('id').primaryKey().default(uuid()),
     insightId: text('insight_id').notNull().references(() => leadInsights.id, { onDelete: 'cascade' }),
 
-    userId: text('user_id').notNull().references(() => users.id), // Who made contact
+    personId: text('person_id').notNull().references(() => persons.id), // Who made contact
     message: text('message').notNull(), // What was said
 
     // Communication details
@@ -8810,7 +8808,7 @@ export const leadSentimentHistory = sqliteTable('lead_sentiment_history', {
     context: text('context'), // Free text explaining the sentiment
     interactionId: text('interaction_id').references(() => leadInteractions.id),
 
-    analyzedBy: text('analyzed_by').references(() => users.id),
+    analyzedBy: text('analyzed_by').references(() => persons.id),
     analyzedAt: integer('analyzed_at').default(timestamp()),
 }, (table) => [
     index('idx_lead_sentiment_lead').on(table.leadId, table.analyzedAt),
@@ -8889,7 +8887,7 @@ export const leadFunnelHistory = sqliteTable('lead_funnel_history', {
     previousStage: text('previous_stage'),
     reason: text('reason'), // Why the transition happened
 
-    changedBy: text('changed_by').references(() => users.id),
+    changedBy: text('changed_by').references(() => persons.id),
     changedAt: integer('changed_at').default(timestamp()),
 }, (table) => [
     index('idx_lead_funnel_history_lead').on(table.leadId, table.changedAt),
@@ -8904,7 +8902,7 @@ export const enrollments = sqliteTable('enrollments', {
     id: text('id').primaryKey().default(uuid()),
     organizationId: text('organization_id').notNull().references(() => organizations.id),
 
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
 
     classId: text('class_id').notNull().references(() => classes.id),
     termId: text('term_id').references(() => terms.id),
@@ -8929,7 +8927,7 @@ export const enrollments = sqliteTable('enrollments', {
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
-    index('idx_enrollments_user').on(table.userId, table.status),
+    index('idx_enrollments_person').on(table.personId, table.status),
     index('idx_enrollments_class').on(table.classId, table.status),
     index('idx_enrollments_term').on(table.termId),
 ]);
@@ -8941,7 +8939,7 @@ export const enrollments = sqliteTable('enrollments', {
 export const waitlist = sqliteTable('waitlist', {
     id: text('id').primaryKey().default(uuid()),
 
-    userId: text('user_id').references(() => users.id),
+    personId: text('person_id').references(() => persons.id),
     leadId: text('lead_id').references(() => leads.id),
 
     classId: text('class_id').references(() => classes.id),
@@ -8969,8 +8967,8 @@ export const waitlist = sqliteTable('waitlist', {
 export const familyLinks = sqliteTable('family_links', {
     id: text('id').primaryKey().default(uuid()),
 
-    parentId: text('parent_id').notNull().references(() => users.id),
-    studentId: text('student_id').notNull().references(() => users.id),
+    parentId: text('parent_id').notNull().references(() => persons.id),
+    studentId: text('student_id').notNull().references(() => persons.id),
 
     relationship: text('relationship', {
         enum: ['parent', 'guardian', 'grandparent', 'sibling', 'other']
@@ -8994,7 +8992,7 @@ export const familyLinks = sqliteTable('family_links', {
 
 export const memoryGraphs = sqliteTable('memory_graphs', {
     id: text('id').primaryKey().default(uuid()),
-    studentId: text('student_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    studentId: text('student_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
     organizationId: text('organization_id').notNull().references(() => organizations.id),
 
     // SNR metrics
@@ -9154,7 +9152,7 @@ export const memoryContradictions = sqliteTable('memory_contradictions', {
 
 export const studentWorldOverlay = sqliteTable('student_world_overlay', {
     id: text('id').primaryKey().default(uuid()),
-    studentId: text('student_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    studentId: text('student_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
     graphId: text('graph_id').notNull().references(() => memoryGraphs.id, { onDelete: 'cascade' }),
 
     // Fog of war - what they've discovered
@@ -9181,7 +9179,7 @@ export const studentWorldOverlay = sqliteTable('student_world_overlay', {
 
 export const chatSessions = sqliteTable('chat_sessions', {
     id: text('id').primaryKey().default(uuid()),
-    studentId: text('student_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    studentId: text('student_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
     organizationId: text('organization_id').notNull().references(() => organizations.id),
 
     startedAt: integer('started_at').default(timestamp()),
@@ -9220,7 +9218,7 @@ export const chatMessages = sqliteTable('chat_messages', {
 
 export const memoryIntegrityHashes = sqliteTable('memory_integrity_hashes', {
     id: text('id').primaryKey().default(uuid()),
-    studentId: text('student_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    studentId: text('student_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
 
     graphHash: text('graph_hash').notNull(), // Hash of entire graph state
     ledgerHash: text('ledger_hash').notNull(), // Hash of ledger state
@@ -9232,7 +9230,7 @@ export const memoryIntegrityHashes = sqliteTable('memory_integrity_hashes', {
 
 export const memoryAuditLog = sqliteTable('memory_audit_log', {
     id: text('id').primaryKey().default(uuid()),
-    studentId: text('student_id').notNull().references(() => users.id),
+    studentId: text('student_id').notNull().references(() => persons.id),
 
     operation: text('operation', {
         enum: ['node.created', 'node.updated', 'node.deleted', 'edge.created', 'edge.deleted', 'ledger.added', 'ledger.updated', 'ledger.deleted', 'graph.compressed', 'graph.exported', 'integrity.verified', 'integrity.failed']
@@ -9262,7 +9260,7 @@ export const memoryAuditLog = sqliteTable('memory_audit_log', {
 
 export const safetyAlerts = sqliteTable('safety_alerts', {
     id: text('id').primaryKey().default(uuid()),
-    studentId: text('student_id').notNull().references(() => users.id),
+    studentId: text('student_id').notNull().references(() => persons.id),
     organizationId: text('organization_id').notNull().references(() => organizations.id),
 
     // Alert level
@@ -9280,11 +9278,11 @@ export const safetyAlerts = sqliteTable('safety_alerts', {
 
     // Acknowledgment
     acknowledgedAt: integer('acknowledged_at'),
-    acknowledgedBy: text('acknowledged_by').references(() => users.id),
+    acknowledgedBy: text('acknowledged_by').references(() => persons.id),
 
     // Resolution
     resolvedAt: integer('resolved_at'),
-    resolvedBy: text('resolved_by').references(() => users.id),
+    resolvedBy: text('resolved_by').references(() => persons.id),
     resolutionNotes: text('resolution_notes'),
 
     // Notifications
@@ -9299,7 +9297,7 @@ export const safetyAlerts = sqliteTable('safety_alerts', {
 export const alertAcknowledgments = sqliteTable('alert_acknowledgments', {
     id: text('id').primaryKey().default(uuid()),
     alertId: text('alert_id').notNull().references(() => safetyAlerts.id, { onDelete: 'cascade' }),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
 
     actionTaken: text('action_taken'),
     notes: text('notes'),
@@ -9311,7 +9309,7 @@ export const alertAcknowledgments = sqliteTable('alert_acknowledgments', {
 
 export const wellbeingSnapshots = sqliteTable('wellbeing_snapshots', {
     id: text('id').primaryKey().default(uuid()),
-    studentId: text('student_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    studentId: text('student_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
 
     snapshotDate: integer('snapshot_date').notNull(), // Day granularity
 
@@ -9338,7 +9336,7 @@ export const wellbeingSnapshots = sqliteTable('wellbeing_snapshots', {
  */
 export const privacyConsents = sqliteTable('privacy_consents', {
     id: text('id').primaryKey().default(uuid()),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
     organizationId: text('organization_id').notNull().references(() => organizations.id),
 
     // Consent type
@@ -9369,9 +9367,9 @@ export const privacyConsents = sqliteTable('privacy_consents', {
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
-    index('idx_consent_user').on(table.userId),
+    index('idx_consent_person').on(table.personId),
     index('idx_consent_type').on(table.consentType),
-    uniqueIndex('idx_consent_unique').on(table.userId, table.organizationId, table.consentType),
+    uniqueIndex('idx_consent_unique').on(table.personId, table.organizationId, table.consentType),
 ]);
 
 /**
@@ -9379,7 +9377,7 @@ export const privacyConsents = sqliteTable('privacy_consents', {
  */
 export const dataExportRequests = sqliteTable('data_export_requests', {
     id: text('id').primaryKey().default(uuid()),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
 
     // Status workflow
     status: text('status', {
@@ -9424,7 +9422,7 @@ export const dataExportRequests = sqliteTable('data_export_requests', {
     ipAddress: text('ip_address'),
     reason: text('reason'),               // Why they want export
 }, (table) => [
-    index('idx_export_user').on(table.userId),
+    index('idx_export_person').on(table.personId),
     index('idx_export_status').on(table.status),
 ]);
 
@@ -9434,7 +9432,7 @@ export const dataExportRequests = sqliteTable('data_export_requests', {
  */
 export const dataDeletionRequests = sqliteTable('data_deletion_requests', {
     id: text('id').primaryKey().default(uuid()),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
 
     // Status workflow (negotiated!)
     status: text('status', {
@@ -9469,7 +9467,7 @@ export const dataDeletionRequests = sqliteTable('data_deletion_requests', {
     additionalNotes: text('additional_notes'),
 
     // Review process
-    reviewerId: text('reviewer_id').references(() => users.id),
+    reviewerId: text('reviewer_id').references(() => persons.id),
     reviewNotes: text('review_notes'),
     reviewedAt: integer('reviewed_at'),
 
@@ -9493,7 +9491,7 @@ export const dataDeletionRequests = sqliteTable('data_deletion_requests', {
     ipAddress: text('ip_address'),
     userAgent: text('user_agent'),
 }, (table) => [
-    index('idx_deletion_user').on(table.userId),
+    index('idx_deletion_person').on(table.personId),
     index('idx_deletion_status').on(table.status),
     index('idx_deletion_pending').on(table.status, table.scheduledFor),
 ]);
@@ -9503,10 +9501,10 @@ export const dataDeletionRequests = sqliteTable('data_deletion_requests', {
  */
 export const dataAccessAuditLog = sqliteTable('data_access_audit_log', {
     id: text('id').primaryKey().default(uuid()),
-    targetUserId: text('target_user_id').notNull().references(() => users.id),
+    targetUserId: text('target_user_id').notNull().references(() => persons.id),
 
     // Who accessed
-    accessorId: text('accessor_id').references(() => users.id), // null = system
+    accessorId: text('accessor_id').references(() => persons.id), // null = system
     accessorRole: text('accessor_role'),
     accessorType: text('accessor_type', {
         enum: ['user', 'admin', 'system', 'api', 'accountant', 'auditor']
@@ -9719,10 +9717,10 @@ export const accountantApiKeys = sqliteTable('accountant_api_keys', {
     // Expiry
     expiresAt: integer('expires_at'),              // Optional expiry
 
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     revokedAt: integer('revoked_at'),
-    revokedBy: text('revoked_by').references(() => users.id),
+    revokedBy: text('revoked_by').references(() => persons.id),
 }, (table) => [
     index('idx_accountant_keys_org').on(table.organizationId),
     uniqueIndex('idx_accountant_keys_hash').on(table.keyHash),
@@ -9878,7 +9876,7 @@ export const latticeEvidence = sqliteTable('lattice_evidence', {
     id: text('id').primaryKey().default(uuid()),
 
     // Who this evidence is about
-    personId: text('person_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
     organizationId: text('organization_id').references(() => organizations.id),
 
     // The evidence content
@@ -9933,7 +9931,7 @@ export const latticeEvidence = sqliteTable('lattice_evidence', {
 export const latticeProjections = sqliteTable('lattice_projections', {
     id: text('id').primaryKey().default(uuid()),
     organizationId: text('organization_id').references(() => organizations.id),
-    createdBy: text('created_by').notNull().references(() => users.id),
+    createdBy: text('created_by').notNull().references(() => persons.id),
 
     name: text('name').notNull(),
     description: text('description'),
@@ -9971,10 +9969,10 @@ export const latticeShares = sqliteTable('lattice_shares', {
     id: text('id').primaryKey().default(uuid()),
 
     // Owner of the lattice
-    ownerId: text('owner_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    ownerId: text('owner_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
 
     // Who can view (null = public link with token)
-    granteeId: text('grantee_id').references(() => users.id),
+    granteeId: text('grantee_id').references(() => persons.id),
     granteeEmail: text('grantee_email'), // For invitations before user exists
 
     // Optional: limit to specific projection
@@ -10011,7 +10009,7 @@ export const latticeShares = sqliteTable('lattice_shares', {
 export const latticeSkillAssessments = sqliteTable('lattice_skill_assessments', {
     id: text('id').primaryKey().default(uuid()),
 
-    personId: text('person_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
     skillId: text('skill_id').notNull().references(() => latticeSkillDefinitions.id),
 
     // Position on the spectrum (-2 to +2)
@@ -10041,7 +10039,7 @@ export const latticeSkillAssessments = sqliteTable('lattice_skill_assessments', 
 export const latticeProjectionResults = sqliteTable('lattice_projection_results', {
     id: text('id').primaryKey().default(uuid()),
 
-    personId: text('person_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
     projectionId: text('projection_id').notNull().references(() => latticeProjections.id, { onDelete: 'cascade' }),
 
     // The calculated shape data
@@ -10076,7 +10074,7 @@ export const latticeProjectionResults = sqliteTable('lattice_projection_results'
 // Talent profiles for external candidates (not employees)
 export const talentProfiles = sqliteTable('talent_profiles', {
     id: text('id').primaryKey().default(uuid()),
-    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
 
     // Profile info
     headline: text('headline'), // E.g., "Senior Software Engineer"
@@ -10108,7 +10106,7 @@ export const talentProfiles = sqliteTable('talent_profiles', {
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
-    index('idx_talent_profiles_user').on(table.userId),
+    index('idx_talent_profiles_person').on(table.personId),
     index('idx_talent_profiles_status').on(table.status),
     index('idx_talent_profiles_searchable').on(table.isSearchable),
 ]);
@@ -10117,7 +10115,7 @@ export const talentProfiles = sqliteTable('talent_profiles', {
 export const talentEvidenceDocuments = sqliteTable('talent_evidence_documents', {
     id: text('id').primaryKey().default(uuid()),
     profileId: text('profile_id').notNull().references(() => talentProfiles.id, { onDelete: 'cascade' }),
-    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
 
     // Document info
     filename: text('filename').notNull(),
@@ -10145,7 +10143,7 @@ export const talentEvidenceDocuments = sqliteTable('talent_evidence_documents', 
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
     index('idx_talent_docs_profile').on(table.profileId),
-    index('idx_talent_docs_user').on(table.userId),
+    index('idx_talent_docs_person').on(table.personId),
     index('idx_talent_docs_status').on(table.analysisStatus),
 ]);
 
@@ -10350,7 +10348,7 @@ export const rolePermissions = sqliteTable('role_permissions', {
  */
 export const userPermissions = sqliteTable('user_permissions', {
     id: text('id').primaryKey().default(uuid()),
-    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
 
     module: text('module').notNull(), // One of PERMISSION_MODULES
 
@@ -10360,14 +10358,14 @@ export const userPermissions = sqliteTable('user_permissions', {
     canUpdate: integer('can_update', { mode: 'boolean' }),
     canDelete: integer('can_delete', { mode: 'boolean' }),
 
-    grantedBy: text('granted_by').references(() => users.id), // Who gave this permission
+    grantedBy: text('granted_by').references(() => persons.id), // Who gave this permission
     reason: text('reason'), // Optional note for why this override exists
 
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
-    index('idx_user_permissions_user').on(table.userId),
-    uniqueIndex('idx_user_permissions_unique').on(table.userId, table.module),
+    index('idx_user_permissions_person').on(table.personId),
+    uniqueIndex('idx_user_permissions_unique').on(table.personId, table.module),
 ]);
 
 // Permission Types
@@ -10411,14 +10409,14 @@ export const crmAuditLog = sqliteTable('crm_audit_log', {
     reason: text('reason'), // Optional reason for the change
 
     // Who made the change
-    changedBy: text('changed_by').notNull().references(() => users.id),
+    changedBy: text('changed_by').notNull().references(() => persons.id),
     changedByName: text('changed_by_name'), // Denormalized for faster reads
     changedByRole: text('changed_by_role'), // Role at time of change
 
     // Undo tracking
     canUndo: integer('can_undo', { mode: 'boolean' }).default(true),
     undoneAt: integer('undone_at'),
-    undoneBy: text('undone_by').references(() => users.id),
+    undoneBy: text('undone_by').references(() => persons.id),
     undoReason: text('undo_reason'),
 
     // Link to the change that was undone (if this is an undo action)
@@ -10454,7 +10452,7 @@ export const crmStageHistory = sqliteTable('crm_stage_history', {
     durationSeconds: integer('duration_seconds'), // Calculated on exit
 
     // Attribution
-    changedBy: text('changed_by').references(() => users.id),
+    changedBy: text('changed_by').references(() => persons.id),
     reason: text('reason'),
 
     // Metrics at time of transition
@@ -10517,7 +10515,7 @@ export const actionItemTypes = sqliteTable('action_item_types', {
     // Ordering
     sortOrder: integer('sort_order').default(0),
 
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
@@ -10548,8 +10546,8 @@ export const actionItems = sqliteTable('action_items', {
     secondaryEntityId: text('secondary_entity_id'),
 
     // Assignment
-    assignedTo: text('assigned_to').references(() => users.id),
-    createdBy: text('created_by').notNull().references(() => users.id),
+    assignedTo: text('assigned_to').references(() => persons.id),
+    createdBy: text('created_by').notNull().references(() => persons.id),
 
     // Status tracking
     status: text('status', {
@@ -10577,7 +10575,7 @@ export const actionItems = sqliteTable('action_items', {
 
     // Completion tracking
     completedAt: integer('completed_at'),
-    completedBy: text('completed_by').references(() => users.id),
+    completedBy: text('completed_by').references(() => persons.id),
 
     // Outcome/result (for completed tasks)
     outcome: text('outcome'), // Custom outcome field
@@ -10615,7 +10613,7 @@ export const actionItemComments = sqliteTable('action_item_comments', {
     // Mentions - JSON array of user IDs mentioned
     mentions: text('mentions').default('[]'),
 
-    createdBy: text('created_by').notNull().references(() => users.id),
+    createdBy: text('created_by').notNull().references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
     isEdited: integer('is_edited', { mode: 'boolean' }).default(false),
@@ -10659,7 +10657,7 @@ export const notes = sqliteTable('notes', {
     attachments: text('attachments').default('[]'),
 
     // Attribution
-    createdBy: text('created_by').notNull().references(() => users.id),
+    createdBy: text('created_by').notNull().references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
@@ -10682,7 +10680,7 @@ export const activityFeed = sqliteTable('activity_feed', {
     organizationId: text('organization_id').notNull().references(() => organizations.id),
 
     // Actor
-    actorId: text('actor_id').notNull().references(() => users.id),
+    actorId: text('actor_id').notNull().references(() => persons.id),
     actorName: text('actor_name'), // Denormalized for quick display
 
     // Action
@@ -10738,7 +10736,7 @@ export const activityFeed = sqliteTable('activity_feed', {
  */
 export const userCalendarSettings = sqliteTable('user_calendar_settings', {
     id: text('id').primaryKey().default(uuid()),
-    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
 
     // Display preferences
     defaultView: text('default_view', {
@@ -10769,7 +10767,7 @@ export const userCalendarSettings = sqliteTable('user_calendar_settings', {
 
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
-    uniqueIndex('idx_calendar_settings_user').on(table.userId),
+    uniqueIndex('idx_calendar_settings_person').on(table.personId),
 ]);
 
 // ============================================================================
@@ -10815,7 +10813,7 @@ export const organizationalRoles = sqliteTable('organizational_roles', {
     isActive: integer('is_active', { mode: 'boolean' }).default(true),
     isSystemRole: integer('is_system_role', { mode: 'boolean' }).default(false), // Cannot be deleted
 
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
@@ -10831,7 +10829,7 @@ export const organizationalRoles = sqliteTable('organizational_roles', {
  */
 export const userRoleAssignments = sqliteTable('user_role_assignments', {
     id: text('id').primaryKey().default(uuid()),
-    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
     roleId: text('role_id').notNull().references(() => organizationalRoles.id, { onDelete: 'cascade' }),
 
     // Scope of this role assignment (null = organization-wide)
@@ -10841,17 +10839,17 @@ export const userRoleAssignments = sqliteTable('user_role_assignments', {
     scopeId: text('scope_id'), // Department ID, Team ID, or Course ID
 
     // Who this person reports to in this role
-    reportsTo: text('reports_to').references(() => users.id),
+    reportsTo: text('reports_to').references(() => persons.id),
 
     isPrimary: integer('is_primary', { mode: 'boolean' }).default(false), // Primary role for this user
 
     effectiveFrom: integer('effective_from').default(timestamp()),
     effectiveUntil: integer('effective_until'), // null = active indefinitely
 
-    assignedBy: text('assigned_by').references(() => users.id),
+    assignedBy: text('assigned_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
-    index('idx_user_roles_user').on(table.userId),
+    index('idx_user_roles_person').on(table.personId),
     index('idx_user_roles_role').on(table.roleId),
     index('idx_user_roles_reports').on(table.reportsTo),
 ]);
@@ -10895,7 +10893,7 @@ export const roleRelationships = sqliteTable('role_relationships', {
 
     isActive: integer('is_active', { mode: 'boolean' }).default(true),
 
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
     index('idx_role_rel_org').on(table.organizationId),
@@ -10967,13 +10965,13 @@ export const meetings = sqliteTable('meetings', {
     approvalStatus: text('approval_status', {
         enum: ['pending', 'approved', 'rejected']
     }),
-    approvedBy: text('approved_by').references(() => users.id),
+    approvedBy: text('approved_by').references(() => persons.id),
     approvedAt: integer('approved_at'),
     approvalNotes: text('approval_notes'),
 
     // Organizer
-    organizerId: text('organizer_id').notNull().references(() => users.id),
-    createdBy: text('created_by').notNull().references(() => users.id),
+    organizerId: text('organizer_id').notNull().references(() => persons.id),
+    createdBy: text('created_by').notNull().references(() => persons.id),
 
     // Meeting notes and outcome
     agenda: text('agenda'),
@@ -10989,7 +10987,7 @@ export const meetings = sqliteTable('meetings', {
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
     cancelledAt: integer('cancelled_at'),
-    cancelledBy: text('cancelled_by').references(() => users.id),
+    cancelledBy: text('cancelled_by').references(() => persons.id),
     cancellationReason: text('cancellation_reason'),
 }, (table) => [
     index('idx_meetings_org').on(table.organizationId),
@@ -11008,7 +11006,7 @@ export const meetingParticipants = sqliteTable('meeting_participants', {
     meetingId: text('meeting_id').notNull().references(() => meetings.id, { onDelete: 'cascade' }),
 
     // Participant can be internal user or external
-    userId: text('user_id').references(() => users.id),
+    personId: text('person_id').references(() => persons.id),
     externalEmail: text('external_email'),
     externalName: text('external_name'),
     externalPhone: text('external_phone'),
@@ -11036,7 +11034,7 @@ export const meetingParticipants = sqliteTable('meeting_participants', {
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
     index('idx_meeting_participants_meeting').on(table.meetingId),
-    index('idx_meeting_participants_user').on(table.userId),
+    index('idx_meeting_participants_person').on(table.personId),
 ]);
 
 /**
@@ -11065,7 +11063,7 @@ export const meetingTemplates = sqliteTable('meeting_templates', {
 
     isActive: integer('is_active', { mode: 'boolean' }).default(true),
 
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
     index('idx_meeting_templates_org').on(table.organizationId),
@@ -11174,7 +11172,7 @@ export const procedureTemplates = sqliteTable('procedure_templates', {
     wikiPageId: text('wiki_page_id'), // Link to wiki article
     autoUpdateWiki: integer('auto_update_wiki', { mode: 'boolean' }).default(true),
 
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
     publishedAt: integer('published_at'),
@@ -11339,7 +11337,7 @@ export const procedureExecutions = sqliteTable('procedure_executions', {
     isOverdue: integer('is_overdue', { mode: 'boolean' }).default(false),
 
     // Assignment
-    assignedUserId: text('assigned_user_id').references(() => users.id),
+    assignedUserId: text('assigned_user_id').references(() => persons.id),
 
     // Outcome
     outcome: text('outcome'), // Free text summary
@@ -11354,7 +11352,7 @@ export const procedureExecutions = sqliteTable('procedure_executions', {
     contributeToLearning: integer('contribute_to_learning', { mode: 'boolean' }).default(true),
 
     triggeredBy: text('triggered_by'), // "manual", "automation", "event:xxx"
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
@@ -11388,7 +11386,7 @@ export const stepExecutions = sqliteTable('step_executions', {
     waitTimeMinutes: integer('wait_time_minutes').default(0),
 
     // Who performed this step
-    performedBy: text('performed_by').references(() => users.id),
+    performedBy: text('performed_by').references(() => persons.id),
 
     // For decision steps - which option was chosen
     decisionOutcome: text('decision_outcome'),
@@ -11499,7 +11497,7 @@ export const stakeholderLifecycles = sqliteTable('stakeholder_lifecycles', {
     wikiPageId: text('wiki_page_id'),
 
     isActive: integer('is_active', { mode: 'boolean' }).default(true),
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
@@ -11558,8 +11556,8 @@ export const wikiPages = sqliteTable('wiki_pages', {
     // Versioning
     version: integer('version').default(1),
 
-    createdBy: text('created_by').references(() => users.id),
-    lastEditedBy: text('last_edited_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
+    lastEditedBy: text('last_edited_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
@@ -11588,7 +11586,7 @@ export const processDiscoveryEvents = sqliteTable('process_discovery_events', {
     eventData: text('event_data').default('{}'), // JSON
 
     // Actor
-    actorId: text('actor_id').references(() => users.id),
+    actorId: text('actor_id').references(() => persons.id),
     actorRole: text('actor_role'),
 
     // Timing
@@ -11657,7 +11655,7 @@ export const conversations = sqliteTable('conversations', {
     }),
     problemResolution: text('problem_resolution'), // The logged solution
     resolvedAt: integer('resolved_at'),
-    resolvedBy: text('resolved_by').references(() => users.id),
+    resolvedBy: text('resolved_by').references(() => persons.id),
 
     // Task linking - when linked task is completed, conversation becomes read-only
     linkedTaskId: text('linked_task_id'), // References tasks table
@@ -11682,7 +11680,7 @@ export const conversations = sqliteTable('conversations', {
     // Metadata
     metadata: text('metadata').default('{}'),
 
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
@@ -11699,7 +11697,7 @@ export const conversations = sqliteTable('conversations', {
 export const conversationParticipants = sqliteTable('conversation_participants', {
     id: text('id').primaryKey().default(uuid()),
     conversationId: text('conversation_id').notNull().references(() => conversations.id, { onDelete: 'cascade' }),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
 
     // Role in conversation
     role: text('role', {
@@ -11723,10 +11721,10 @@ export const conversationParticipants = sqliteTable('conversation_participants',
     leftAt: integer('left_at'),
 
     joinedAt: integer('joined_at').default(timestamp()),
-    invitedBy: text('invited_by').references(() => users.id),
+    invitedBy: text('invited_by').references(() => persons.id),
 }, (table) => [
-    uniqueIndex('idx_conv_participant_unique').on(table.conversationId, table.userId),
-    index('idx_conv_participant_user').on(table.userId),
+    uniqueIndex('idx_conv_participant_unique').on(table.conversationId, table.personId),
+    index('idx_conv_participant_person').on(table.personId),
 ]);
 
 /**
@@ -11738,7 +11736,7 @@ export const messages = sqliteTable('messages', {
     conversationId: text('conversation_id').notNull().references(() => conversations.id, { onDelete: 'cascade' }),
 
     // Sender - null for system messages
-    senderId: text('sender_id').references(() => users.id),
+    senderId: text('sender_id').references(() => persons.id),
     senderType: text('sender_type', {
         enum: ['user', 'ai', 'system', 'bot']
     }).default('user'),
@@ -11777,7 +11775,7 @@ export const messages = sqliteTable('messages', {
 
     // For problem resolution
     isSolution: integer('is_solution', { mode: 'boolean' }).default(false),
-    solutionApprovedBy: text('solution_approved_by').references(() => users.id),
+    solutionApprovedBy: text('solution_approved_by').references(() => persons.id),
 
     // Metadata
     metadata: text('metadata').default('{}'),
@@ -11815,7 +11813,7 @@ export const messageAttachments = sqliteTable('message_attachments', {
         enum: ['pending', 'processing', 'completed', 'failed']
     }),
 
-    uploadedBy: text('uploaded_by').references(() => users.id),
+    uploadedBy: text('uploaded_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
     index('idx_attach_msg').on(table.messageId),
@@ -11827,7 +11825,7 @@ export const messageAttachments = sqliteTable('message_attachments', {
 export const meetingNotes = sqliteTable('meeting_notes', {
     id: text('id').primaryKey().default(uuid()),
     meetingId: text('meeting_id').notNull().references(() => meetings.id, { onDelete: 'cascade' }),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
 
     // Content
     content: text('content').default(''),
@@ -11844,7 +11842,7 @@ export const meetingNotes = sqliteTable('meeting_notes', {
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
-    uniqueIndex('idx_meeting_notes_unique').on(table.meetingId, table.userId),
+    uniqueIndex('idx_meeting_notes_unique').on(table.meetingId, table.personId),
     index('idx_meeting_notes_meeting').on(table.meetingId),
 ]);
 
@@ -11856,7 +11854,7 @@ export const meetingTranscripts = sqliteTable('meeting_transcripts', {
     meetingId: text('meeting_id').notNull().references(() => meetings.id, { onDelete: 'cascade' }),
 
     // Who recorded this
-    recordedBy: text('recorded_by').notNull().references(() => users.id),
+    recordedBy: text('recorded_by').notNull().references(() => persons.id),
 
     // Device info
     deviceType: text('device_type', {
@@ -11932,7 +11930,7 @@ export const aiSummaries = sqliteTable('ai_summaries', {
     // Node/Graph integration
     linkedNodeId: text('linked_node_id'),
 
-    generatedBy: text('generated_by').references(() => users.id),
+    generatedBy: text('generated_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
     index('idx_summary_org').on(table.organizationId),
@@ -11946,10 +11944,10 @@ export const aiSummaries = sqliteTable('ai_summaries', {
 export const messageReadReceipts = sqliteTable('message_read_receipts', {
     id: text('id').primaryKey().default(uuid()),
     messageId: text('message_id').notNull().references(() => messages.id, { onDelete: 'cascade' }),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
     readAt: integer('read_at').default(timestamp()),
 }, (table) => [
-    uniqueIndex('idx_read_receipt_unique').on(table.messageId, table.userId),
+    uniqueIndex('idx_read_receipt_unique').on(table.messageId, table.personId),
     index('idx_read_receipt_msg').on(table.messageId),
 ]);
 
@@ -11977,7 +11975,7 @@ export const communicationTemplates = sqliteTable('communication_templates', {
     usageCount: integer('usage_count').default(0),
     lastUsedAt: integer('last_used_at'),
 
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
@@ -11991,11 +11989,11 @@ export const communicationTemplates = sqliteTable('communication_templates', {
 export const typingIndicators = sqliteTable('typing_indicators', {
     id: text('id').primaryKey().default(uuid()),
     conversationId: text('conversation_id').notNull().references(() => conversations.id, { onDelete: 'cascade' }),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
     startedAt: integer('started_at').default(timestamp()),
     expiresAt: integer('expires_at'),
 }, (table) => [
-    uniqueIndex('idx_typing_unique').on(table.conversationId, table.userId),
+    uniqueIndex('idx_typing_unique').on(table.conversationId, table.personId),
 ]);
 
 /**
@@ -12004,7 +12002,7 @@ export const typingIndicators = sqliteTable('typing_indicators', {
 export const notificationQueue = sqliteTable('notification_queue', {
     id: text('id').primaryKey().default(uuid()),
     organizationId: text('organization_id').notNull().references(() => organizations.id),
-    recipientId: text('recipient_id').notNull().references(() => users.id),
+    recipientId: text('recipient_id').notNull().references(() => persons.id),
 
     // Notification type
     type: text('type', {
@@ -12104,7 +12102,7 @@ export const wikiCategories = sqliteTable('wiki_categories', {
     }).default('internal'),
     allowedRoles: text('allowed_roles').default('[]'), // JSON array of role IDs
 
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
@@ -12159,9 +12157,9 @@ export const wikiArticles = sqliteTable('wiki_articles', {
     allowedRoles: text('allowed_roles'), // JSON array, null = inherit from category
 
     // Ownership
-    authorId: text('author_id').references(() => users.id),
-    lastEditorId: text('last_editor_id').references(() => users.id),
-    reviewerId: text('reviewer_id').references(() => users.id),
+    authorId: text('author_id').references(() => persons.id),
+    lastEditorId: text('last_editor_id').references(() => persons.id),
+    reviewerId: text('reviewer_id').references(() => persons.id),
 
     // Timestamps
     createdAt: integer('created_at').default(timestamp()),
@@ -12192,7 +12190,7 @@ export const wikiArticleVersions = sqliteTable('wiki_article_versions', {
 
     changeNotes: text('change_notes'), // What changed
 
-    editorId: text('editor_id').references(() => users.id),
+    editorId: text('editor_id').references(() => persons.id),
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
     index('idx_wiki_version_article').on(table.articleId),
@@ -12205,7 +12203,7 @@ export const wikiArticleVersions = sqliteTable('wiki_article_versions', {
 export const wikiArticleFeedback = sqliteTable('wiki_article_feedback', {
     id: text('id').primaryKey().default(uuid()),
     articleId: text('article_id').notNull().references(() => wikiArticles.id, { onDelete: 'cascade' }),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
 
     // Reaction
     isHelpful: integer('is_helpful', { mode: 'boolean' }),
@@ -12216,7 +12214,7 @@ export const wikiArticleFeedback = sqliteTable('wiki_article_feedback', {
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
     index('idx_wiki_feedback_article').on(table.articleId),
-    uniqueIndex('idx_wiki_feedback_user').on(table.articleId, table.userId),
+    uniqueIndex('idx_wiki_feedback_person').on(table.articleId, table.personId),
 ]);
 
 // ============================================================================
@@ -12312,7 +12310,7 @@ export const wikiEvidencePoints = sqliteTable('wiki_evidence_points', {
     isUsedInGeneration: integer('is_used_in_generation', { mode: 'boolean' }).default(false),
 
     // Source user
-    userId: text('user_id').references(() => users.id),
+    personId: text('person_id').references(() => persons.id),
 
     collectedAt: integer('collected_at').default(timestamp()),
 }, (table) => [
@@ -12422,7 +12420,7 @@ export const wikiEditSessions = sqliteTable('wiki_edit_sessions', {
     articleId: text('article_id').notNull().references(() => wikiArticles.id),
 
     // Editor
-    editorId: text('editor_id').notNull().references(() => users.id),
+    editorId: text('editor_id').notNull().references(() => persons.id),
 
     // Session state
     status: text('status', {
@@ -12562,12 +12560,12 @@ export const kaizenSuggestions = sqliteTable('kaizen_suggestions', {
     }).default('submitted'),
 
     // Review process
-    reviewerId: text('reviewer_id').references(() => users.id),
+    reviewerId: text('reviewer_id').references(() => persons.id),
     reviewNotes: text('review_notes'),
     reviewedAt: integer('reviewed_at'),
 
     // Implementation tracking
-    implementerId: text('implementer_id').references(() => users.id),
+    implementerId: text('implementer_id').references(() => persons.id),
     implementationNotes: text('implementation_notes'),
     implementedAt: integer('implemented_at'),
 
@@ -12576,7 +12574,7 @@ export const kaizenSuggestions = sqliteTable('kaizen_suggestions', {
     downvotes: integer('downvotes').default(0),
 
     // The submitter
-    submitterId: text('submitter_id').notNull().references(() => users.id),
+    submitterId: text('submitter_id').notNull().references(() => persons.id),
     isAnonymous: integer('is_anonymous', { mode: 'boolean' }).default(false),
 
     // Tags for categorization
@@ -12602,14 +12600,14 @@ export const kaizenSuggestions = sqliteTable('kaizen_suggestions', {
 export const kaizenVotes = sqliteTable('kaizen_votes', {
     id: text('id').primaryKey().default(uuid()),
     suggestionId: text('suggestion_id').notNull().references(() => kaizenSuggestions.id, { onDelete: 'cascade' }),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
 
     vote: integer('vote').notNull(), // +1 or -1
 
     createdAt: integer('created_at').default(timestamp()),
 }, (table) => [
     index('idx_kaizen_vote_suggestion').on(table.suggestionId),
-    uniqueIndex('idx_kaizen_vote_user').on(table.suggestionId, table.userId),
+    uniqueIndex('idx_kaizen_vote_person').on(table.suggestionId, table.personId),
 ]);
 
 /**
@@ -12621,7 +12619,7 @@ export const kaizenComments = sqliteTable('kaizen_comments', {
 
     content: text('content').notNull(),
 
-    authorId: text('author_id').notNull().references(() => users.id),
+    authorId: text('author_id').notNull().references(() => persons.id),
     isReviewerComment: integer('is_reviewer_comment', { mode: 'boolean' }).default(false),
 
     // Reply threading
@@ -12647,7 +12645,7 @@ export const kaizenMetrics = sqliteTable('kaizen_metrics', {
     unit: text('unit'), // e.g., "minutes", "count", "dollars"
 
     measuredAt: integer('measured_at').default(timestamp()),
-    measuredBy: text('measured_by').references(() => users.id),
+    measuredBy: text('measured_by').references(() => persons.id),
     notes: text('notes'),
 }, (table) => [
     index('idx_kaizen_metric_suggestion').on(table.suggestionId),
@@ -12672,7 +12670,7 @@ export const procedureBranches = sqliteTable('procedure_branches', {
     // Branch info
     branchName: text('branch_name').notNull(),
     description: text('description').notNull(),      // What are we trying to improve
-    proposedBy: text('proposed_by').notNull().references(() => users.id),
+    proposedBy: text('proposed_by').notNull().references(() => persons.id),
 
     // Status
     status: text('status', {
@@ -12742,7 +12740,7 @@ export const branchChanges = sqliteTable('branch_changes', {
     rationale: text('rationale'),              // Why this change
 
     // Who made it
-    authorId: text('author_id').notNull().references(() => users.id),
+    authorId: text('author_id').notNull().references(() => persons.id),
 
     // Order in branch
     sequence: integer('sequence').notNull(),
@@ -12760,7 +12758,7 @@ export const branchChanges = sqliteTable('branch_changes', {
 export const branchStakeholders = sqliteTable('branch_stakeholders', {
     id: text('id').primaryKey().default(uuid()),
     branchId: text('branch_id').notNull().references(() => procedureBranches.id, { onDelete: 'cascade' }),
-    userId: text('user_id').notNull().references(() => users.id),
+    personId: text('person_id').notNull().references(() => persons.id),
 
     // Stake
     role: text('role', {
@@ -12781,7 +12779,7 @@ export const branchStakeholders = sqliteTable('branch_stakeholders', {
     addedAt: integer('added_at').default(timestamp()),
 }, (table) => [
     index('idx_stakeholder_branch').on(table.branchId),
-    uniqueIndex('idx_stakeholder_user').on(table.branchId, table.userId),
+    uniqueIndex('idx_stakeholder_person').on(table.branchId, table.personId),
 ]);
 
 /**
@@ -12803,7 +12801,7 @@ export const trialExecutions = sqliteTable('trial_executions', {
     exceptionsOccurred: integer('exceptions_occurred').default(0),
 
     // Executor feedback ("vibes")
-    executorId: text('executor_id').references(() => users.id),
+    executorId: text('executor_id').references(() => persons.id),
     vibeRating: integer('vibe_rating'), // 1-5 how did it feel?
     vibeFeedback: text('vibe_feedback'),  // Quick comment
 
@@ -12893,7 +12891,7 @@ export const procedureVersions = sqliteTable('procedure_versions', {
 
     // Source
     branchId: text('branch_id').references(() => procedureBranches.id),
-    committedBy: text('committed_by').references(() => users.id),
+    committedBy: text('committed_by').references(() => persons.id),
 
     // Status
     status: text('status', {
@@ -12926,7 +12924,7 @@ export const journeyInstances = sqliteTable('journey_instances', {
     organizationId: text('organization_id').notNull().references(() => organizations.id),
 
     // Who is on this journey
-    userId: text('user_id').references(() => users.id),   // For staff/students
+    personId: text('person_id').references(() => persons.id),   // For staff/students
     leadId: text('lead_id').references(() => leads.id),   // For pre-enrollment leads
 
     // Which lifecycle template
@@ -12977,7 +12975,7 @@ export const journeyInstances = sqliteTable('journey_instances', {
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
     index('idx_journey_org').on(table.organizationId),
-    index('idx_journey_user').on(table.userId),
+    index('idx_journey_person').on(table.personId),
     index('idx_journey_lead').on(table.leadId),
     index('idx_journey_type').on(table.journeyType, table.status),
     index('idx_journey_stage').on(table.currentStage),
@@ -13020,7 +13018,7 @@ export const journeyEvents = sqliteTable('journey_events', {
     durationMinutes: integer('duration_minutes'), // How long stage/action took
 
     // Actor
-    actorId: text('actor_id').references(() => users.id),
+    actorId: text('actor_id').references(() => persons.id),
     actorType: text('actor_type', {
         enum: ['user', 'staff', 'system', 'automation', 'ai']
     }).default('system'),
@@ -13095,7 +13093,7 @@ export const dropoffInferences = sqliteTable('dropoff_inferences', {
 
     // Status
     isAcknowledged: integer('is_acknowledged', { mode: 'boolean' }).default(false),
-    acknowledgedBy: text('acknowledged_by').references(() => users.id),
+    acknowledgedBy: text('acknowledged_by').references(() => persons.id),
     acknowledgedAt: integer('acknowledged_at'),
     actionTaken: text('action_taken'),
 
@@ -13263,7 +13261,7 @@ export const teams = sqliteTable('teams', {
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
     archivedAt: integer('archived_at'),
-    createdBy: text('created_by').references(() => users.id),
+    createdBy: text('created_by').references(() => persons.id),
 }, (table) => [
     index('idx_team_org').on(table.organizationId),
     index('idx_team_parent').on(table.parentTeamId),
@@ -13321,7 +13319,7 @@ export const teamMembers = sqliteTable('team_members', {
     id: text('id').primaryKey().default(uuid()),
 
     teamId: text('team_id').notNull().references(() => teams.id, { onDelete: 'cascade' }),
-    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
     positionId: text('position_id').notNull().references(() => teamPositions.id),
 
     // Member role within the team
@@ -13354,9 +13352,9 @@ export const teamMembers = sqliteTable('team_members', {
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
     index('idx_member_team').on(table.teamId),
-    index('idx_member_user').on(table.userId),
+    index('idx_member_person').on(table.personId),
     index('idx_member_position').on(table.positionId),
-    uniqueIndex('idx_member_team_user').on(table.teamId, table.userId),
+    uniqueIndex('idx_member_team_person').on(table.teamId, table.personId),
 ]);
 
 /**
@@ -13421,7 +13419,7 @@ export const positionPermissions = sqliteTable('position_permissions', {
     // Can grant this permission to others?
     canDelegate: integer('can_delegate', { mode: 'boolean' }).default(false),
 
-    grantedBy: text('granted_by').references(() => users.id),
+    grantedBy: text('granted_by').references(() => persons.id),
     grantedAt: integer('granted_at').default(timestamp()),
     expiresAt: integer('expires_at'),
 }, (table) => [
@@ -13437,7 +13435,7 @@ export const positionPermissions = sqliteTable('position_permissions', {
 export const userPermissionOverrides = sqliteTable('user_permission_overrides', {
     id: text('id').primaryKey().default(uuid()),
 
-    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
     actionTypeId: text('action_type_id').notNull().references(() => actionTypes.id, { onDelete: 'cascade' }),
 
     // Grant or deny
@@ -13454,16 +13452,16 @@ export const userPermissionOverrides = sqliteTable('user_permission_overrides', 
     // Reason for override (for auditing)
     reason: text('reason'),
 
-    grantedBy: text('granted_by').notNull().references(() => users.id),
+    grantedBy: text('granted_by').notNull().references(() => persons.id),
     grantedAt: integer('granted_at').default(timestamp()),
     expiresAt: integer('expires_at'),
 
     // Revocation tracking
     revokedAt: integer('revoked_at'),
-    revokedBy: text('revoked_by').references(() => users.id),
+    revokedBy: text('revoked_by').references(() => persons.id),
     revokeReason: text('revoke_reason'),
 }, (table) => [
-    index('idx_override_user').on(table.userId),
+    index('idx_override_person').on(table.personId),
     index('idx_override_action').on(table.actionTypeId),
     index('idx_override_team').on(table.teamId),
 ]);
@@ -13519,19 +13517,19 @@ export const permissionGroupActions = sqliteTable('permission_group_actions', {
 export const userGroupAssignments = sqliteTable('user_group_assignments', {
     id: text('id').primaryKey().default(uuid()),
 
-    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
     groupId: text('group_id').notNull().references(() => permissionGroups.id, { onDelete: 'cascade' }),
 
     // For which team? (null = all teams)
     teamId: text('team_id').references(() => teams.id, { onDelete: 'cascade' }),
 
-    grantedBy: text('granted_by').notNull().references(() => users.id),
+    grantedBy: text('granted_by').notNull().references(() => persons.id),
     grantedAt: integer('granted_at').default(timestamp()),
     expiresAt: integer('expires_at'),
 }, (table) => [
-    index('idx_user_group_user').on(table.userId),
+    index('idx_user_group_person').on(table.personId),
     index('idx_user_group_group').on(table.groupId),
-    uniqueIndex('idx_user_group').on(table.userId, table.groupId, table.teamId),
+    uniqueIndex('idx_user_group').on(table.personId, table.groupId, table.teamId),
 ]);
 
 /**
@@ -13547,7 +13545,7 @@ export const permissionAuditLog = sqliteTable('permission_audit_log', {
     }).notNull(),
 
     // Who was affected
-    targetUserId: text('target_user_id').references(() => users.id),
+    targetUserId: text('target_user_id').references(() => persons.id),
     targetPositionId: text('target_position_id').references(() => teamPositions.id),
     targetGroupId: text('target_group_id').references(() => permissionGroups.id),
 
@@ -13559,7 +13557,7 @@ export const permissionAuditLog = sqliteTable('permission_audit_log', {
     newValue: text('new_value'),
 
     // Who did it
-    performedBy: text('performed_by').notNull().references(() => users.id),
+    performedBy: text('performed_by').notNull().references(() => persons.id),
     performedAt: integer('performed_at').default(timestamp()),
 
     // Metadata
@@ -13568,7 +13566,7 @@ export const permissionAuditLog = sqliteTable('permission_audit_log', {
     reason: text('reason'),
 }, (table) => [
     index('idx_audit_org').on(table.organizationId),
-    index('idx_audit_target_user').on(table.targetUserId),
+    index('idx_audit_target_person').on(table.targetUserId),
     index('idx_audit_performed_by').on(table.performedBy),
     index('idx_audit_date').on(table.performedAt),
 ]);
@@ -13584,7 +13582,7 @@ export const permissionAuditLog = sqliteTable('permission_audit_log', {
  */
 export const drafts = sqliteTable('drafts', {
     id: text('id').primaryKey().default(uuid()),
-    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
     organizationId: text('organization_id').notNull().references(() => organizations.id),
 
     // What type of content
@@ -13601,8 +13599,8 @@ export const drafts = sqliteTable('drafts', {
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
-    uniqueIndex('idx_drafts_unique').on(table.userId, table.type, table.referenceId),
-    index('idx_drafts_user').on(table.userId),
+    uniqueIndex('idx_drafts_unique').on(table.personId, table.type, table.referenceId),
+    index('idx_drafts_person').on(table.personId),
     index('idx_drafts_org').on(table.organizationId),
 ]);
 

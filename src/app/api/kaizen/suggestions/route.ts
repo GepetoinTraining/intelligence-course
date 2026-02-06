@@ -47,8 +47,8 @@ const ListSuggestionsSchema = z.object({
 
 export async function GET(request: NextRequest) {
     try {
-        const { userId } = await getApiAuthWithOrg();
-        if (!userId) {
+        const { personId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
                 .from(kaizenVotes)
                 .where(and(
                     inArray(kaizenVotes.suggestionId, suggestionIds),
-                    eq(kaizenVotes.userId, userId)
+                    eq(kaizenVotes.personId, personId)
                 ));
 
             userVotes = Object.fromEntries(votes.map(v => [v.suggestionId, v.vote]));
@@ -183,8 +183,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId } = await getApiAuthWithOrg();
-        if (!userId) {
+        const { personId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -250,4 +250,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create suggestion' }, { status: 500 });
     }
 }
+
+
 

@@ -20,8 +20,8 @@ const teamSchema = z.object({
 // GET /api/teams - List all teams
 export async function GET(request: NextRequest) {
     try {
-        const { userId, orgId: organizationId } = await getApiAuthWithOrg();
-        if (!userId || !organizationId) {
+        const { personId, orgId: organizationId } = await getApiAuthWithOrg();
+        if (!personId || !organizationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -101,8 +101,8 @@ export async function GET(request: NextRequest) {
 // POST /api/teams - Create a new team
 export async function POST(request: NextRequest) {
     try {
-        const { userId, orgId: organizationId } = await getApiAuthWithOrg();
-        if (!userId || !organizationId) {
+        const { personId, orgId: organizationId } = await getApiAuthWithOrg();
+        if (!personId || !organizationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -176,4 +176,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create team' }, { status: 500 });
     }
 }
+
+
 

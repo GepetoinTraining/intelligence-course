@@ -6,8 +6,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/annotations - List annotations
 export async function GET(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
 
     try {
-        const conditions = [eq(runAnnotations.userId, userId)];
+        const conditions = [eq(runAnnotations.personId, personId)];
         if (runId) conditions.push(eq(runAnnotations.runId, runId));
 
         const result = await db
@@ -35,8 +35,8 @@ export async function GET(request: NextRequest) {
 
 // POST /api/annotations - Create annotation
 export async function POST(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -62,4 +62,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create annotation' }, { status: 500 });
     }
 }
+
+
 

@@ -6,8 +6,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/users - List users (admin/staff only)
 export async function GET(request: NextRequest) {
-    const { userId, orgId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -50,8 +50,8 @@ export async function GET(request: NextRequest) {
 
 // POST /api/users - Create user (typically handled by Clerk webhook)
 export async function POST(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -74,4 +74,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
     }
 }
+
+
 

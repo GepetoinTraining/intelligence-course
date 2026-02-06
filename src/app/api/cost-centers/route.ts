@@ -6,8 +6,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/cost-centers - List cost centers
 export async function GET(request: NextRequest) {
-    const { userId, orgId } = await getApiAuthWithOrg();
-    if (!userId || !orgId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -69,8 +69,8 @@ export async function GET(request: NextRequest) {
 
 // POST /api/cost-centers - Create cost center
 export async function POST(request: NextRequest) {
-    const { userId, orgId } = await getApiAuthWithOrg();
-    if (!userId || !orgId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -126,4 +126,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create cost center' }, { status: 500 });
     }
 }
+
+
 

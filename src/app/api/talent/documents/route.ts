@@ -16,13 +16,13 @@ const anthropic = new Anthropic();
 
 export async function GET() {
     try {
-        const { userId } = await getApiAuthWithOrg();
-        if (!userId) {
+        const { personId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const documents = await db.select().from(talentEvidenceDocuments)
-            .where(eq(talentEvidenceDocuments.userId, userId))
+            .where(eq(talentEvidenceDocuments.personId, personId))
             .orderBy(desc(talentEvidenceDocuments.createdAt));
 
         return NextResponse.json({
@@ -47,8 +47,8 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId } = await getApiAuthWithOrg();
-        if (!userId) {
+        const { personId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
 
         // Get profile ID
         let profile = await db.query.talentProfiles.findFirst({
-            where: eq(talentProfiles.userId, userId),
+            where: eq(talentProfiles.personId, personId),
         });
 
         if (!profile) {
@@ -223,4 +223,6 @@ async function updateProfileLattice(profileId: string, newSkills: Record<string,
         console.error('Error updating profile lattice:', error);
     }
 }
+
+
 

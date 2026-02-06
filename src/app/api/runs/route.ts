@@ -8,9 +8,9 @@ import { decrypt } from '@/lib/crypto';
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId } = await getApiAuthWithOrg();
+        const { personId } = await getApiAuthWithOrg();
 
-        if (!userId) {
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
             .from(userApiKeys)
             .where(
                 and(
-                    eq(userApiKeys.userId, userId),
+                    eq(userApiKeys.personId, personId),
                     eq(userApiKeys.provider, 'anthropic')
                 )
             )
@@ -120,9 +120,9 @@ export async function POST(request: NextRequest) {
 // GET /api/runs - List user's recent runs
 export async function GET(request: NextRequest) {
     try {
-        const { userId } = await getApiAuthWithOrg();
+        const { personId } = await getApiAuthWithOrg();
 
-        if (!userId) {
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -133,7 +133,7 @@ export async function GET(request: NextRequest) {
         let query = db
             .select()
             .from(promptRuns)
-            .where(eq(promptRuns.userId, userId))
+            .where(eq(promptRuns.personId, personId))
             .orderBy(promptRuns.createdAt)
             .limit(limit);
 
@@ -143,7 +143,7 @@ export async function GET(request: NextRequest) {
                 .from(promptRuns)
                 .where(
                     and(
-                        eq(promptRuns.userId, userId),
+                        eq(promptRuns.personId, personId),
                         eq(promptRuns.promptId, promptId)
                     )
                 )
@@ -162,4 +162,6 @@ export async function GET(request: NextRequest) {
         );
     }
 }
+
+
 

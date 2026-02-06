@@ -19,8 +19,8 @@ const actionTypeSchema = z.object({
 // GET /api/actions - List all action types
 export async function GET(request: NextRequest) {
     try {
-        const { userId, orgId: organizationId } = await getApiAuthWithOrg();
-        if (!userId || !organizationId) {
+        const { personId, orgId: organizationId } = await getApiAuthWithOrg();
+        if (!personId || !organizationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -69,8 +69,8 @@ export async function GET(request: NextRequest) {
 // POST /api/actions - Create a new action type
 export async function POST(request: NextRequest) {
     try {
-        const { userId, orgId: organizationId } = await getApiAuthWithOrg();
-        if (!userId || !organizationId) {
+        const { personId, orgId: organizationId } = await getApiAuthWithOrg();
+        if (!personId || !organizationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -120,8 +120,8 @@ export async function POST(request: NextRequest) {
 // Seed default action types
 export async function PUT(request: NextRequest) {
     try {
-        const { userId, orgId: organizationId } = await getApiAuthWithOrg();
-        if (!userId || !organizationId) {
+        const { personId, orgId: organizationId } = await getApiAuthWithOrg();
+        if (!personId || !organizationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -219,4 +219,6 @@ export async function PUT(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to seed actions' }, { status: 500 });
     }
 }
+
+
 

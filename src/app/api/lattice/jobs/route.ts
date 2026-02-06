@@ -14,8 +14,8 @@ import { eq, desc } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId, orgId } = await getApiAuthWithOrg();
-        if (!userId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -71,8 +71,8 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
     try {
-        const { userId, orgId } = await getApiAuthWithOrg();
-        if (!userId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -111,4 +111,6 @@ export async function GET(request: NextRequest) {
         );
     }
 }
+
+
 

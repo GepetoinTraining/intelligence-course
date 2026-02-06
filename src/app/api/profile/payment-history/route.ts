@@ -6,8 +6,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/profile/payment-history - Get payment records
 export async function GET(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
         const payments = await db
             .select()
             .from(transactions)
-            .where(eq(transactions.userId, userId))
+            .where(eq(transactions.personId, personId))
             .orderBy(desc(transactions.createdAt))
             .limit(limit);
 
@@ -39,4 +39,6 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to fetch payment history' }, { status: 500 });
     }
 }
+
+
 

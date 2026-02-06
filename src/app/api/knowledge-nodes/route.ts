@@ -6,8 +6,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/knowledge-nodes - List knowledge nodes
 export async function GET(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
 
     try {
-        const conditions = [eq(knowledgeNodes.userId, userId)];
+        const conditions = [eq(knowledgeNodes.personId, personId)];
 
         if (nodeType) {
             conditions.push(eq(knowledgeNodes.nodeType, nodeType as any));
@@ -38,8 +38,8 @@ export async function GET(request: NextRequest) {
 
 // POST /api/knowledge-nodes - Create knowledge node
 export async function POST(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -68,4 +68,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create knowledge node' }, { status: 500 });
     }
 }
+
+
 

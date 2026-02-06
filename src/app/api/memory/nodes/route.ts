@@ -8,8 +8,8 @@ import { createHash } from 'crypto';
 // GET /api/memory/nodes - Get memory nodes for current user's graph
 export async function GET(req: NextRequest) {
     try {
-        const { userId } = await getApiAuthWithOrg();
-        if (!userId) {
+        const { personId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, { status: 401 });
         }
 
@@ -73,8 +73,8 @@ export async function GET(req: NextRequest) {
 // POST /api/memory/nodes - Add a new memory node
 export async function POST(req: NextRequest) {
     try {
-        const { userId } = await getApiAuthWithOrg();
-        if (!userId) {
+        const { personId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, { status: 401 });
         }
 
@@ -174,4 +174,6 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to create memory node' } }, { status: 500 });
     }
 }
+
+
 

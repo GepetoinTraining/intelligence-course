@@ -6,8 +6,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/sessions - List class sessions
 export async function GET(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -53,8 +53,8 @@ export async function GET(request: NextRequest) {
 
 // POST /api/sessions - Create session
 export async function POST(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -79,4 +79,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create session' }, { status: 500 });
     }
 }
+
+
 

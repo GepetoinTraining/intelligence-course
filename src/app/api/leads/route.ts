@@ -6,8 +6,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/leads - List leads
 export async function GET(request: NextRequest) {
-    const { userId, orgId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/leads - Create lead
 export async function POST(request: NextRequest) {
-    const { userId, orgId } = await getApiAuthWithOrg();
+    const { personId, orgId } = await getApiAuthWithOrg();
 
     // Allow unauthenticated lead creation (for forms)
     const body = await request.json();
@@ -91,4 +91,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create lead' }, { status: 500 });
     }
 }
+
+
 

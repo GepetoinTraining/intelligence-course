@@ -6,8 +6,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/knowledge-edges - List knowledge edges
 export async function GET(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
 
     try {
-        const conditions = [eq(knowledgeEdges.userId, userId)];
+        const conditions = [eq(knowledgeEdges.personId, personId)];
 
         if (nodeId) {
             conditions.push(or(
@@ -53,8 +53,8 @@ export async function GET(request: NextRequest) {
 
 // POST /api/knowledge-edges - Create knowledge edge
 export async function POST(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -87,4 +87,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create knowledge edge' }, { status: 500 });
     }
 }
+
+
 

@@ -6,8 +6,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/graveyard - List graveyard entries
 export async function GET(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
         const entries = await db
             .select()
             .from(graveyardEntries)
-            .where(eq(graveyardEntries.userId, userId))
+            .where(eq(graveyardEntries.personId, personId))
             .orderBy(desc(graveyardEntries.createdAt))
             .limit(limit);
 
@@ -31,8 +31,8 @@ export async function GET(request: NextRequest) {
 
 // POST /api/graveyard - Create graveyard entry
 export async function POST(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -60,4 +60,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create graveyard entry' }, { status: 500 });
     }
 }
+
+
 

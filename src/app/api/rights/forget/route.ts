@@ -6,8 +6,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 
 // POST /api/rights/forget - Request memory deletion (LGPD right of deletion)
 export async function POST(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -88,4 +88,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to process forget request' }, { status: 500 });
     }
 }
+
+
 

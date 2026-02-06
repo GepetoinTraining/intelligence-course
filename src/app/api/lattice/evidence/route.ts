@@ -16,8 +16,8 @@ import { EvidenceCreateSchema, EvidenceQuerySchema } from '@/lib/lattice/schemas
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId } = await getApiAuthWithOrg();
-        if (!userId) {
+        const { personId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json(
                 { error: 'Unauthorized' },
                 { status: 401 }
@@ -57,8 +57,8 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
     try {
-        const { userId } = await getApiAuthWithOrg();
-        if (!userId) {
+        const { personId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json(
                 { error: 'Unauthorized' },
                 { status: 401 }
@@ -112,4 +112,6 @@ export async function GET(request: NextRequest) {
         );
     }
 }
+
+
 

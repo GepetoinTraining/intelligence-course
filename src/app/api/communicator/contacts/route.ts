@@ -44,8 +44,8 @@ interface ContactResult {
 
 export async function GET(request: NextRequest) {
     try {
-        const { userId } = await getApiAuthWithOrg();
-        if (!userId) {
+        const { personId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
                 .from(conversations)
                 .innerJoin(conversationParticipants, eq(conversations.id, conversationParticipants.conversationId))
                 .where(and(
-                    eq(conversationParticipants.userId, userId),
+                    eq(conversationParticipants.personId, personId),
                     eq(conversations.type, 'ai_assistant')
                 ))
                 .limit(100);
@@ -185,4 +185,6 @@ async function getConversationCount(userId1: string, userId2: string): Promise<n
         return 0;
     }
 }
+
+
 

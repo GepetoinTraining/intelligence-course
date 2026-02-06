@@ -3,8 +3,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 
 // POST /api/rights/portability - Package data for migration
 export async function POST(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -45,4 +45,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create portability package' }, { status: 500 });
     }
 }
+
+
 

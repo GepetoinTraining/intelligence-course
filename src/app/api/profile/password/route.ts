@@ -4,8 +4,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 // POST /api/profile/password - Change password
 // Note: Password management is handled by Clerk
 export async function POST(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -26,4 +26,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to process password change' }, { status: 500 });
     }
 }
+
+
 

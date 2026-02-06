@@ -7,8 +7,8 @@ import { eq } from 'drizzle-orm';
 // GET /api/levels - List all levels
 export async function GET(request: NextRequest) {
     try {
-        const { userId, orgId: organizationId } = await getApiAuthWithOrg();
-        if (!userId || !organizationId) {
+        const { personId, orgId: organizationId } = await getApiAuthWithOrg();
+        if (!personId || !organizationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -38,8 +38,8 @@ export async function GET(request: NextRequest) {
 // POST /api/levels - Create a new level
 export async function POST(request: NextRequest) {
     try {
-        const { userId, orgId: organizationId } = await getApiAuthWithOrg();
-        if (!userId || !organizationId) {
+        const { personId, orgId: organizationId } = await getApiAuthWithOrg();
+        if (!personId || !organizationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -67,3 +67,5 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create level' }, { status: 500 });
     }
 }
+
+

@@ -4,8 +4,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 // GET /api/profile/sessions - Get active sessions
 // Note: Session management is handled by Clerk
 export async function GET(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -30,4 +30,6 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to fetch sessions' }, { status: 500 });
     }
 }
+
+
 

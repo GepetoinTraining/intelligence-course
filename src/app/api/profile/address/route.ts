@@ -6,8 +6,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/profile/address - Get addresses from preferences
 export async function GET(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -34,8 +34,8 @@ export async function GET(request: NextRequest) {
 
 // PATCH /api/profile/address - Update addresses in preferences
 export async function PATCH(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -62,4 +62,6 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to update addresses' }, { status: 500 });
     }
 }
+
+
 

@@ -13,14 +13,14 @@ import { eq, desc } from 'drizzle-orm';
 
 export async function GET() {
     try {
-        const { userId } = await getApiAuthWithOrg();
-        if (!userId) {
+        const { personId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         // Get or create talent profile
         let profile = await db.query.talentProfiles.findFirst({
-            where: eq(talentProfiles.userId, userId),
+            where: eq(talentProfiles.personId, personId),
         });
 
         if (!profile) {
@@ -34,7 +34,7 @@ export async function GET() {
 
         // Get documents
         const documents = await db.select().from(talentEvidenceDocuments)
-            .where(eq(talentEvidenceDocuments.userId, userId))
+            .where(eq(talentEvidenceDocuments.personId, personId))
             .orderBy(desc(talentEvidenceDocuments.createdAt));
 
         // Calculate skill gaps (skills with no evidence)
@@ -81,8 +81,8 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId } = await getApiAuthWithOrg();
-        if (!userId) {
+        const { personId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
                 summary,
                 updatedAt: Math.floor(Date.now() / 1000),
             })
-            .where(eq(talentProfiles.userId, userId));
+            .where(eq(talentProfiles.personId, personId));
 
         return NextResponse.json({ success: true });
     } catch (error) {
@@ -107,4 +107,6 @@ export async function POST(request: NextRequest) {
         );
     }
 }
+
+
 

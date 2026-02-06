@@ -1,49 +1,92 @@
+/**
+ * Authentication Helpers
+ * 
+ * Identity Architecture:
+ * - Clerk provides clerkUserId (auth session)
+ * - users table bridges clerkUserId → personId
+ * - persons table is the canonical identity
+ * - organizationMemberships provides roles in each org
+ * 
+ * All API routes should use personId as the identity key.
+ */
+
 const isDevMode = process.env.NEXT_PUBLIC_DEV_AUTH === 'true';
 
-// Dev mode user for local development (server-side)
-const DEV_USER = {
-    id: 'dev-user-123',
-    firstName: 'Dev',
-    lastName: 'User',
-    fullName: 'Dev User',
-    emailAddresses: [{ emailAddress: 'dev@test.local' }],
-    imageUrl: null,
-};
+// ============================================================================
+// AUTH TYPES
+// ============================================================================
 
-const DEV_ORG_ID = 'dev-org-123';
+export interface ApiAuth {
+    personId: string | null;
+    orgId: string | null;
+    clerkUserId: string | null;
+}
+
+export interface ApiAuthWithOrg {
+    personId: string;
+    orgId: string;
+    clerkUserId: string;
+    roles: string[];
+}
+
+// ============================================================================
+// DEV MODE AUTH (Reads from DB)
+// ============================================================================
 
 /**
- * Get auth for API routes.
- * In dev mode, returns mock userId and orgId.
- * In production, uses Clerk.
+ * Get owner auth from database for dev mode.
+ * This ensures dev mode works with real data after running bootstrap-owner.ts
  */
-export async function getApiAuth(): Promise<{ userId: string | null; orgId: string | null }> {
-    if (isDevMode) {
-        return { userId: DEV_USER.id, orgId: DEV_ORG_ID };
-    }
-
+async function getDevAuth(): Promise<ApiAuth> {
     try {
-        const { auth } = await import('@clerk/nextjs/server');
-        const result = await auth();
-        return { userId: result.userId, orgId: result.orgId ?? null };
-    } catch {
-        return { userId: null, orgId: null };
+        const { db } = await import('@/lib/db');
+        const { users, organizationMemberships } = await import('@/lib/db/schema');
+        const { eq } = await import('drizzle-orm');
+
+        // Find first owner membership
+        const ownerMembership = await db.query.organizationMemberships.findFirst({
+            where: eq(organizationMemberships.role, 'owner'),
+            columns: { personId: true, organizationId: true },
+        });
+
+        if (!ownerMembership) {
+            console.error(
+                '❌ No owner found in database. Run: npx tsx scripts/bootstrap-owner.ts'
+            );
+            return { personId: null, orgId: null, clerkUserId: null };
+        }
+
+        // Find user record for this person (may not exist in dev)
+        const user = await db.query.users.findFirst({
+            where: eq(users.personId, ownerMembership.personId),
+            columns: { id: true },
+        });
+
+        return {
+            personId: ownerMembership.personId,
+            orgId: ownerMembership.organizationId,
+            clerkUserId: user?.id || 'dev-no-clerk',
+        };
+    } catch (error) {
+        console.error('❌ Dev auth error:', error);
+        return { personId: null, orgId: null, clerkUserId: null };
     }
 }
 
+// ============================================================================
+// MAIN AUTH FUNCTIONS
+// ============================================================================
+
 /**
- * Get auth for API routes with org switcher support.
+ * Get auth for API routes.
+ * Returns personId (canonical identity), orgId, and clerkUserId.
  * 
- * Priority for resolving orgId:
- * 1. Active org cookie (set via org switcher)
- * 2. Clerk's orgId (if set)
- * 3. User's organizationId from database
- * 
- * This is the PREFERRED method for API routes that need orgId.
+ * In dev mode, reads owner from database.
+ * In production, uses Clerk.
  */
-export async function getApiAuthWithOrg(): Promise<{ userId: string | null; orgId: string | null }> {
+export async function getApiAuth(): Promise<ApiAuth> {
     if (isDevMode) {
-        return { userId: DEV_USER.id, orgId: DEV_ORG_ID };
+        return getDevAuth();
     }
 
     try {
@@ -51,100 +94,149 @@ export async function getApiAuthWithOrg(): Promise<{ userId: string | null; orgI
         const result = await auth();
 
         if (!result.userId) {
-            return { userId: null, orgId: null };
+            return { personId: null, orgId: null, clerkUserId: null };
         }
 
-        // Priority 1: Check for active org cookie (org switcher)
-        const { cookies } = await import('next/headers');
-        const cookieStore = await cookies();
-        const activeOrgCookie = cookieStore.get('nodezero_active_org')?.value;
-
-        if (activeOrgCookie) {
-            // Verify user still has access to this org before using it
-            const { db } = await import('@/lib/db');
-            const { users, organizationMemberships } = await import('@/lib/db/schema');
-            const { eq, and } = await import('drizzle-orm');
-
-            const user = await db.query.users.findFirst({
-                where: eq(users.id, result.userId),
-                columns: { personId: true, organizationId: true },
-            });
-
-            if (user) {
-                // Check if active org is user's default org
-                if (user.organizationId === activeOrgCookie) {
-                    return { userId: result.userId, orgId: activeOrgCookie };
-                }
-
-                // Check if user has membership to this org
-                if (user.personId) {
-                    const membership = await db.query.organizationMemberships.findFirst({
-                        where: and(
-                            eq(organizationMemberships.personId, user.personId),
-                            eq(organizationMemberships.organizationId, activeOrgCookie),
-                            eq(organizationMemberships.status, 'active')
-                        ),
-                    });
-                    if (membership) {
-                        return { userId: result.userId, orgId: activeOrgCookie };
-                    }
-                }
-            }
-            // Cookie org is invalid/inaccessible, fall through to other methods
-        }
-
-        // Priority 2: Try Clerk's orgId
-        if (result.orgId) {
-            return { userId: result.userId, orgId: result.orgId };
-        }
-
-        // Priority 3: Fallback to user's organizationId from database
+        // Resolve personId from users table
         const { db } = await import('@/lib/db');
         const { users } = await import('@/lib/db/schema');
         const { eq } = await import('drizzle-orm');
 
         const user = await db.query.users.findFirst({
             where: eq(users.id, result.userId),
-            columns: { organizationId: true },
+            columns: { personId: true },
         });
 
         return {
-            userId: result.userId,
-            orgId: user?.organizationId ?? null
+            personId: user?.personId || null,
+            orgId: result.orgId ?? null,
+            clerkUserId: result.userId,
         };
     } catch {
-        return { userId: null, orgId: null };
+        return { personId: null, orgId: null, clerkUserId: null };
     }
 }
 
 /**
- * Get the current user ID.
- * In dev mode, returns a mock user ID.
- * In production, uses Clerk.
+ * Get auth for API routes with org switcher support.
+ * Returns personId, orgId, clerkUserId, and roles[].
+ * 
+ * Priority for resolving orgId:
+ * 1. Active org cookie (set via org switcher)
+ * 2. Clerk's orgId (if set)
+ * 3. First active membership from database
+ * 
+ * Throws redirect if not authenticated.
+ */
+export async function getApiAuthWithOrg(): Promise<ApiAuthWithOrg> {
+    const baseAuth = await getApiAuth();
+
+    if (!baseAuth.personId || !baseAuth.clerkUserId) {
+        const { redirect } = await import('next/navigation');
+        redirect('/sign-in');
+        throw new Error('Redirect failed'); // Never reached
+    }
+
+    const { db } = await import('@/lib/db');
+    const { organizationMemberships } = await import('@/lib/db/schema');
+    const { eq, and } = await import('drizzle-orm');
+
+    // Resolve orgId
+    let resolvedOrgId: string | null = null;
+
+    // Priority 1: Check for active org cookie
+    if (!isDevMode) {
+        try {
+            const { cookies } = await import('next/headers');
+            const cookieStore = await cookies();
+            const activeOrgCookie = cookieStore.get('nodezero_active_org')?.value;
+
+            if (activeOrgCookie) {
+                // Verify membership exists
+                const membership = await db.query.organizationMemberships.findFirst({
+                    where: and(
+                        eq(organizationMemberships.personId, baseAuth.personId),
+                        eq(organizationMemberships.organizationId, activeOrgCookie),
+                        eq(organizationMemberships.status, 'active')
+                    ),
+                });
+                if (membership) {
+                    resolvedOrgId = activeOrgCookie;
+                }
+            }
+        } catch {
+            // Cookie access failed, continue to other methods
+        }
+    }
+
+    // Priority 2: Clerk's orgId
+    if (!resolvedOrgId && baseAuth.orgId) {
+        resolvedOrgId = baseAuth.orgId;
+    }
+
+    // Priority 3: First active membership
+    if (!resolvedOrgId) {
+        const firstMembership = await db.query.organizationMemberships.findFirst({
+            where: and(
+                eq(organizationMemberships.personId, baseAuth.personId),
+                eq(organizationMemberships.status, 'active')
+            ),
+            columns: { organizationId: true },
+        });
+        resolvedOrgId = firstMembership?.organizationId || null;
+    }
+
+    if (!resolvedOrgId) {
+        const { redirect } = await import('next/navigation');
+        redirect('/onboarding');
+        throw new Error('Redirect failed'); // Never reached
+    }
+
+    // Get all roles in this org
+    const memberships = await db.select({ role: organizationMemberships.role })
+        .from(organizationMemberships)
+        .where(and(
+            eq(organizationMemberships.personId, baseAuth.personId),
+            eq(organizationMemberships.organizationId, resolvedOrgId),
+            eq(organizationMemberships.status, 'active')
+        ));
+
+    const roles = memberships.map(m => m.role).filter(Boolean) as string[];
+
+    return {
+        personId: baseAuth.personId,
+        orgId: resolvedOrgId,
+        clerkUserId: baseAuth.clerkUserId,
+        roles,
+    };
+}
+
+// ============================================================================
+// LEGACY COMPATIBILITY (Will be removed)
+// ============================================================================
+
+/**
+ * @deprecated Use getApiAuth() and access personId
  */
 export async function getAuthUserId(): Promise<string | null> {
-    if (isDevMode) {
-        return DEV_USER.id;
-    }
-
-    try {
-        const { auth } = await import('@clerk/nextjs/server');
-        const { userId } = await auth();
-        return userId;
-    } catch {
-        // If Clerk middleware isn't set up, return null
-        return null;
-    }
+    const { clerkUserId } = await getApiAuth();
+    return clerkUserId;
 }
 
 /**
- * Get the current user details.
- * In dev mode, returns a mock user.
- * In production, uses Clerk.
+ * @deprecated Use getApiAuth() and access person data from persons table
  */
 export async function getAuthUser() {
     if (isDevMode) {
-        return DEV_USER;
+        // Return minimal dev user structure
+        return {
+            id: 'dev-owner-clerk-id',
+            firstName: 'Dev',
+            lastName: 'Owner',
+            fullName: 'Dev Owner',
+            emailAddresses: [{ emailAddress: 'dev@nodezero.local' }],
+            imageUrl: null,
+        };
     }
 
     try {
@@ -157,19 +249,16 @@ export async function getAuthUser() {
 
 /**
  * Require authentication.
- * In dev mode, always succeeds.
- * In production, redirects to sign-in if not authenticated.
+ * Returns personId if authenticated, redirects to sign-in if not.
  */
 export async function requireAuth(): Promise<string> {
-    const userId = await getAuthUserId();
+    const { personId } = await getApiAuth();
 
-    if (!userId) {
+    if (!personId) {
         const { redirect } = await import('next/navigation');
         redirect('/sign-in');
-        // redirect() throws and never returns, but TypeScript doesn't know this
-        throw new Error('Redirect failed'); // This line is never reached
+        throw new Error('Redirect failed'); // Never reached
     }
 
-    return userId;
+    return personId;
 }
-

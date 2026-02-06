@@ -40,8 +40,8 @@ function generateSlug(name: string): string {
 // GET: List permission groups
 export async function GET(request: NextRequest) {
     try {
-        const { userId, orgId } = await getApiAuthWithOrg();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -159,8 +159,8 @@ export async function GET(request: NextRequest) {
 // POST: Create group or assign user
 export async function POST(request: NextRequest) {
     try {
-        const { userId, orgId } = await getApiAuthWithOrg();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -291,8 +291,8 @@ export async function POST(request: NextRequest) {
 // PUT: Update group or manage actions
 export async function PUT(request: NextRequest) {
     try {
-        const { userId, orgId } = await getApiAuthWithOrg();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -371,8 +371,8 @@ export async function PUT(request: NextRequest) {
 // DELETE: Delete group or remove user assignment
 export async function DELETE(request: NextRequest) {
     try {
-        const { userId, orgId } = await getApiAuthWithOrg();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -448,4 +448,6 @@ export async function DELETE(request: NextRequest) {
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
+
+
 

@@ -6,8 +6,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/capstones - List capstone submissions
 export async function GET(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
         let query = db
             .select()
             .from(capstoneSubmissions)
-            .where(eq(capstoneSubmissions.userId, userId));
+            .where(eq(capstoneSubmissions.personId, personId));
 
         if (status) {
             // The schema uses 'under_review' not 'in_review'
@@ -41,8 +41,8 @@ export async function GET(request: NextRequest) {
 
 // POST /api/capstones - Create capstone submission
 export async function POST(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -68,4 +68,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create capstone' }, { status: 500 });
     }
 }
+
+
 

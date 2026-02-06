@@ -6,8 +6,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/prompts - List prompts
 export async function GET(request: NextRequest) {
-    const { userId, orgId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
         // Also filter by user's own prompts or shared prompts
         // For now, return user's prompts and public prompts
         if (!lessonId && !taskId && !courseId) {
-            conditions.push(eq(prompts.userId, userId));
+            conditions.push(eq(prompts.personId, personId));
         }
 
         const result = await db
@@ -54,8 +54,8 @@ export async function GET(request: NextRequest) {
 
 // POST /api/prompts - Create prompt
 export async function POST(request: NextRequest) {
-    const { userId, orgId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -85,4 +85,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create prompt' }, { status: 500 });
     }
 }
+
+
 

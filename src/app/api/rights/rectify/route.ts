@@ -3,8 +3,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 
 // POST /api/rights/rectify - Request data correction (LGPD right of rectification)
 export async function POST(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -51,4 +51,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to submit rectification' }, { status: 500 });
     }
 }
+
+
 

@@ -6,8 +6,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/auditor/alerts - List alerts with filtering (for auditors)
 export async function GET(request: NextRequest) {
-    const { userId, orgId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -44,4 +44,6 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to fetch alerts' }, { status: 500 });
     }
 }
+
+
 

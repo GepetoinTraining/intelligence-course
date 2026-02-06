@@ -24,9 +24,9 @@ interface ExportQuery {
 // GET /api/export?report=journal-entries&startDate=2026-01-01&endDate=2026-01-31
 export async function GET(request: NextRequest) {
     try {
-        const { userId, orgId } = await getApiAuthWithOrg();
+        const { personId, orgId } = await getApiAuthWithOrg();
 
-        if (!userId || !orgId) {
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -241,4 +241,6 @@ export async function GET(request: NextRequest) {
         }, { status: 500 });
     }
 }
+
+
 

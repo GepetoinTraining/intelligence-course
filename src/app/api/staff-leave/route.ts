@@ -6,8 +6,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/staff-leave - List leave requests
 export async function GET(request: NextRequest) {
-    const { userId, orgId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -98,4 +98,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create staff leave' }, { status: 500 });
     }
 }
+
+
 

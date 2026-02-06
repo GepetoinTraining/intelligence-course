@@ -6,8 +6,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/products - List products
 export async function GET(request: NextRequest) {
-    const { userId, orgId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -39,8 +39,8 @@ export async function GET(request: NextRequest) {
 
 // POST /api/products - Create product
 export async function POST(request: NextRequest) {
-    const { userId, orgId } = await getApiAuthWithOrg();
-    if (!userId || !orgId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized - organization required' }, { status: 401 });
     }
 
@@ -69,4 +69,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create product' }, { status: 500 });
     }
 }
+
+
 

@@ -7,8 +7,8 @@ import { eq, and, desc } from 'drizzle-orm';
 // GET /api/memory/ledger - Get ledger entries (critical memories)
 export async function GET(req: NextRequest) {
     try {
-        const { userId } = await getApiAuthWithOrg();
-        if (!userId) {
+        const { personId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, { status: 401 });
         }
 
@@ -61,8 +61,8 @@ export async function GET(req: NextRequest) {
 // POST /api/memory/ledger - Add a new ledger entry (critical memory)
 export async function POST(req: NextRequest) {
     try {
-        const { userId } = await getApiAuthWithOrg();
-        if (!userId) {
+        const { personId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, { status: 401 });
         }
 
@@ -142,4 +142,6 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to create ledger entry' } }, { status: 500 });
     }
 }
+
+
 

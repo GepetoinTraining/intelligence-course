@@ -205,9 +205,9 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { userId, module, canCreate, canRead, canUpdate, canDelete, reason } = body;
+        const { personId, module, canCreate, canRead, canUpdate, canDelete, reason } = body;
 
-        if (!userId || !module) {
+        if (!personId || !module) {
             return NextResponse.json({ error: 'userId and module are required' }, { status: 400 });
         }
 
@@ -239,7 +239,7 @@ export async function POST(request: NextRequest) {
             // Remove override if it exists
             await db.delete(userPermissions).where(
                 and(
-                    eq(userPermissions.userId, userId),
+                    eq(userPermissions.personId, personId),
                     eq(userPermissions.module, module)
                 )
             );
@@ -252,7 +252,7 @@ export async function POST(request: NextRequest) {
 
         // Upsert the permission override
         const existing = await db.select().from(userPermissions)
-            .where(and(eq(userPermissions.userId, userId), eq(userPermissions.module, module)))
+            .where(and(eq(userPermissions.personId, personId), eq(userPermissions.module, module)))
             .limit(1);
 
         if (existing.length > 0) {
@@ -323,4 +323,6 @@ export async function DELETE(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to reset permissions' }, { status: 500 });
     }
 }
+
+
 

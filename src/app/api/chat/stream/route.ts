@@ -4,8 +4,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 // POST /api/chat/stream - Streaming chat response
 // Note: This is a placeholder for SSE streaming implementation
 export async function POST(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -50,4 +50,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to stream' }, { status: 500 });
     }
 }
+
+
 

@@ -6,8 +6,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/workshops - List workshop problems
 export async function GET(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
 
     try {
-        const conditions = [eq(problemWorkshops.userId, userId)];
+        const conditions = [eq(problemWorkshops.personId, personId)];
 
         if (status) {
             conditions.push(eq(problemWorkshops.status, status as 'draft' | 'in_progress' | 'complete'));
@@ -38,8 +38,8 @@ export async function GET(request: NextRequest) {
 
 // POST /api/workshops - Create workshop problem
 export async function POST(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -69,4 +69,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create workshop' }, { status: 500 });
     }
 }
+
+
 

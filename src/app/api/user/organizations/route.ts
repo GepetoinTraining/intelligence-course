@@ -17,7 +17,7 @@ export const ACTIVE_ORG_COOKIE = 'nodezero_active_org';
 export async function GET() {
     try {
         const { userId } = await auth();
-        if (!userId) {
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -113,7 +113,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
     try {
         const { userId } = await auth();
-        if (!userId) {
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -172,3 +172,5 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to switch organization' }, { status: 500 });
     }
 }
+
+

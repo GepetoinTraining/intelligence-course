@@ -6,8 +6,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/todos - List todo items
 export async function GET(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '100');
 
     try {
-        const conditions = [eq(todoItems.userId, userId)];
+        const conditions = [eq(todoItems.personId, personId)];
 
         if (status) {
             const validStatus = status === 'pending' ? 'active' : status === 'in_progress' ? 'active' : status;
@@ -39,8 +39,8 @@ export async function GET(request: NextRequest) {
 
 // POST /api/todos - Create todo item
 export async function POST(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -70,4 +70,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create todo' }, { status: 500 });
     }
 }
+
+
 

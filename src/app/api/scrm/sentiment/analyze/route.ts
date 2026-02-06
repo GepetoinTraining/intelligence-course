@@ -22,8 +22,8 @@ const analyzeSchema = z.object({
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId, orgId } = await getApiAuthWithOrg();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -152,8 +152,8 @@ Return ONLY the JSON.`;
 
 export async function GET(request: NextRequest) {
     try {
-        const { userId, orgId } = await getApiAuthWithOrg();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -255,8 +255,8 @@ const manualUpdateSchema = z.object({
 
 export async function PUT(request: NextRequest) {
     try {
-        const { userId, orgId } = await getApiAuthWithOrg();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -311,4 +311,6 @@ export async function PUT(request: NextRequest) {
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
+
+
 

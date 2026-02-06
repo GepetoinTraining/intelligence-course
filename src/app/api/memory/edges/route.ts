@@ -7,8 +7,8 @@ import { eq, and, or, sql } from 'drizzle-orm';
 // GET /api/memory/edges - Get edges for current user's graph
 export async function GET(req: NextRequest) {
     try {
-        const { userId } = await getApiAuthWithOrg();
-        if (!userId) {
+        const { personId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, { status: 401 });
         }
 
@@ -67,8 +67,8 @@ export async function GET(req: NextRequest) {
 // POST /api/memory/edges - Create a new edge between nodes
 export async function POST(req: NextRequest) {
     try {
-        const { userId } = await getApiAuthWithOrg();
-        if (!userId) {
+        const { personId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, { status: 401 });
         }
 
@@ -155,8 +155,8 @@ export async function POST(req: NextRequest) {
 // DELETE /api/memory/edges?id=xxx - Delete an edge
 export async function DELETE(req: NextRequest) {
     try {
-        const { userId } = await getApiAuthWithOrg();
-        if (!userId) {
+        const { personId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, { status: 401 });
         }
 
@@ -223,4 +223,6 @@ export async function DELETE(req: NextRequest) {
         return NextResponse.json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to delete memory edge' } }, { status: 500 });
     }
 }
+
+
 

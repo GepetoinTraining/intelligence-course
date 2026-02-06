@@ -6,8 +6,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/techniques - List technique usage
 export async function GET(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
 
     try {
-        const conditions = [eq(techniqueUsage.userId, userId)];
+        const conditions = [eq(techniqueUsage.personId, personId)];
 
         if (technique) {
             conditions.push(eq(techniqueUsage.technique, technique as any));
@@ -38,8 +38,8 @@ export async function GET(request: NextRequest) {
 
 // POST /api/techniques - Record technique usage
 export async function POST(request: NextRequest) {
-    const { userId } = await getApiAuthWithOrg();
-    if (!userId) {
+    const { personId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -64,4 +64,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to record technique' }, { status: 500 });
     }
 }
+
+
 
