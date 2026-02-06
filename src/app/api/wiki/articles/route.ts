@@ -34,18 +34,18 @@ const ListArticlesSchema = z.object({
 
 export async function GET(request: NextRequest) {
     try {
-        const { userId } = await getApiAuthWithOrg();
+        const { userId, orgId: organizationId } = await getApiAuthWithOrg();
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        if (!organizationId) {
+            return NextResponse.json({ error: 'No organization context' }, { status: 400 });
         }
 
         const user = await db.query.users.findFirst({
             where: eq(users.id, userId),
         });
-
-        if (!user?.organizationId) {
-            return NextResponse.json({ error: 'No organization' }, { status: 400 });
-        }
 
         const { searchParams } = new URL(request.url);
         const params = ListArticlesSchema.parse({
@@ -58,8 +58,9 @@ export async function GET(request: NextRequest) {
 
         // Build conditions
         const conditions: any[] = [
-            eq(wikiArticles.organizationId, user.organizationId),
+            eq(wikiArticles.organizationId, organizationId),
         ];
+
 
         if (params.categoryId) {
             conditions.push(eq(wikiArticles.categoryId, params.categoryId));
@@ -69,10 +70,11 @@ export async function GET(request: NextRequest) {
             conditions.push(eq(wikiArticles.status, params.status));
         } else {
             // Default: show published to regular users, all to staff+
-            if (!['staff', 'school', 'owner'].includes(user.role || '')) {
+            if (!['staff', 'school', 'owner'].includes(user?.role || '')) {
                 conditions.push(eq(wikiArticles.status, 'published'));
             }
         }
+
 
         if (params.search) {
             const searchTerm = `%${params.search}%`;
@@ -128,23 +130,24 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId } = await getApiAuthWithOrg();
+        const { userId, orgId: organizationId } = await getApiAuthWithOrg();
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        if (!organizationId) {
+            return NextResponse.json({ error: 'No organization context' }, { status: 400 });
         }
 
         const user = await db.query.users.findFirst({
             where: eq(users.id, userId),
         });
 
-        if (!user?.organizationId) {
-            return NextResponse.json({ error: 'No organization' }, { status: 400 });
-        }
-
         // Check permission (staff+ can create articles)
-        if (!['staff', 'school', 'owner'].includes(user.role || '')) {
+        if (!['staff', 'school', 'owner'].includes(user?.role || '')) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
+
 
         const body = await request.json();
         const validation = CreateArticleSchema.safeParse(body);
@@ -161,7 +164,7 @@ export async function POST(request: NextRequest) {
         // Check slug uniqueness
         const existing = await db.query.wikiArticles.findFirst({
             where: and(
-                eq(wikiArticles.organizationId, user.organizationId),
+                eq(wikiArticles.organizationId, organizationId),
                 eq(wikiArticles.slug, data.slug)
             ),
         });
@@ -174,7 +177,8 @@ export async function POST(request: NextRequest) {
         const status = data.status || 'draft';
 
         const [article] = await db.insert(wikiArticles).values({
-            organizationId: user.organizationId,
+            organizationId: organizationId,
+
             categoryId: data.categoryId,
             title: data.title,
             slug: data.slug,
