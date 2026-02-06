@@ -13574,8 +13574,106 @@ export const permissionAuditLog = sqliteTable('permission_audit_log', {
 ]);
 
 // ============================================================================
+// DRAFTS: Auto-save infrastructure
+// ============================================================================
+
+/**
+ * Drafts - Stores work-in-progress content to prevent data loss
+ * 
+ * Used by: wiki editor, anunciação writer, any long-form content creation
+ */
+export const drafts = sqliteTable('drafts', {
+    id: text('id').primaryKey().default(uuid()),
+    userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+    organizationId: text('organization_id').notNull().references(() => organizations.id),
+
+    // What type of content
+    type: text('type', {
+        enum: ['wiki_article', 'anunciacao', 'procedure', 'sop', 'other']
+    }).notNull(),
+
+    // Reference to the parent item (e.g., team_id for anunciacao, article_id for wiki)
+    referenceId: text('reference_id'),
+
+    // The draft content as JSON
+    content: text('content').notNull(),  // JSON blob with all fields
+
+    createdAt: integer('created_at').default(timestamp()),
+    updatedAt: integer('updated_at').default(timestamp()),
+}, (table) => [
+    uniqueIndex('idx_drafts_unique').on(table.userId, table.type, table.referenceId),
+    index('idx_drafts_user').on(table.userId),
+    index('idx_drafts_org').on(table.organizationId),
+]);
+
+// ============================================================================
+// ANUNCIAÇÃO: Team Leadership Declaration System
+// ============================================================================
+
+/**
+ * Org Anunciação Settings - Feature toggle and configuration per org
+ */
+export const orgAnunciacaoSettings = sqliteTable('org_anunciacao_settings', {
+    orgId: text('org_id').primaryKey().references(() => organizations.id, { onDelete: 'cascade' }),
+
+    enabled: integer('enabled').default(0),
+    requiredForTeamAccess: integer('required_for_team_access').default(1),
+    visibility: text('visibility', { enum: ['org_wide', 'leadership_only'] }).default('org_wide'),
+    aiModelPreference: text('ai_model_preference').default('claude-sonnet-4-20250514'),
+
+    createdAt: integer('created_at').default(timestamp()),
+    updatedAt: integer('updated_at').default(timestamp()),
+});
+
+/**
+ * Anunciações - Team leadership declaration documents
+ * 
+ * Each team leader writes a personal declaration (first 3 quarters)
+ * AI writes the 4th quarter from its perspective about the collaboration
+ * When a leader leaves, their anunciação is "enshrined" with tenure stats
+ */
+export const anunciacoes = sqliteTable('anunciacoes', {
+    id: text('id').primaryKey().default(uuid()),
+    organizationId: text('organization_id').notNull().references(() => organizations.id),
+    teamId: text('team_id').notNull().references(() => teams.id),
+    authorPersonId: text('author_person_id').notNull().references(() => persons.id),
+
+    // Content (markdown)
+    quarter1Content: text('quarter_1_content'),      // "Who I Am"
+    quarter2Content: text('quarter_2_content'),      // "What I Believe"
+    quarter3Content: text('quarter_3_content'),      // "What I'm Building"
+    quarter4AiContent: text('quarter_4_ai_content'), // AI-generated
+    closingContent: text('closing_content'),         // Optional human closing
+
+    // AI generation metadata
+    aiModelUsed: text('ai_model_used'),
+    aiQuarterEdited: integer('ai_quarter_edited').default(0),
+    aiQuarterRegenerations: integer('ai_quarter_regenerations').default(0),
+
+    // Lifecycle: draft → active → enshrined
+    status: text('status', { enum: ['draft', 'active', 'enshrined'] }).default('draft'),
+
+    // Tenure tracking (populated on enshrine)
+    tenureStartedAt: integer('tenure_started_at'),
+    tenureEndedAt: integer('tenure_ended_at'),
+    tenureStats: text('tenure_stats'),  // JSON from procedures map
+
+    // Timestamps
+    createdAt: integer('created_at').default(timestamp()),
+    publishedAt: integer('published_at'),
+    enshrinedAt: integer('enshrined_at'),
+    updatedAt: integer('updated_at').default(timestamp()),
+}, (table) => [
+    index('idx_anunciacoes_org').on(table.organizationId),
+    index('idx_anunciacoes_team').on(table.teamId),
+    index('idx_anunciacoes_author').on(table.authorPersonId),
+    index('idx_anunciacoes_status').on(table.status),
+]);
+
+// ============================================================================
 // TYPE EXPORTS - Team & Role Management
 // ============================================================================
+
 
 export type Team = typeof teams.$inferSelect;
 export type TeamInsert = typeof teams.$inferInsert;
