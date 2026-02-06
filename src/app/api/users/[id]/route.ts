@@ -2,16 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users, persons, organizationMemberships } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { getApiAuthWithOrg } from '@/lib/auth';
+import { getApiAuth, getApiAuthWithOrg } from '@/lib/auth';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
 }
 
 // GET /api/users/[id] - Get single user
+// NOTE: Uses getApiAuth() (not getApiAuthWithOrg) because this is the
+// bootstrap endpoint that useUser calls to establish identity.
+// Using getApiAuthWithOrg would create a circular dependency:
+// useUser needs user data → API needs org → org needs user data → loop
 export async function GET(request: NextRequest, { params }: RouteParams) {
-    const { personId, orgId } = await getApiAuthWithOrg();
-    if (!personId) {
+    const auth = await getApiAuth();
+    if (!auth.clerkUserId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -40,14 +44,42 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
+        // Resolve orgId: cookie > clerk > first active membership
+        let orgId: string | null = null;
+
+        // Try cookie first
+        try {
+            const { cookies } = await import('next/headers');
+            const cookieStore = await cookies();
+            orgId = cookieStore.get('nodezero_active_org')?.value || null;
+        } catch { }
+
+        // Fall back to Clerk orgId
+        if (!orgId) {
+            orgId = auth.orgId;
+        }
+
+        // Fall back to first active membership
+        if (!orgId && result[0].personId) {
+            const firstMembership = await db
+                .select({ organizationId: organizationMemberships.organizationId })
+                .from(organizationMemberships)
+                .where(and(
+                    eq(organizationMemberships.personId, result[0].personId),
+                    eq(organizationMemberships.status, 'active')
+                ))
+                .limit(1);
+            orgId = firstMembership[0]?.organizationId || null;
+        }
+
         // Get role from organizationMemberships
         let role = 'student'; // default
-        if (orgId) {
+        if (orgId && result[0].personId) {
             const [membership] = await db
                 .select({ role: organizationMemberships.role })
                 .from(organizationMemberships)
                 .where(and(
-                    eq(organizationMemberships.personId, result[0].personId!),
+                    eq(organizationMemberships.personId, result[0].personId),
                     eq(organizationMemberships.organizationId, orgId)
                 ))
                 .limit(1);
