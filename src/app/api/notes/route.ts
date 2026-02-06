@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
 
         // Get user name for activity feed
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
             columns: { name: true },
         });
 
@@ -101,13 +101,13 @@ export async function POST(request: NextRequest) {
             content,
             noteType: noteType || 'general',
             isPrivate: isPrivate || false,
-            createdBy: userId,
+            createdBy: personId,
         }).returning();
 
         // Log to activity feed
         await db.insert(activityFeed).values({
             organizationId: orgId,
-            actorId: userId,
+            actorId: personId,
             actorName: user?.name || 'Unknown',
             action: 'note_created',
             entityType,

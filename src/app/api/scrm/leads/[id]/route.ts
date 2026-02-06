@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import {
     leads,
@@ -24,8 +24,8 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userId, orgId } = await auth();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -159,8 +159,8 @@ export async function PUT(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userId, orgId } = await auth();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -228,7 +228,7 @@ export async function PUT(
                 stage: validated.funnelStage,
                 funnelSegment: getFunnelSegment(validated.funnelStage),
                 previousStage: current.funnelStage,
-                changedBy: userId,
+                changedBy: personId,
                 changedAt: now,
             });
         }
@@ -240,7 +240,7 @@ export async function PUT(
                 sentiment: validated.currentSentiment,
                 source: 'user_observation',
                 context: validated.sentimentReason,
-                analyzedBy: userId,
+                analyzedBy: personId,
                 analyzedAt: now,
             });
         }
@@ -269,8 +269,8 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userId, orgId } = await auth();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -307,7 +307,7 @@ export async function DELETE(
             stage: 'lost',
             funnelSegment: 'outcome',
             reason: 'Archived by user',
-            changedBy: userId,
+            changedBy: personId,
             changedAt: now,
         });
 

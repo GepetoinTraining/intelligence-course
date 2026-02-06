@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { enrollments } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -10,8 +10,8 @@ interface RouteParams {
 
 // POST /api/enrollments/[id]/transfer - Transfer student to another class
 export async function POST(request: NextRequest, { params }: RouteParams) {
-    const { userId, orgId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         // Create new enrollment
         const newEnrollment = await db.insert(enrollments).values({
             organizationId: existing[0].organizationId,
-            userId: existing[0].userId,
+            personId: existing[0].personId,
             classId: body.newClassId,
             termId: body.termId || existing[0].termId,
             leadId: existing[0].leadId,

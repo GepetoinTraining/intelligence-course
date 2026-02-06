@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import {
     teamMembers,
@@ -29,8 +29,8 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userId, orgId } = await auth();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -92,7 +92,7 @@ export async function PUT(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userId: authUserId, orgId } = await auth();
+        const { personId: authUserId, orgId } = await getApiAuthWithOrg();
         if (!authUserId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -160,7 +160,7 @@ export async function PUT(
                 id: randomUUID(),
                 organizationId: orgId,
                 action: 'modify',
-                targetUserId: currentMember.userId,
+                targetUserId: currentMember.personId,
                 targetPositionId: validated.positionId,
                 previousValue: JSON.stringify({
                     positionId: oldPositionId,
@@ -181,7 +181,7 @@ export async function PUT(
             .select({
                 id: teamMembers.id,
                 teamId: teamMembers.teamId,
-                userId: teamMembers.userId,
+                personId: teamMembers.personId,
                 positionId: teamMembers.positionId,
                 memberRole: teamMembers.memberRole,
                 allocation: teamMembers.allocation,
@@ -214,7 +214,7 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userId: authUserId, orgId } = await auth();
+        const { personId: authUserId, orgId } = await getApiAuthWithOrg();
         if (!authUserId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -247,7 +247,7 @@ export async function DELETE(
             id: randomUUID(),
             organizationId: orgId,
             action: 'revoke',
-            targetUserId: member.userId,
+            targetUserId: member.personId,
             targetPositionId: member.positionId,
             previousValue: JSON.stringify({ teamId: member.teamId }),
             performedBy: authUserId,

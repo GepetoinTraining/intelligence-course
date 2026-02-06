@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { capstoneSubmissions } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -10,8 +10,8 @@ interface RouteParams {
 
 // GET /api/capstones/[id]
 export async function GET(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         }
 
         // Authorization check - must be owner or reviewer
-        if (result[0].userId !== userId && result[0].gradedBy !== userId) {
+        if (result[0].personId !== personId && result[0].gradedBy !== personId) {
             return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
         }
 
@@ -42,8 +42,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 // PATCH /api/capstones/[id]
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -68,7 +68,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         const updated = await db
             .update(capstoneSubmissions)
             .set(updateData)
-            .where(and(eq(capstoneSubmissions.id, id), eq(capstoneSubmissions.userId, userId)))
+            .where(and(eq(capstoneSubmissions.id, id), eq(capstoneSubmissions.personId, personId)))
             .returning();
 
         if (updated.length === 0) {
@@ -84,8 +84,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 // DELETE /api/capstones/[id]
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -94,7 +94,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     try {
         const deleted = await db
             .delete(capstoneSubmissions)
-            .where(and(eq(capstoneSubmissions.id, id), eq(capstoneSubmissions.userId, userId)))
+            .where(and(eq(capstoneSubmissions.id, id), eq(capstoneSubmissions.personId, personId)))
             .returning();
 
         if (deleted.length === 0) {

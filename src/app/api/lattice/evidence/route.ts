@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
         // Validate and capture
         const validated = EvidenceCreateSchema.parse({
             ...body,
-            personId: body.personId || userId, // Default to current user
+            personId: body.personId || personId, // Default to current user
         });
 
         const evidenceId = await captureEvidence(validated);
@@ -69,14 +69,14 @@ export async function GET(request: NextRequest) {
 
         // Check if requesting stats
         if (searchParams.get('stats') === 'true') {
-            const personId = searchParams.get('personId') || userId;
-            const stats = await getEvidenceStats(personId);
+            const targetPersonId = searchParams.get('personId') || personId;
+            const stats = await getEvidenceStats(targetPersonId);
             return NextResponse.json({ data: stats });
         }
 
         // Parse query params
         const query = EvidenceQuerySchema.parse({
-            personId: searchParams.get('personId') || userId,
+            personId: searchParams.get('personId') || personId,
             organizationId: searchParams.get('organizationId'),
             sourceType: searchParams.get('sourceType'),
             status: searchParams.get('status') || 'active',

@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
         }
 
         const newEntry = await db.insert(graveyardEntries).values({
-            userId,
+            personId,
             runId,
             characterName,
             causeOfDeath,

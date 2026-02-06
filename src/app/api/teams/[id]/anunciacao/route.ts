@@ -21,9 +21,9 @@ export async function GET(
 ) {
     try {
         const { id: teamId } = await params;
-        const { userId, orgId: organizationId } = await getApiAuthWithOrg();
+        const { personId, orgId: organizationId } = await getApiAuthWithOrg();
 
-        if (!userId || !organizationId) {
+        if (!personId || !organizationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -54,14 +54,14 @@ export async function GET(
 
         // Get the current user's record
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
         });
 
         // Check if user is a team leader (memberRole = 'owner' or 'lead')
         const isLeader = await db.query.teamMembers.findFirst({
             where: and(
                 eq(teamMembers.teamId, teamId),
-                eq(teamMembers.userId, userId),
+                eq(teamMembers.personId, personId),
                 or(
                     eq(teamMembers.memberRole, 'owner'),
                     eq(teamMembers.memberRole, 'lead')
@@ -121,15 +121,15 @@ export async function POST(
 ) {
     try {
         const { id: teamId } = await params;
-        const { userId, orgId: organizationId } = await getApiAuthWithOrg();
+        const { personId, orgId: organizationId } = await getApiAuthWithOrg();
 
-        if (!userId || !organizationId) {
+        if (!personId || !organizationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         // Get user's person record
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
         });
 
         if (!user?.personId) {
@@ -140,7 +140,7 @@ export async function POST(
         const membership = await db.query.teamMembers.findFirst({
             where: and(
                 eq(teamMembers.teamId, teamId),
-                eq(teamMembers.userId, userId),
+                eq(teamMembers.personId, personId),
                 or(
                     eq(teamMembers.memberRole, 'owner'),
                     eq(teamMembers.memberRole, 'lead')
@@ -197,9 +197,9 @@ export async function PATCH(
 ) {
     try {
         const { id: teamId } = await params;
-        const { userId, orgId: organizationId } = await getApiAuthWithOrg();
+        const { personId, orgId: organizationId } = await getApiAuthWithOrg();
 
-        if (!userId || !organizationId) {
+        if (!personId || !organizationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -209,7 +209,7 @@ export async function PATCH(
 
         // Get user's person record
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
         });
 
         if (!user?.personId) {

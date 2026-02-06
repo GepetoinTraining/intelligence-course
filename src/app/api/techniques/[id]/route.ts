@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { techniqueUsage } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -10,8 +10,8 @@ interface RouteParams {
 
 // GET /api/techniques/[id]
 export async function GET(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         const result = await db
             .select()
             .from(techniqueUsage)
-            .where(and(eq(techniqueUsage.id, id), eq(techniqueUsage.userId, userId)))
+            .where(and(eq(techniqueUsage.id, id), eq(techniqueUsage.personId, personId)))
             .limit(1);
 
         if (result.length === 0) {
@@ -37,8 +37,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 // PATCH /api/techniques/[id] - Update effectiveness or notes
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -56,7 +56,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         const updated = await db
             .update(techniqueUsage)
             .set(updateData)
-            .where(and(eq(techniqueUsage.id, id), eq(techniqueUsage.userId, userId)))
+            .where(and(eq(techniqueUsage.id, id), eq(techniqueUsage.personId, personId)))
             .returning();
 
         if (updated.length === 0) {
@@ -72,8 +72,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 // DELETE /api/techniques/[id]
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -82,7 +82,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     try {
         const deleted = await db
             .delete(techniqueUsage)
-            .where(and(eq(techniqueUsage.id, id), eq(techniqueUsage.userId, userId)))
+            .where(and(eq(techniqueUsage.id, id), eq(techniqueUsage.personId, personId)))
             .returning();
 
         if (deleted.length === 0) {

@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const payrollId = searchParams.get('payrollId');
-    const staffUserId = searchParams.get('userId');
+    const staffUserId = searchParams.get('personId');
     const status = searchParams.get('status');
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
         }
 
         if (staffUserId) {
-            conditions.push(eq(payrollPayments.userId, staffUserId));
+            conditions.push(eq(payrollPayments.personId, staffUserId));
         }
 
         if (status) {
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/payroll-payments - Create a payment (supports split payments)
 export async function POST(request: NextRequest) {
-    const { userId: authUserId } = await getApiAuthWithOrg();
+    const { personId: authUserId } = await getApiAuthWithOrg();
     if (!authUserId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
         // Create the payment
         const newPayment = await db.insert(payrollPayments).values({
             payrollId: body.payrollId,
-            userId: payrollRecord.userId,
+            personId: payrollRecord.personId,
             paymentMethodId: body.paymentMethodId,
             amountCents: body.amountCents,
             currency: body.currency || 'BRL',

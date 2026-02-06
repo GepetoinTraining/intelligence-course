@@ -15,7 +15,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { users, conversationParticipants, conversations } from '@/lib/db/schema';
+import { users, conversationParticipants, conversations, organizationMemberships, persons } from '@/lib/db/schema';
 import { eq, and, inArray, ne, isNull } from 'drizzle-orm';
 
 // Role hierarchy for contact visibility - maps user role to visible roles
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
 
         // 1. Always add Synapse (AI companion) first
         contacts.push({
-            id: `synapse-${userId}`,
+            id: `synapse-${personId}`,
             name: 'Synapse',
             email: null,
             avatarUrl: null,
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
             organizationId: organizationMemberships.organizationId,
         })
             .from(users)
-            .where(eq(users.id, userId))
+            .where(eq(users.id, personId))
             .limit(1);
 
         // If user not found or no org, just return Synapse
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
                 .from(users)
                 .where(and(
                     eq(organizationMemberships.organizationId, orgId),
-                    ne(users.id, userId), // Exclude self
+                    ne(users.id, personId), // Exclude self
                     isNull(users.archivedAt) // Only active users
                 ))
                 .orderBy(persons.firstName)
@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
                 if (!visibleRoles.includes(contact.role as any)) continue;
 
                 // Count conversations with this contact
-                const convCount = await getConversationCount(userId, contact.id);
+                const convCount = await getConversationCount(personId, contact.id);
 
                 contacts.push({
                     id: contact.id,
@@ -167,7 +167,7 @@ async function getConversationCount(userId1: string, userId2: string): Promise<n
         // Get conversations where both users are participants
         const user1Convs = await db.select({ conversationId: conversationParticipants.conversationId })
             .from(conversationParticipants)
-            .where(eq(conversationParticipants.userId, userId1));
+            .where(eq(conversationParticipants.personId, userId1));
 
         if (user1Convs.length === 0) return 0;
 
@@ -176,7 +176,7 @@ async function getConversationCount(userId1: string, userId2: string): Promise<n
         const sharedConvs = await db.select({ id: conversationParticipants.conversationId })
             .from(conversationParticipants)
             .where(and(
-                eq(conversationParticipants.userId, userId2),
+                eq(conversationParticipants.personId, userId2),
                 inArray(conversationParticipants.conversationId, convIds)
             ));
 

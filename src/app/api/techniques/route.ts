@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
         }
 
         const newUsage = await db.insert(techniqueUsage).values({
-            userId,
+            personId,
             runId,
             technique,
             heldCharacter: heldCharacter ? 1 : 0,

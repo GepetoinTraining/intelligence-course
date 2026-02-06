@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { staffPayroll, payrollPayments } from '@/lib/db/schema';
 import { eq, and, sum } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -10,8 +10,8 @@ interface RouteParams {
 
 // GET /api/staff-payroll/[id]
 export async function GET(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -48,8 +48,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 // PATCH /api/staff-payroll/[id] - Update payroll (status, amounts, approval)
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -79,7 +79,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             updateData.status = body.status;
 
             if (body.status === 'approved') {
-                updateData.approvedBy = userId;
+                updateData.approvedBy = personId;
                 updateData.approvedAt = Date.now();
             } else if (body.status === 'paid') {
                 updateData.paidAt = Date.now();
@@ -110,8 +110,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 // DELETE /api/staff-payroll/[id] - Cancel payroll
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

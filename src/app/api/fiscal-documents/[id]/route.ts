@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { fiscalDocuments, taxWithholdings } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -10,8 +10,8 @@ interface RouteParams {
 
 // GET /api/fiscal-documents/[id]
 export async function GET(request: NextRequest, { params }: RouteParams) {
-    const { userId, orgId } = await auth();
-    if (!userId || !orgId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -53,8 +53,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 // PATCH /api/fiscal-documents/[id] - Update status or add integration info
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
-    const { userId, orgId } = await auth();
-    if (!userId || !orgId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -113,8 +113,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 // DELETE /api/fiscal-documents/[id] - Cancel document (cannot truly delete fiscal docs)
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
-    const { userId, orgId } = await auth();
-    if (!userId || !orgId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

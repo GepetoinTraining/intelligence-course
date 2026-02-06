@@ -12,12 +12,12 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams;
-    const targetUserId = searchParams.get('userId') || userId;
+    const targetUserId = searchParams.get('personId') || personId;
     const methodType = searchParams.get('type');
     const activeOnly = searchParams.get('activeOnly') !== 'false';
 
     try {
-        const conditions = [eq(paymentMethods.userId, targetUserId)];
+        const conditions = [eq(paymentMethods.personId, targetUserId)];
 
         if (methodType) {
             conditions.push(eq(paymentMethods.methodType, methodType as any));
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
         const result = await db
             .select({
                 id: paymentMethods.id,
-                userId: paymentMethods.userId,
+                personId: paymentMethods.personId,
                 methodType: paymentMethods.methodType,
                 label: paymentMethods.label,
                 isDefault: paymentMethods.isDefault,
@@ -61,20 +61,20 @@ export async function GET(request: NextRequest) {
 
 // POST /api/payment-methods - Register a new payment method
 export async function POST(request: NextRequest) {
-    const { userId: authUserId, orgId } = await getApiAuthWithOrg();
+    const { personId: authUserId, orgId } = await getApiAuthWithOrg();
     if (!authUserId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     try {
         const body = await request.json();
-        const targetUserId = body.userId || authUserId;
+        const targetUserId = body.personId || authUserId;
 
         // If this is the first method for user, make it default
         const existingMethods = await db
             .select({ id: paymentMethods.id })
             .from(paymentMethods)
-            .where(eq(paymentMethods.userId, targetUserId))
+            .where(eq(paymentMethods.personId, targetUserId))
             .limit(1);
 
         const isDefault = existingMethods.length === 0 ? 1 : (body.isDefault ? 1 : 0);
@@ -84,11 +84,11 @@ export async function POST(request: NextRequest) {
             await db
                 .update(paymentMethods)
                 .set({ isDefault: 0, updatedAt: Date.now() })
-                .where(eq(paymentMethods.userId, targetUserId));
+                .where(eq(paymentMethods.personId, targetUserId));
         }
 
         const newMethod = await db.insert(paymentMethods).values({
-            userId: targetUserId,
+            personId: targetUserId,
             organizationId: orgId,
             methodType: body.methodType,
             label: body.label,

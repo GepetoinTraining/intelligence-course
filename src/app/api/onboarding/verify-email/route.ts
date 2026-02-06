@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { users } from '@/lib/db/schema';
+import { users, persons } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 // POST /api/onboarding/verify-email - Email verification

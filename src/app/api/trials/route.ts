@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
         const newTrial = await db.insert(trialClasses).values({
             organizationId: orgId || body.organizationId,
             leadId: body.leadId,
-            userId: body.userId,
+            personId: body.personId,
             classId: body.classId,
             sessionId: body.sessionId,
             scheduledDate: body.scheduledDate,

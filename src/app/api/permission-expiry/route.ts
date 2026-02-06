@@ -6,7 +6,7 @@ import {
     userGroupAssignments,
     permissionGroups,
     actionTypes,
-    users
+    users, persons
 } from '@/lib/db/schema';
 import { eq, and, isNull, lt, gt, gte } from 'drizzle-orm';
 
@@ -16,7 +16,7 @@ const ONE_WEEK_MS = 7 * ONE_DAY_MS;
 interface ExpiringPermission {
     id: string;
     type: 'override' | 'group';
-    userId: string;
+    personId: string;
     userName: string | null;
     personEmail: string | null;
     description: string;
@@ -31,7 +31,7 @@ interface ExpiringPermission {
  * 
  * Query params:
  * - days: Number of days to look ahead (default: 7)
- * - userId: Filter by specific user
+ * - personId: Filter by specific user
  */
 export async function GET(request: NextRequest) {
     try {
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 
         const { searchParams } = new URL(request.url);
         const lookAheadDays = parseInt(searchParams.get('days') || '7', 10);
-        const filterUserId = searchParams.get('userId');
+        const filterUserId = searchParams.get('personId');
 
         const now = Date.now();
         const lookAheadMs = lookAheadDays * ONE_DAY_MS;
@@ -54,24 +54,24 @@ export async function GET(request: NextRequest) {
         const expiringOverrides = await db
             .select({
                 id: userPermissionOverrides.id,
-                userId: userPermissionOverrides.userId,
+                personId: userPermissionOverrides.personId,
                 actionTypeId: userPermissionOverrides.actionTypeId,
                 expiresAt: userPermissionOverrides.expiresAt,
                 scope: userPermissionOverrides.scope,
                 userName: persons.firstName,
-                personEmail: persons.primaryEmail,
+                userEmail: persons.primaryEmail,
                 actionName: actionTypes.name,
                 actionCode: actionTypes.code,
             })
             .from(userPermissionOverrides)
-            .leftJoin(users, eq(userPermissionOverrides.userId, users.id))
+            .leftJoin(persons, eq(userPermissionOverrides.personId, persons.id))
             .leftJoin(actionTypes, eq(userPermissionOverrides.actionTypeId, actionTypes.id))
             .where(and(
                 eq(userPermissionOverrides.isGranted, true),
                 isNull(userPermissionOverrides.revokedAt),
                 gte(userPermissionOverrides.expiresAt, now),
                 lt(userPermissionOverrides.expiresAt, maxExpiry),
-                filterUserId ? eq(userPermissionOverrides.userId, filterUserId) : undefined
+                filterUserId ? eq(userPermissionOverrides.personId, filterUserId) : undefined
             ));
 
         for (const override of expiringOverrides) {
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
             expirations.push({
                 id: override.id,
                 type: 'override',
-                userId: override.userId,
+                personId: override.personId,
                 userName: override.userName,
                 personEmail: override.userEmail,
                 description: `Permission "${override.actionName || override.actionCode}" (${override.scope})`,
@@ -101,20 +101,20 @@ export async function GET(request: NextRequest) {
         const expiringGroupAssignments = await db
             .select({
                 id: userGroupAssignments.id,
-                userId: userGroupAssignments.userId,
+                personId: userGroupAssignments.personId,
                 groupId: userGroupAssignments.groupId,
                 expiresAt: userGroupAssignments.expiresAt,
                 userName: persons.firstName,
-                personEmail: persons.primaryEmail,
+                userEmail: persons.primaryEmail,
                 groupName: permissionGroups.name,
             })
             .from(userGroupAssignments)
-            .leftJoin(users, eq(userGroupAssignments.userId, users.id))
+            .leftJoin(persons, eq(userGroupAssignments.personId, persons.id))
             .leftJoin(permissionGroups, eq(userGroupAssignments.groupId, permissionGroups.id))
             .where(and(
                 gte(userGroupAssignments.expiresAt, now),
                 lt(userGroupAssignments.expiresAt, maxExpiry),
-                filterUserId ? eq(userGroupAssignments.userId, filterUserId) : undefined
+                filterUserId ? eq(userGroupAssignments.personId, filterUserId) : undefined
             ));
 
         for (const assignment of expiringGroupAssignments) {
@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
             expirations.push({
                 id: assignment.id,
                 type: 'group',
-                userId: assignment.userId,
+                personId: assignment.personId,
                 userName: assignment.userName,
                 personEmail: assignment.userEmail,
                 description: `Group "${assignment.groupName}" membership`,

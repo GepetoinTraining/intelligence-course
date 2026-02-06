@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const sessionId = searchParams.get('sessionId');
-    const studentId = searchParams.get('userId');
+    const studentId = searchParams.get('personId');
     const classId = searchParams.get('classId');
     const dateFrom = searchParams.get('dateFrom');
     const dateTo = searchParams.get('dateTo');
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
                     student: users,
                 })
                 .from(attendance)
-                .innerJoin(users, eq(attendance.userId, users.id))
+                .innerJoin(users, eq(attendance.personId, users.id))
                 .where(eq(attendance.sessionId, sessionId));
 
             return NextResponse.json({
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
                 })
                 .from(attendance)
                 .innerJoin(classSessions, eq(attendance.sessionId, classSessions.id))
-                .where(eq(attendance.userId, studentId))
+                .where(eq(attendance.personId, studentId))
                 .orderBy(desc(classSessions.sessionDate));
 
             return NextResponse.json({
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
             });
         }
 
-        return NextResponse.json({ error: 'sessionId or userId required' }, { status: 400 });
+        return NextResponse.json({ error: 'sessionId or personId required' }, { status: 400 });
     } catch (error) {
         console.error('Error fetching attendance:', error);
         return NextResponse.json({ error: 'Failed to fetch attendance' }, { status: 500 });
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
                 .from(attendance)
                 .where(and(
                     eq(attendance.sessionId, sessionId),
-                    eq(attendance.userId, record.userId)
+                    eq(attendance.personId, record.personId)
                 ))
                 .limit(1);
 
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
                         arrivedAt: record.arrivedAt,
                         notes: record.notes,
                         excuseReason: record.excuseReason,
-                        markedBy: userId,
+                        markedBy: personId,
                         markedAt: now,
                     })
                     .where(eq(attendance.id, existing[0].id))
@@ -118,12 +118,12 @@ export async function POST(request: NextRequest) {
                     .insert(attendance)
                     .values({
                         sessionId,
-                        userId: record.userId,
+                        personId: record.personId,
                         status: record.status,
                         arrivedAt: record.arrivedAt,
                         notes: record.notes,
                         excuseReason: record.excuseReason,
-                        markedBy: userId,
+                        markedBy: personId,
                         markedAt: now,
                     })
                     .returning();

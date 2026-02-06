@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
         } else {
             // Insert new
             await db.insert(userApiKeys).values({
-                userId,
+                personId,
                 provider,
                 encryptedKey,
                 keyHint,

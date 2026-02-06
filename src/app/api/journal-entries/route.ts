@@ -139,8 +139,8 @@ export async function POST(request: NextRequest) {
             sourceType: body.sourceType || 'manual',
             sourceId: body.sourceId,
             status: body.autoPost ? 'posted' : 'draft',
-            createdBy: userId,
-            postedBy: body.autoPost ? userId : null,
+            createdBy: personId,
+            postedBy: body.autoPost ? personId : null,
             postedAt: body.autoPost ? Date.now() : null,
         }).returning();
 

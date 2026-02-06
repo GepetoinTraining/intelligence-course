@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
         const user = await db
             .select()
             .from(users)
-            .where(eq(users.id, userId))
+            .where(eq(users.id, personId))
             .limit(1);
 
         if (user.length === 0) {
@@ -47,14 +47,14 @@ export async function PATCH(request: NextRequest) {
             return NextResponse.json({ error: 'addresses must be an array' }, { status: 400 });
         }
 
-        const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+        const user = await db.select().from(users).where(eq(users.id, personId)).limit(1);
         const preferences = JSON.parse(user[0]?.preferences || '{}');
         preferences.addresses = addresses;
 
         await db.update(users).set({
             preferences: JSON.stringify(preferences),
             updatedAt: Math.floor(Date.now() / 1000),
-        }).where(eq(users.id, userId));
+        }).where(eq(users.id, personId));
 
         return NextResponse.json({ data: addresses });
     } catch (error) {

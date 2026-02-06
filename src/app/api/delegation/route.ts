@@ -7,8 +7,7 @@ import {
     teamMembers,
     actionTypes,
     permissionAuditLog,
-    users
-} from '@/lib/db/schema';
+    users, persons } from '@/lib/db/schema';
 import { eq, and, isNull, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
@@ -85,7 +84,7 @@ export async function GET(request: NextRequest) {
         const existingDelegations = await db
             .select({
                 id: userPermissionOverrides.id,
-                targetUserId: userPermissionOverrides.userId,
+                targetUserId: userPermissionOverrides.personId,
                 actionTypeId: userPermissionOverrides.actionTypeId,
                 scope: userPermissionOverrides.scope,
                 isGranted: userPermissionOverrides.isGranted,
@@ -95,9 +94,9 @@ export async function GET(request: NextRequest) {
                 targetpersonEmail: persons.primaryEmail,
             })
             .from(userPermissionOverrides)
-            .leftJoin(users, eq(userPermissionOverrides.userId, users.id))
+            .leftJoin(users, eq(userPermissionOverrides.personId, users.id))
             .where(and(
-                eq(userPermissionOverrides.grantedBy, userId),
+                eq(userPermissionOverrides.grantedBy, personId),
                 eq(userPermissionOverrides.isGranted, true),
                 isNull(userPermissionOverrides.revokedAt)
             ));
@@ -202,7 +201,7 @@ export async function POST(request: NextRequest) {
                 .select()
                 .from(userPermissionOverrides)
                 .where(and(
-                    eq(userPermissionOverrides.userId, targetUserId),
+                    eq(userPermissionOverrides.personId, targetUserId),
                     eq(userPermissionOverrides.actionTypeId, actionTypeId),
                     isNull(userPermissionOverrides.revokedAt)
                 ))
@@ -218,7 +217,7 @@ export async function POST(request: NextRequest) {
                         scope: effectiveScope,
                         isGranted: true,
                         expiresAt: validated.expiresAt || null,
-                        grantedBy: userId,
+                        grantedBy: personId,
                         grantedAt: now,
                         reason: validated.reason,
                     })
@@ -229,11 +228,11 @@ export async function POST(request: NextRequest) {
                 const [newOverride] = await db
                     .insert(userPermissionOverrides)
                     .values({
-                        userId: targetUserId,
+                        personId: targetUserId,
                         actionTypeId,
                         scope: effectiveScope,
                         isGranted: true,
-                        grantedBy: userId,
+                        grantedBy: personId,
                         grantedAt: now,
                         expiresAt: validated.expiresAt || null,
                         reason: validated.reason,
@@ -254,9 +253,9 @@ export async function POST(request: NextRequest) {
                     scope: effectiveScope,
                     expiresAt: validated.expiresAt,
                 }),
-                performedBy: userId,
+                performedBy: personId,
                 performedAt: now,
-                reason: validated.reason || `Delegated by ${userId}`,
+                reason: validated.reason || `Delegated by ${personId}`,
             });
 
             results.push({
@@ -304,7 +303,7 @@ export async function DELETE(request: NextRequest) {
             .from(userPermissionOverrides)
             .where(and(
                 eq(userPermissionOverrides.id, overrideId),
-                eq(userPermissionOverrides.grantedBy, userId)
+                eq(userPermissionOverrides.grantedBy, personId)
             ))
             .limit(1);
 
@@ -321,7 +320,7 @@ export async function DELETE(request: NextRequest) {
             .update(userPermissionOverrides)
             .set({
                 revokedAt: now,
-                revokedBy: userId,
+                revokedBy: personId,
             })
             .where(eq(userPermissionOverrides.id, overrideId));
 
@@ -330,10 +329,10 @@ export async function DELETE(request: NextRequest) {
             id: randomUUID(),
             organizationId: orgId,
             action: 'revoke',
-            targetUserId: override.userId,
+            targetUserId: override.personId,
             actionTypeId: override.actionTypeId,
             previousValue: JSON.stringify(override),
-            performedBy: userId,
+            performedBy: personId,
             performedAt: now,
             reason: 'Delegation revoked by grantor',
         });

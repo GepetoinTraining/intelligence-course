@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
         }
 
         const newPrompt = await db.insert(studentPrompts).values({
-            userId,
+            personId,
             title,
             systemPrompt,
             userMessage,

@@ -4,8 +4,7 @@ import {
     userPermissionOverrides,
     actionTypes,
     users,
-    permissionAuditLog
-} from '@/lib/db/schema';
+    permissionAuditLog, persons, organizationMemberships } from '@/lib/db/schema';
 import { getApiAuthWithOrg } from '@/lib/auth';
 import { eq, and, isNull } from 'drizzle-orm';
 import { z } from 'zod';
@@ -13,7 +12,7 @@ import { randomUUID } from 'crypto';
 
 // Schema for creating/updating user overrides (matches actual DB schema)
 const userOverrideSchema = z.object({
-    userId: z.string(),
+    personId: z.string(),
     actionTypeId: z.string().uuid(),
     isGranted: z.boolean(), // true = grant, false = revoke
     scope: z.enum(['own', 'team', 'department', 'organization', 'global']).optional(),
@@ -25,13 +24,13 @@ const userOverrideSchema = z.object({
 // GET: List user permission overrides
 export async function GET(request: NextRequest) {
     try {
-        const { userId: authUserId, orgId } = await getApiAuthWithOrg();
+        const { personId: authUserId, orgId } = await getApiAuthWithOrg();
         if (!authUserId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const searchParams = request.nextUrl.searchParams;
-        const targetUserId = searchParams.get('userId');
+        const targetUserId = searchParams.get('personId');
 
         // Build query
         let results;
@@ -39,7 +38,7 @@ export async function GET(request: NextRequest) {
             results = await db
                 .select({
                     id: userPermissionOverrides.id,
-                    userId: userPermissionOverrides.userId,
+                    personId: userPermissionOverrides.personId,
                     actionTypeId: userPermissionOverrides.actionTypeId,
                     isGranted: userPermissionOverrides.isGranted,
                     scope: userPermissionOverrides.scope,
@@ -57,7 +56,7 @@ export async function GET(request: NextRequest) {
                 .from(userPermissionOverrides)
                 .leftJoin(actionTypes, eq(userPermissionOverrides.actionTypeId, actionTypes.id))
                 .where(and(
-                    eq(userPermissionOverrides.userId, targetUserId),
+                    eq(userPermissionOverrides.personId, targetUserId),
                     isNull(userPermissionOverrides.revokedAt) // Only active overrides
                 ));
         } else {
@@ -76,7 +75,7 @@ export async function GET(request: NextRequest) {
             results = await db
                 .select({
                     id: userPermissionOverrides.id,
-                    userId: userPermissionOverrides.userId,
+                    personId: userPermissionOverrides.personId,
                     actionTypeId: userPermissionOverrides.actionTypeId,
                     isGranted: userPermissionOverrides.isGranted,
                     scope: userPermissionOverrides.scope,
@@ -93,7 +92,7 @@ export async function GET(request: NextRequest) {
                 })
                 .from(userPermissionOverrides)
                 .leftJoin(actionTypes, eq(userPermissionOverrides.actionTypeId, actionTypes.id))
-                .leftJoin(users, eq(userPermissionOverrides.userId, users.id))
+                .leftJoin(users, eq(userPermissionOverrides.personId, users.id))
                 .where(isNull(userPermissionOverrides.revokedAt));
         }
 
@@ -115,7 +114,7 @@ export async function GET(request: NextRequest) {
 // POST: Create or update a user override
 export async function POST(request: NextRequest) {
     try {
-        const { userId: authUserId, orgId } = await getApiAuthWithOrg();
+        const { personId: authUserId, orgId } = await getApiAuthWithOrg();
         if (!authUserId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -127,7 +126,7 @@ export async function POST(request: NextRequest) {
         const [targetUser] = await db
             .select()
             .from(users)
-            .where(eq(users.id, validated.userId))
+            .where(eq(users.id, validated.personId))
             .limit(1);
 
         if (!targetUser) {
@@ -139,7 +138,7 @@ export async function POST(request: NextRequest) {
             .select()
             .from(userPermissionOverrides)
             .where(and(
-                eq(userPermissionOverrides.userId, validated.userId),
+                eq(userPermissionOverrides.personId, validated.personId),
                 eq(userPermissionOverrides.actionTypeId, validated.actionTypeId),
                 isNull(userPermissionOverrides.revokedAt)
             ))
@@ -161,7 +160,7 @@ export async function POST(request: NextRequest) {
         const id = randomUUID();
         await db.insert(userPermissionOverrides).values({
             id,
-            userId: validated.userId,
+            personId: validated.personId,
             actionTypeId: validated.actionTypeId,
             isGranted: validated.isGranted,
             scope: validated.scope || 'own',
@@ -177,7 +176,7 @@ export async function POST(request: NextRequest) {
             id: randomUUID(),
             organizationId: orgId,
             action: validated.isGranted ? 'grant' : 'revoke',
-            targetUserId: validated.userId,
+            targetUserId: validated.personId,
             actionTypeId: validated.actionTypeId,
             newValue: JSON.stringify({
                 isGranted: validated.isGranted,
@@ -205,18 +204,18 @@ export async function POST(request: NextRequest) {
 // DELETE: Revoke a user override
 export async function DELETE(request: NextRequest) {
     try {
-        const { userId: authUserId, orgId } = await getApiAuthWithOrg();
+        const { personId: authUserId, orgId } = await getApiAuthWithOrg();
         if (!authUserId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const searchParams = request.nextUrl.searchParams;
-        const targetUserId = searchParams.get('userId');
+        const targetUserId = searchParams.get('personId');
         const actionTypeId = searchParams.get('actionTypeId');
         const overrideId = searchParams.get('id');
         const revokeReason = searchParams.get('reason') || 'Manually revoked';
 
-        // Can delete by ID or by userId + actionTypeId
+        // Can delete by ID or by personId + actionTypeId
         let existing;
         if (overrideId) {
             [existing] = await db
@@ -232,14 +231,14 @@ export async function DELETE(request: NextRequest) {
                 .select()
                 .from(userPermissionOverrides)
                 .where(and(
-                    eq(userPermissionOverrides.userId, targetUserId),
+                    eq(userPermissionOverrides.personId, targetUserId),
                     eq(userPermissionOverrides.actionTypeId, actionTypeId),
                     isNull(userPermissionOverrides.revokedAt)
                 ))
                 .limit(1);
         } else {
             return NextResponse.json({
-                error: 'Either id or (userId + actionTypeId) required'
+                error: 'Either id or (personId + actionTypeId) required'
             }, { status: 400 });
         }
 
@@ -262,7 +261,7 @@ export async function DELETE(request: NextRequest) {
             id: randomUUID(),
             organizationId: orgId,
             action: 'revoke',
-            targetUserId: existing.userId,
+            targetUserId: existing.personId,
             actionTypeId: existing.actionTypeId,
             previousValue: JSON.stringify({
                 isGranted: existing.isGranted,

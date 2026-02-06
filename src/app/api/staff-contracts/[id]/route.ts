@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { staffContracts, users, persons } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -10,8 +10,8 @@ interface RouteParams {
 
 // GET /api/staff-contracts/[id]
 export async function GET(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -53,8 +53,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 // PATCH /api/staff-contracts/[id]
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -99,7 +99,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             await db
                 .update(users)
                 .set(userUpdateData)
-                .where(eq(users.id, contract.userId));
+                .where(eq(users.id, contract.personId));
         }
 
         return NextResponse.json({ data: updated[0] });
@@ -111,8 +111,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 // DELETE /api/staff-contracts/[id] - Terminate contract
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

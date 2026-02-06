@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
 
         if (!profile) {
             const [newProfile] = await db.insert(talentProfiles).values({
-                userId,
+                personId,
                 status: 'incomplete',
             }).returning();
             profile = newProfile;
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
         // Create document record
         const [doc] = await db.insert(talentEvidenceDocuments).values({
             profileId: profile.id,
-            userId,
+            personId,
             filename: file.name,
             fileType: file.type.includes('pdf') ? 'pdf' : file.type.includes('image') ? 'image' : 'text',
             fileContent: fileContent.slice(0, 50000), // Limit content size

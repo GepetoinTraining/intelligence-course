@@ -21,15 +21,15 @@ export async function GET(
 ) {
     try {
         const { type, id: referenceId } = await params;
-        const { userId, orgId: organizationId } = await getApiAuthWithOrg();
+        const { personId, orgId: organizationId } = await getApiAuthWithOrg();
 
-        if (!userId) {
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const draft = await db.query.drafts.findFirst({
             where: and(
-                eq(drafts.userId, userId),
+                eq(drafts.personId, personId),
                 eq(drafts.type, type as any),
                 eq(drafts.referenceId, referenceId)
             ),
@@ -58,9 +58,9 @@ export async function PUT(
 ) {
     try {
         const { type, id: referenceId } = await params;
-        const { userId, orgId: organizationId } = await getApiAuthWithOrg();
+        const { personId, orgId: organizationId } = await getApiAuthWithOrg();
 
-        if (!userId) {
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -75,7 +75,7 @@ export async function PUT(
         // Check if draft exists
         const existing = await db.query.drafts.findFirst({
             where: and(
-                eq(drafts.userId, userId),
+                eq(drafts.personId, personId),
                 eq(drafts.type, type as any),
                 eq(drafts.referenceId, referenceId)
             ),
@@ -91,7 +91,7 @@ export async function PUT(
         } else {
             // Create new draft
             await db.insert(drafts).values({
-                userId,
+                personId,
                 organizationId,
                 type: type as any,
                 referenceId,
@@ -115,15 +115,15 @@ export async function DELETE(
 ) {
     try {
         const { type, id: referenceId } = await params;
-        const { userId } = await getApiAuthWithOrg();
+        const { personId } = await getApiAuthWithOrg();
 
-        if (!userId) {
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         await db.delete(drafts).where(
             and(
-                eq(drafts.userId, userId),
+                eq(drafts.personId, personId),
                 eq(drafts.type, type as any),
                 eq(drafts.referenceId, referenceId)
             )

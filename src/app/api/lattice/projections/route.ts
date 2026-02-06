@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
         // Validate
         const validated = ProjectionCreateSchema.parse(body);
 
-        const projectionId = await createProjection(validated, userId);
+        const projectionId = await createProjection(validated, personId);
 
         return NextResponse.json({
             success: true,
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
             organizationId: searchParams.get('organizationId') || undefined,
             category: searchParams.get('category') || undefined,
             isPublic: searchParams.get('isPublic') === 'true' ? true : undefined,
-            createdBy: searchParams.get('mine') === 'true' ? userId : undefined,
+            createdBy: searchParams.get('mine') === 'true' ? personId : undefined,
             limit: searchParams.get('limit')
                 ? parseInt(searchParams.get('limit')!)
                 : 20,

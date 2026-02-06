@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { costCenters, users } from '@/lib/db/schema';
+import { costCenters, users, persons } from '@/lib/db/schema';
 import { eq, and, asc, isNull } from 'drizzle-orm';
 import { getApiAuthWithOrg } from '@/lib/auth';
 

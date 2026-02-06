@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import {
     getProjectionById,
     projectLattice,
@@ -23,8 +23,8 @@ interface Context {
 
 export async function GET(request: NextRequest, context: Context) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json(
                 { error: 'Unauthorized' },
                 { status: 401 }
@@ -53,8 +53,8 @@ export async function GET(request: NextRequest, context: Context) {
 
 export async function POST(request: NextRequest, context: Context) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json(
                 { error: 'Unauthorized' },
                 { status: 401 }
@@ -67,13 +67,13 @@ export async function POST(request: NextRequest, context: Context) {
         // Check action type
         if (body.action === 'project') {
             // Project a single person's lattice
-            const personId = body.personId || userId;
+            const targetPersonId = body.personId || personId;
 
-            const shape = await projectLattice(personId, id);
+            const shape = await projectLattice(targetPersonId, id);
 
             return NextResponse.json({
                 data: shape,
-                personId,
+                personId: targetPersonId,
                 projectionId: id,
             });
         }
@@ -107,8 +107,8 @@ export async function POST(request: NextRequest, context: Context) {
 
 export async function DELETE(request: NextRequest, context: Context) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json(
                 { error: 'Unauthorized' },
                 { status: 401 }
@@ -126,7 +126,7 @@ export async function DELETE(request: NextRequest, context: Context) {
         }
 
         // Only creator can delete
-        if (projection.createdBy !== userId) {
+        if (projection.createdBy !== personId) {
             return NextResponse.json(
                 { error: 'Access denied' },
                 { status: 403 }

@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
         // Get the student's memory graph
         const graph = await db.select().from(memoryGraphs)
-            .where(eq(memoryGraphs.studentId, userId)).limit(1);
+            .where(eq(memoryGraphs.studentId, personId)).limit(1);
 
         if (graph.length === 0) {
             return NextResponse.json({ error: 'Memory graph not found' }, { status: 404 });

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import {
     leads,
@@ -19,8 +19,8 @@ export async function GET(
     { params }: { params: Promise<{ leadId: string }> }
 ) {
     try {
-        const { userId, orgId } = await auth();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -100,8 +100,8 @@ export async function POST(
     { params }: { params: Promise<{ leadId: string }> }
 ) {
     try {
-        const { userId, orgId } = await auth();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -148,7 +148,7 @@ export async function POST(
             content: validated.content,
             context: validated.context,
             position,
-            createdBy: userId,
+            createdBy: personId,
             createdAt: now,
             updatedAt: now,
         }).returning();
@@ -185,8 +185,8 @@ export async function DELETE(
     { params }: { params: Promise<{ leadId: string }> }
 ) {
     try {
-        const { userId, orgId } = await auth();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 

@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
             recurrenceInterval: body.recurrenceInterval,
             parentPayableId: body.parentPayableId,
             notes: body.notes,
-            createdBy: userId,
+            createdBy: personId,
         }).returning();
 
         return NextResponse.json({ data: newPayable[0] }, { status: 201 });

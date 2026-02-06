@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
             targetDurationHours: data.targetDurationHours,
             warningThresholdPercent: data.warningThresholdPercent,
             autoUpdateWiki: data.autoUpdateWiki,
-            createdBy: userId,
+            createdBy: personId,
             status: 'draft',
         }).returning();
 
@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
                 sourceProcedureId: newProcedure.id,
                 autoUpdate: true,
                 status: 'draft',
-                createdBy: userId,
+                createdBy: personId,
             }).returning();
 
             // Update procedure with wiki page ID

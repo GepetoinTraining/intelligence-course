@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { staffLeave, users } from '@/lib/db/schema';
+import { staffLeave, users, persons } from '@/lib/db/schema';
 import { eq, and, desc, gte, lte } from 'drizzle-orm';
 import { getApiAuthWithOrg } from '@/lib/auth';
 
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams;
-    const staffUserId = searchParams.get('userId');
+    const staffUserId = searchParams.get('personId');
     const status = searchParams.get('status');
     const leaveType = searchParams.get('type');
     const startAfter = searchParams.get('startAfter');
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
         const conditions = [];
 
         if (staffUserId) {
-            conditions.push(eq(staffLeave.userId, staffUserId));
+            conditions.push(eq(staffLeave.personId, staffUserId));
         }
 
         if (status) {
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
                 }
             })
             .from(staffLeave)
-            .leftJoin(users, eq(staffLeave.userId, users.id))
+            .leftJoin(users, eq(staffLeave.personId, users.id))
             .where(conditions.length > 0 ? and(...conditions) : undefined)
             .orderBy(desc(staffLeave.startDate))
             .limit(limit)
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/staff-leave - Create leave request
 export async function POST(request: NextRequest) {
-    const { userId: authUserId } = await getApiAuthWithOrg();
+    const { personId: authUserId } = await getApiAuthWithOrg();
     if (!authUserId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
 
         const newLeave = await db.insert(staffLeave).values({
-            userId: body.userId,
+            personId: body.personId,
             contractId: body.contractId,
             leaveType: body.leaveType,
             startDate: body.startDate,

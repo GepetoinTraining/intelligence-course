@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
 
         const newPrompt = await db.insert(prompts).values({
-            userId,
+            personId,
             organizationId: orgId || null,
             name: body.name,
             description: body.description,

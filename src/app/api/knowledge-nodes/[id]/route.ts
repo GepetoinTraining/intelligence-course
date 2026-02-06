@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { knowledgeNodes, knowledgeEdges } from '@/lib/db/schema';
 import { eq, and, or } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -10,8 +10,8 @@ interface RouteParams {
 
 // GET /api/knowledge-nodes/[id]
 export async function GET(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -58,8 +58,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 // PATCH /api/knowledge-nodes/[id]
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -81,7 +81,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         const updated = await db
             .update(knowledgeNodes)
             .set(updateData)
-            .where(and(eq(knowledgeNodes.id, id), eq(knowledgeNodes.userId, userId)))
+            .where(and(eq(knowledgeNodes.id, id), eq(knowledgeNodes.personId, personId)))
             .returning();
 
         if (updated.length === 0) {
@@ -97,8 +97,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 // DELETE /api/knowledge-nodes/[id]
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -116,7 +116,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         // Delete the node
         const deleted = await db
             .delete(knowledgeNodes)
-            .where(and(eq(knowledgeNodes.id, id), eq(knowledgeNodes.userId, userId)))
+            .where(and(eq(knowledgeNodes.id, id), eq(knowledgeNodes.personId, personId)))
             .returning();
 
         if (deleted.length === 0) {

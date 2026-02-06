@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
         const user = await db
             .select()
             .from(users)
-            .where(eq(users.id, userId))
+            .where(eq(users.id, personId))
             .limit(1);
 
         if (user.length === 0) {
@@ -61,7 +61,7 @@ export async function PATCH(request: NextRequest) {
     try {
         const body = await request.json();
 
-        const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+        const user = await db.select().from(users).where(eq(users.id, personId)).limit(1);
         const currentPrefs = JSON.parse(user[0]?.preferences || '{}');
 
         const updatedPrefs = {
@@ -82,7 +82,7 @@ export async function PATCH(request: NextRequest) {
         await db.update(users).set({
             preferences: JSON.stringify(updatedPrefs),
             updatedAt: Math.floor(Date.now() / 1000),
-        }).where(eq(users.id, userId));
+        }).where(eq(users.id, personId));
 
         return NextResponse.json({ data: updatedPrefs });
     } catch (error) {

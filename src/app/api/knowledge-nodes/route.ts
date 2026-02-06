@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
         }
 
         const newNode = await db.insert(knowledgeNodes).values({
-            userId,
+            personId,
             title,
             content,
             nodeType: nodeType || 'concept',

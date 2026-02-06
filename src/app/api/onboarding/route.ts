@@ -17,7 +17,7 @@ const APPROVAL_HIERARCHY: Record<string, string[]> = {
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId: clerkUserId } = await getApiAuthWithOrg();
+        const { personId: clerkUserId } = await getApiAuthWithOrg();
 
         if (!clerkUserId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
 // GET - Check onboarding status
 export async function GET(request: NextRequest) {
     try {
-        const { userId: clerkUserId } = await getApiAuthWithOrg();
+        const { personId: clerkUserId } = await getApiAuthWithOrg();
 
         if (!clerkUserId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

@@ -30,8 +30,8 @@ export async function GET(request: NextRequest) {
         // If no filters, return links for the current user
         if (conditions.length === 0) {
             conditions.push(or(
-                eq(familyLinks.parentId, userId),
-                eq(familyLinks.studentId, userId)
+                eq(familyLinks.parentId, personId),
+                eq(familyLinks.studentId, personId)
             ));
         }
 

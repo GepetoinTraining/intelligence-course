@@ -73,7 +73,7 @@ export async function hasPermission(
         .select()
         .from(userPermissionOverrides)
         .where(and(
-            eq(userPermissionOverrides.userId, userId),
+            eq(userPermissionOverrides.personId, userId),
             eq(userPermissionOverrides.actionTypeId, action.id),
             isNull(userPermissionOverrides.revokedAt) // Only active overrides
         ))
@@ -113,7 +113,7 @@ export async function hasPermission(
         .from(teamMembers)
         .leftJoin(teams, eq(teamMembers.teamId, teams.id))
         .where(and(
-            eq(teamMembers.userId, userId),
+            eq(teamMembers.personId, userId),
             eq(teamMembers.isActive, true)
         ));
 
@@ -265,7 +265,7 @@ async function checkInheritedPermissions(
                 .from(teamMembers)
                 .where(and(
                     eq(teamMembers.teamId, parentTeamId),
-                    eq(teamMembers.userId, userId),
+                    eq(teamMembers.personId, userId),
                     eq(teamMembers.isActive, true)
                 ));
 
@@ -315,7 +315,7 @@ async function checkPermissionGroups(
     const groupAssignments = await db
         .select()
         .from(userGroupAssignments)
-        .where(eq(userGroupAssignments.userId, userId));
+        .where(eq(userGroupAssignments.personId, userId));
 
     // Filter out expired assignments
     const activeAssignments = groupAssignments.filter(g =>

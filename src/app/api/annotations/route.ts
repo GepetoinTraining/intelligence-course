@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
         }
 
         const newAnnotation = await db.insert(runAnnotations).values({
-            userId,
+            personId,
             runId,
             annotation,
             annotationType,

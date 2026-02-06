@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { leads, enrollments, users, crmAuditLog, crmStageHistory, leadInteractions } from '@/lib/db/schema';
 import { eq, desc, and } from 'drizzle-orm';
@@ -125,8 +125,8 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userId, orgId } = await auth();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -211,7 +211,7 @@ export async function GET(
 
             // Get student info
             const student = await db.query.users.findFirst({
-                where: eq(users.id, enrollment.userId),
+                where: eq(users.id, enrollment.personId),
                 columns: { id: true, name: true, email: true, avatarUrl: true },
             });
 
@@ -260,8 +260,8 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userId, orgId } = await auth();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -271,7 +271,7 @@ export async function PATCH(
 
         // Get current user info for audit log
         const currentUser = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
             columns: { name: true, role: true },
         });
 
@@ -307,7 +307,7 @@ export async function PATCH(
                         newValue: JSON.stringify(newValue),
                         changeDescription: `${field}: ${previousValue} → ${newValue}`,
                         reason,
-                        changedBy: userId,
+                        changedBy: personId,
                         changedByName: currentUser?.name || undefined,
                         changedByRole: currentUser?.role || undefined,
                     });
@@ -320,7 +320,7 @@ export async function PATCH(
                             entityId: id,
                             fromStage: previousValue,
                             toStage: newValue as string,
-                            changedBy: userId,
+                            changedBy: personId,
                             reason,
                         });
                     }
@@ -364,7 +364,7 @@ export async function PATCH(
                         newValue: JSON.stringify(newValue),
                         changeDescription: `${field}: ${previousValue} → ${newValue}`,
                         reason,
-                        changedBy: userId,
+                        changedBy: personId,
                         changedByName: currentUser?.name || undefined,
                         changedByRole: currentUser?.role || undefined,
                     });

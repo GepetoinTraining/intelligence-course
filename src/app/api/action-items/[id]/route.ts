@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { actionItems, users, activityFeed } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
@@ -17,8 +17,8 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userId, orgId } = await auth();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -66,8 +66,8 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userId, orgId } = await auth();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -104,7 +104,7 @@ export async function PATCH(
         // Handle status change to completed
         if (body.status === 'completed' && currentItem.status !== 'completed') {
             updates.completedAt = Date.now();
-            updates.completedBy = userId;
+            updates.completedBy = personId;
         }
 
         // Apply update
@@ -115,13 +115,13 @@ export async function PATCH(
         // Log significant changes
         if (body.status === 'completed') {
             const user = await db.query.users.findFirst({
-                where: eq(users.id, userId),
+                where: eq(users.id, personId),
                 columns: { name: true },
             });
 
             await db.insert(activityFeed).values({
                 organizationId: orgId,
-                actorId: userId,
+                actorId: personId,
                 actorName: user?.name || 'Unknown',
                 action: 'task_completed',
                 entityType: currentItem.linkedEntityType || 'action_item',

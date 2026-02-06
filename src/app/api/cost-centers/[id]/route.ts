@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { costCenters, journalEntryLines } from '@/lib/db/schema';
 import { eq, and, sum } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -10,8 +10,8 @@ interface RouteParams {
 
 // GET /api/cost-centers/[id] - Get cost center with expense totals
 export async function GET(request: NextRequest, { params }: RouteParams) {
-    const { userId, orgId } = await auth();
-    if (!userId || !orgId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -66,8 +66,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 // PATCH /api/cost-centers/[id]
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
-    const { userId, orgId } = await auth();
-    if (!userId || !orgId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -112,8 +112,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 // DELETE /api/cost-centers/[id]
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
-    const { userId, orgId } = await auth();
-    if (!userId || !orgId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

@@ -18,9 +18,9 @@ export async function GET(
 ) {
     try {
         const { id: teamId } = await params;
-        const { userId, orgId: organizationId } = await getApiAuthWithOrg();
+        const { personId, orgId: organizationId } = await getApiAuthWithOrg();
 
-        if (!userId || !organizationId) {
+        if (!personId || !organizationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 

@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const classId = searchParams.get('classId');
-    const studentId = searchParams.get('userId');
+    const studentId = searchParams.get('personId');
     const status = searchParams.get('status');
     const termId = searchParams.get('termId');
 
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
         }
 
         if (studentId) {
-            conditions.push(eq(enrollments.userId, studentId));
+            conditions.push(eq(enrollments.personId, studentId));
         }
 
         if (status) {
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
                 class: classes,
             })
             .from(enrollments)
-            .innerJoin(users, eq(enrollments.userId, users.id))
+            .innerJoin(users, eq(enrollments.personId, users.id))
             .innerJoin(classes, eq(enrollments.classId, classes.id))
             .where(conditions.length > 0 ? and(...conditions) : undefined)
             .orderBy(desc(enrollments.enrolledAt));
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
 
         const newEnrollment = await db.insert(enrollments).values({
             organizationId: orgId,
-            userId: body.userId,
+            personId: body.personId,
             classId: body.classId,
             termId: body.termId || classData[0].termId,
             leadId: body.leadId,

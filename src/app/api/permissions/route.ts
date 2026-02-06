@@ -2,14 +2,14 @@
  * Permissions API
  * 
  * GET /api/permissions - List all users with their permissions (organization-scoped)
- * GET /api/permissions?userId=xxx - Get specific user's permissions
+ * GET /api/permissions?personId=xxx - Get specific user's permissions
  * POST /api/permissions - Update user permission override
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { users, rolePermissions, userPermissions, PERMISSION_MODULES } from '@/lib/db/schema';
+import { users, rolePermissions, userPermissions, PERMISSION_MODULES, organizationMemberships } from '@/lib/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 
 // Module categories for better UI organization
@@ -94,7 +94,7 @@ const DEFAULT_ROLE_PERMISSIONS: Record<string, Record<string, { c: boolean; r: b
 
 export async function GET(request: NextRequest) {
     try {
-        const { userId: clerkUserId } = await getApiAuthWithOrg();
+        const { personId: clerkUserId } = await getApiAuthWithOrg();
         if (!clerkUserId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
         }
 
         const { searchParams } = new URL(request.url);
-        const targetUserId = searchParams.get('userId');
+        const targetUserId = searchParams.get('personId');
 
         if (targetUserId) {
             // Get specific user's permissions
@@ -119,7 +119,7 @@ export async function GET(request: NextRequest) {
             const roleDefaults = DEFAULT_ROLE_PERMISSIONS[targetUser.role || 'student'] || {};
 
             // Get user overrides
-            const overrides = await db.select().from(userPermissions).where(eq(userPermissions.userId, targetUserId));
+            const overrides = await db.select().from(userPermissions).where(eq(userPermissions.personId, targetUserId));
             const overridesMap = Object.fromEntries(overrides.map(o => [o.module, o]));
 
             // Build effective permissions
@@ -160,12 +160,12 @@ export async function GET(request: NextRequest) {
             // Get all user overrides
             const userIds = orgUsers.map(u => u.id);
             const allOverrides = userIds.length > 0
-                ? await db.select().from(userPermissions).where(inArray(userPermissions.userId, userIds))
+                ? await db.select().from(userPermissions).where(inArray(userPermissions.personId, userIds))
                 : [];
 
             const overridesByUser = allOverrides.reduce((acc, o) => {
-                if (!acc[o.userId]) acc[o.userId] = [];
-                acc[o.userId].push(o);
+                if (!acc[o.personId]) acc[o.personId] = [];
+                acc[o.personId].push(o);
                 return acc;
             }, {} as Record<string, typeof allOverrides>);
 
@@ -193,7 +193,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId: clerkUserId } = await getApiAuthWithOrg();
+        const { personId: clerkUserId } = await getApiAuthWithOrg();
         if (!clerkUserId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -208,7 +208,7 @@ export async function POST(request: NextRequest) {
         const { personId, module, canCreate, canRead, canUpdate, canDelete, reason } = body;
 
         if (!personId || !module) {
-            return NextResponse.json({ error: 'userId and module are required' }, { status: 400 });
+            return NextResponse.json({ error: 'personId and module are required' }, { status: 400 });
         }
 
         // Check if module is valid
@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Get target user to verify exists and get their role
-        const [targetUser] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+        const [targetUser] = await db.select().from(users).where(eq(users.id, personId)).limit(1);
         if (!targetUser) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
@@ -269,7 +269,7 @@ export async function POST(request: NextRequest) {
                 .where(eq(userPermissions.id, existing[0].id));
         } else {
             await db.insert(userPermissions).values({
-                userId,
+                personId,
                 module,
                 canCreate,
                 canRead,
@@ -293,7 +293,7 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
     try {
-        const { userId: clerkUserId } = await getApiAuthWithOrg();
+        const { personId: clerkUserId } = await getApiAuthWithOrg();
         if (!clerkUserId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -305,14 +305,14 @@ export async function DELETE(request: NextRequest) {
         }
 
         const { searchParams } = new URL(request.url);
-        const targetUserId = searchParams.get('userId');
+        const targetUserId = searchParams.get('personId');
 
         if (!targetUserId) {
-            return NextResponse.json({ error: 'userId is required' }, { status: 400 });
+            return NextResponse.json({ error: 'personId is required' }, { status: 400 });
         }
 
         // Delete all overrides for user (reset to role defaults)
-        await db.delete(userPermissions).where(eq(userPermissions.userId, targetUserId));
+        await db.delete(userPermissions).where(eq(userPermissions.personId, targetUserId));
 
         return NextResponse.json({
             success: true,

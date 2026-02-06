@@ -7,10 +7,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import {
-    kaizenSuggestions, kaizenVotes, kaizenComments, kaizenMetrics, users
+    kaizenSuggestions, kaizenVotes, kaizenComments, kaizenMetrics, users, persons
 } from '@/lib/db/schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { z } from 'zod';
@@ -61,15 +61,15 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const { id } = await params;
 
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
         });
 
         if (!user?.organizationId) {
@@ -91,7 +91,7 @@ export async function GET(
         const userVote = await db.query.kaizenVotes.findFirst({
             where: and(
                 eq(kaizenVotes.suggestionId, id),
-                eq(kaizenVotes.userId, userId)
+                eq(kaizenVotes.personId, personId)
             ),
         });
 
@@ -112,8 +112,9 @@ export async function GET(
         const authorIds = [...new Set(comments.map(c => c.authorId))];
         let authorNames: Record<string, string> = {};
         if (authorIds.length > 0) {
-            const authors = await db.select({ id: users.id, name: users.name })
+            const authors = await db.select({ id: users.id, name: persons.firstName })
                 .from(users)
+                .leftJoin(persons, eq(users.personId, persons.id))
                 .where(sql`${users.id} IN (${authorIds.map(id => `'${id}'`).join(',')})`);
             authorNames = Object.fromEntries(authors.map(a => [a.id, a.name || 'Unknown']));
         }
@@ -130,7 +131,7 @@ export async function GET(
         // Get submitter name if not anonymous
         let submitterName = 'Anônimo';
         if (!suggestion.isAnonymous) {
-            if (suggestion.submitterId === userId) {
+            if (suggestion.submitterId === personId) {
                 submitterName = 'Você';
             } else {
                 const submitter = await db.query.users.findFirst({
@@ -148,12 +149,12 @@ export async function GET(
                 netVotes: (suggestion.upvotes || 0) - (suggestion.downvotes || 0),
                 userVote: userVote?.vote || null,
                 submitterName,
-                isOwner: suggestion.submitterId === userId,
+                isOwner: suggestion.submitterId === personId,
                 canReview: ['staff', 'school', 'owner'].includes(user.role || ''),
                 comments: comments.map(c => ({
                     ...c,
                     authorName: authorNames[c.authorId] || 'Unknown',
-                    isOwner: c.authorId === userId,
+                    isOwner: c.authorId === personId,
                 })),
                 metrics,
             },
@@ -169,15 +170,15 @@ export async function PUT(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const { id } = await params;
 
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
         });
 
         if (!user?.organizationId) {
@@ -196,7 +197,7 @@ export async function PUT(
         }
 
         // Only owner can update, and only if still submitted
-        if (suggestion.submitterId !== userId) {
+        if (suggestion.submitterId !== personId) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
@@ -246,8 +247,8 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -256,7 +257,7 @@ export async function POST(
         const action = searchParams.get('action');
 
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
         });
 
         if (!user?.organizationId) {
@@ -294,7 +295,7 @@ export async function POST(
             const existing = await db.query.kaizenVotes.findFirst({
                 where: and(
                     eq(kaizenVotes.suggestionId, id),
-                    eq(kaizenVotes.userId, userId)
+                    eq(kaizenVotes.personId, personId)
                 ),
             });
 
@@ -350,7 +351,7 @@ export async function POST(
                     }
                     await db.insert(kaizenVotes).values({
                         suggestionId: id,
-                        userId,
+                        personId,
                         vote: voteValue,
                         createdAt: now,
                     });
@@ -391,7 +392,7 @@ export async function POST(
             await db.update(kaizenSuggestions)
                 .set({
                     status,
-                    reviewerId: userId,
+                    reviewerId: personId,
                     reviewNotes,
                     reviewedAt: now,
                     updatedAt: now,
@@ -421,7 +422,7 @@ export async function POST(
 
             const updateData: any = {
                 status,
-                implementerId: userId,
+                implementerId: personId,
                 implementationNotes,
                 updatedAt: now,
             };
@@ -455,7 +456,7 @@ export async function POST(
             const [comment] = await db.insert(kaizenComments).values({
                 suggestionId: id,
                 content,
-                authorId: userId,
+                authorId: personId,
                 isReviewerComment: isReviewer,
                 parentCommentId,
                 createdAt: now,
@@ -501,7 +502,7 @@ export async function POST(
                 unit: data.unit,
                 notes: data.notes,
                 measuredAt: now,
-                measuredBy: userId,
+                measuredBy: personId,
             }).returning();
 
             return NextResponse.json({ data: metric }, { status: 201 });

@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { kaizenSuggestions, kaizenVotes, users } from '@/lib/db/schema';
+import { kaizenSuggestions, kaizenVotes, users, persons } from '@/lib/db/schema';
 import { eq, and, desc, sql, or, like, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
         }
 
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
         });
 
         if (!user?.organizationId) {
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
         }
 
         if (params.mine) {
-            conditions.push(eq(kaizenSuggestions.submitterId, userId));
+            conditions.push(eq(kaizenSuggestions.submitterId, personId));
         }
 
         // Order by
@@ -137,7 +137,7 @@ export async function GET(request: NextRequest) {
         // Get submitter names (for non-anonymous)
         const submitterIds = [...new Set(
             suggestions
-                .filter(s => !s.isAnonymous && s.submitterId !== userId)
+                .filter(s => !s.isAnonymous && s.submitterId !== personId)
                 .map(s => s.submitterId)
         )];
 
@@ -166,8 +166,8 @@ export async function GET(request: NextRequest) {
                 userVote: userVotes[s.id] || null,
                 submitterName: s.isAnonymous
                     ? 'Anônimo'
-                    : (s.submitterId === userId ? 'Você' : submitterNames[s.submitterId] || 'Unknown'),
-                isOwner: s.submitterId === userId,
+                    : (s.submitterId === personId ? 'Você' : submitterNames[s.submitterId] || 'Unknown'),
+                isOwner: s.submitterId === personId,
             })),
             meta: {
                 total: countResult[0]?.count || 0,
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
         }
 
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
         });
 
         if (!user?.organizationId) {
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
             stepId: data.stepId,
             wikiArticleId: data.wikiArticleId,
             status: 'submitted',
-            submitterId: userId,
+            submitterId: personId,
             isAnonymous: data.isAnonymous || false,
             tags: data.tags ? JSON.stringify(data.tags) : '[]',
             attachments: data.attachments ? JSON.stringify(data.attachments) : '[]',
@@ -233,7 +233,7 @@ export async function POST(request: NextRequest) {
         // Auto-vote for own suggestion
         await db.insert(kaizenVotes).values({
             suggestionId: suggestion.id,
-            userId,
+            personId,
             vote: 1,
             createdAt: now,
         });

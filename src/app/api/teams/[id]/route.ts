@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { teams, teamMembers, teamPositions, users, persons } from '@/lib/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
@@ -17,7 +17,7 @@ const teamUpdateSchema = z.object({
 });
 
 const addMemberSchema = z.object({
-    userId: z.string(),
+    personId: z.string(),
     positionId: z.string(),
     memberRole: z.enum(['owner', 'lead', 'member', 'guest', 'observer']).default('member'),
     customTitle: z.string().optional(),
@@ -32,8 +32,8 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userId, orgId: organizationId } = await auth();
-        if (!userId || !organizationId) {
+        const { personId, orgId: organizationId } = await getApiAuthWithOrg();
+        if (!personId || !organizationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -121,8 +121,8 @@ export async function PUT(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userId, orgId: organizationId } = await auth();
-        if (!userId || !organizationId) {
+        const { personId, orgId: organizationId } = await getApiAuthWithOrg();
+        if (!personId || !organizationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -185,8 +185,8 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userId, orgId: organizationId } = await auth();
-        if (!userId || !organizationId) {
+        const { personId, orgId: organizationId } = await getApiAuthWithOrg();
+        if (!personId || !organizationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -255,8 +255,8 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userId, orgId: organizationId } = await auth();
-        if (!userId || !organizationId) {
+        const { personId, orgId: organizationId } = await getApiAuthWithOrg();
+        if (!personId || !organizationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -289,7 +289,7 @@ export async function POST(
         const [user] = await db
             .select({ id: users.id })
             .from(users)
-            .where(eq(users.id, data.userId))
+            .where(eq(users.id, data.personId))
             .limit(1);
 
         if (!user) {
@@ -319,7 +319,7 @@ export async function POST(
             .where(
                 and(
                     eq(teamMembers.teamId, id),
-                    eq(teamMembers.userId, data.userId)
+                    eq(teamMembers.personId, data.personId)
                 )
             )
             .limit(1);
@@ -331,7 +331,7 @@ export async function POST(
         // Add member
         const [newMember] = await db.insert(teamMembers).values({
             teamId: id,
-            userId: data.userId,
+            personId: data.personId,
             positionId: data.positionId,
             memberRole: data.memberRole,
             customTitle: data.customTitle,

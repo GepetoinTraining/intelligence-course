@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { teams, teamMembers, teamPositions, users } from '@/lib/db/schema';
+import { teams, teamMembers, teamPositions, users, persons } from '@/lib/db/schema';
 import { eq, and, desc, isNull, count, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
                     const members = await db
                         .select({
                             id: teamMembers.id,
-                            userId: teamMembers.userId,
+                            personId: teamMembers.personId,
                             positionId: teamMembers.positionId,
                             memberRole: teamMembers.memberRole,
                             customTitle: teamMembers.customTitle,
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
                             positionName: teamPositions.name,
                         })
                         .from(teamMembers)
-                        .leftJoin(users, eq(teamMembers.userId, users.id))
+                        .leftJoin(users, eq(teamMembers.personId, users.id))
                         .leftJoin(teamPositions, eq(teamMembers.positionId, teamPositions.id))
                         .where(
                             and(
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
             icon: data.icon || 'IconUsers',
             color: data.color || 'blue',
             settings: JSON.stringify(data.settings || {}),
-            createdBy: userId,
+            createdBy: personId,
         }).returning();
 
         return NextResponse.json({ data: newTeam }, { status: 201 });

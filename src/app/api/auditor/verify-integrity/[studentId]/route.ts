@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { memoryGraphs } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 interface RouteParams {
     params: Promise<{ studentId: string }>;
@@ -10,8 +10,8 @@ interface RouteParams {
 
 // GET /api/auditor/verify-integrity/[studentId] - Verify memory integrity
 export async function GET(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -54,8 +54,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 // POST /api/auditor/verify-integrity/[studentId] - Update verification status
 export async function POST(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             data: {
                 verified: true,
                 verifiedAt: Math.floor(Date.now() / 1000),
-                verifiedBy: userId,
+                verifiedBy: personId,
             }
         });
     } catch (error) {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { staffPayroll, staffContracts, users } from '@/lib/db/schema';
+import { staffPayroll, staffContracts, users, persons } from '@/lib/db/schema';
 import { eq, and, desc, gte, lte } from 'drizzle-orm';
 import { getApiAuthWithOrg } from '@/lib/auth';
 
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams;
-    const staffUserId = searchParams.get('userId');
+    const staffUserId = searchParams.get('personId');
     const contractId = searchParams.get('contractId');
     const status = searchParams.get('status');
     const periodStart = searchParams.get('periodStart');
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
         }
 
         if (staffUserId) {
-            conditions.push(eq(staffPayroll.userId, staffUserId));
+            conditions.push(eq(staffPayroll.personId, staffUserId));
         }
 
         if (contractId) {
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
             })
             .from(staffPayroll)
             .leftJoin(staffContracts, eq(staffPayroll.contractId, staffContracts.id))
-            .leftJoin(users, eq(staffPayroll.userId, users.id))
+            .leftJoin(users, eq(staffPayroll.personId, users.id))
             .where(conditions.length > 0 ? and(...conditions) : undefined)
             .orderBy(desc(staffPayroll.periodStart))
             .limit(limit)
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/staff-payroll - Create payroll entry
 export async function POST(request: NextRequest) {
-    const { userId: authUserId, orgId } = await getApiAuthWithOrg();
+    const { personId: authUserId, orgId } = await getApiAuthWithOrg();
     if (!authUserId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
         const newPayroll = await db.insert(staffPayroll).values({
             organizationId: orgId,
             contractId: body.contractId,
-            userId: body.userId,
+            personId: body.personId,
             periodStart: body.periodStart,
             periodEnd: body.periodEnd,
             paymentDueDate: body.paymentDueDate,

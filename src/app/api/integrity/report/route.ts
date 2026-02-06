@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
         const report = {
             id: crypto.randomUUID(),
-            reportedBy: userId,
+            reportedBy: personId,
             studentId,
             suspectedIssue,
             evidence,

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { payrollPayments, staffPayroll } from '@/lib/db/schema';
 import { eq, and, sum } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -10,8 +10,8 @@ interface RouteParams {
 
 // GET /api/payroll-payments/[id]
 export async function GET(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -37,8 +37,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 // PATCH /api/payroll-payments/[id] - Update payment status (mark as completed, failed, etc.)
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -59,7 +59,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                 updateData.processedAt = Date.now();
             } else if (body.status === 'completed') {
                 updateData.completedAt = Date.now();
-                updateData.confirmedBy = userId;
+                updateData.confirmedBy = personId;
             } else if (body.status === 'failed') {
                 updateData.failedAt = Date.now();
                 updateData.failureReason = body.failureReason;
@@ -130,8 +130,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 // DELETE /api/payroll-payments/[id] - Cancel payment
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

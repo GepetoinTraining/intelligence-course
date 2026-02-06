@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
         const user = await db
             .select()
             .from(users)
-            .where(eq(users.id, userId))
+            .where(eq(users.id, personId))
             .limit(1);
 
         if (user.length === 0) {
@@ -56,7 +56,7 @@ export async function PATCH(request: NextRequest) {
         const updated = await db
             .update(users)
             .set(updateData)
-            .where(eq(users.id, userId))
+            .where(eq(users.id, personId))
             .returning();
 
         if (updated.length === 0) {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { memoryGraphs, memoryLedger, chatSessions } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 interface RouteParams {
     params: Promise<{ studentId: string }>;
@@ -10,15 +10,15 @@ interface RouteParams {
 
 // GET /api/rights/access/[studentId] - Get data access information
 export async function GET(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { studentId } = await params;
 
     // Authorization: only the student themselves or authorized roles can access
-    if (userId !== studentId) {
+    if (personId !== studentId) {
         // In production, would check for parent/admin roles
     }
 

@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { users, organizations, organizationMemberships, persons } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -16,14 +16,14 @@ export const ACTIVE_ORG_COOKIE = 'nodezero_active_org';
 
 export async function GET() {
     try {
-        const { userId } = await auth();
+        const { personId, orgId } = await getApiAuthWithOrg();
         if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         // Get the user's personId
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
             columns: { personId: true, organizationId: true },
         });
 
@@ -112,7 +112,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId } = await auth();
+        const { personId, orgId } = await getApiAuthWithOrg();
         if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
 
         // Verify user has access to this org
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
             columns: { personId: true, organizationId: true },
         });
 

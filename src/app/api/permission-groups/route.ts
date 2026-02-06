@@ -6,8 +6,7 @@ import {
     userGroupAssignments,
     actionTypes,
     users,
-    permissionAuditLog
-} from '@/lib/db/schema';
+    permissionAuditLog, persons } from '@/lib/db/schema';
 import { getApiAuthWithOrg } from '@/lib/auth';
 import { eq, and, inArray } from 'drizzle-orm';
 import { z } from 'zod';
@@ -22,7 +21,7 @@ const createGroupSchema = z.object({
 
 const assignUserSchema = z.object({
     groupId: z.string().uuid(),
-    userId: z.string(),
+    personId: z.string(),
     teamId: z.string().uuid().optional().nullable(),
     expiresAt: z.number().optional(),
 });
@@ -86,7 +85,7 @@ export async function GET(request: NextRequest) {
                 assignedUsers = await db
                     .select({
                         assignmentId: userGroupAssignments.id,
-                        userId: users.id,
+                        personId: users.id,
                         userName: persons.firstName,
                         personEmail: persons.primaryEmail,
                         userAvatar: persons.avatarUrl,
@@ -94,7 +93,7 @@ export async function GET(request: NextRequest) {
                         expiresAt: userGroupAssignments.expiresAt,
                     })
                     .from(userGroupAssignments)
-                    .leftJoin(users, eq(userGroupAssignments.userId, users.id))
+                    .leftJoin(users, eq(userGroupAssignments.personId, users.id))
                     .where(eq(userGroupAssignments.groupId, groupId));
             }
 
@@ -167,7 +166,7 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
 
         // Check if this is a user assignment or group creation
-        if (body.groupId && body.userId) {
+        if (body.groupId && body.personId) {
             // Assign user to group
             const validated = assignUserSchema.parse(body);
 
@@ -191,7 +190,7 @@ export async function POST(request: NextRequest) {
                 .from(userGroupAssignments)
                 .where(and(
                     eq(userGroupAssignments.groupId, validated.groupId),
-                    eq(userGroupAssignments.userId, validated.userId)
+                    eq(userGroupAssignments.personId, validated.personId)
                 ))
                 .limit(1);
 
@@ -202,7 +201,7 @@ export async function POST(request: NextRequest) {
                     .set({
                         expiresAt: validated.expiresAt || null,
                         grantedAt: Date.now(),
-                        grantedBy: userId,
+                        grantedBy: personId,
                     })
                     .where(eq(userGroupAssignments.id, existing[0].id));
 
@@ -214,11 +213,11 @@ export async function POST(request: NextRequest) {
             await db.insert(userGroupAssignments).values({
                 id: assignmentId,
                 groupId: validated.groupId,
-                userId: validated.userId,
+                personId: validated.personId,
                 teamId: validated.teamId || null,
                 expiresAt: validated.expiresAt || null,
                 grantedAt: Date.now(),
-                grantedBy: userId,
+                grantedBy: personId,
             });
 
             // Audit log
@@ -226,10 +225,10 @@ export async function POST(request: NextRequest) {
                 id: randomUUID(),
                 organizationId: orgId,
                 action: 'grant',
-                targetUserId: validated.userId,
+                targetUserId: validated.personId,
                 targetGroupId: validated.groupId,
                 newValue: JSON.stringify({ groupName: group.name }),
-                performedBy: userId,
+                performedBy: personId,
                 performedAt: Date.now(),
             });
 
@@ -270,7 +269,7 @@ export async function POST(request: NextRequest) {
             action: 'grant',
             targetGroupId: id,
             newValue: JSON.stringify({ name: validated.name, actionCount: validated.actionTypeIds?.length || 0 }),
-            performedBy: userId,
+            performedBy: personId,
             performedAt: Date.now(),
         });
 
@@ -357,7 +356,7 @@ export async function PUT(request: NextRequest) {
             targetGroupId: groupId,
             previousValue: JSON.stringify({ name: group.name }),
             newValue: JSON.stringify({ name: name || group.name, actionCount: actionTypeIds?.length }),
-            performedBy: userId,
+            performedBy: personId,
             performedAt: Date.now(),
         });
 
@@ -378,7 +377,7 @@ export async function DELETE(request: NextRequest) {
 
         const searchParams = request.nextUrl.searchParams;
         const groupId = searchParams.get('groupId');
-        const targetUserId = searchParams.get('userId');
+        const targetUserId = searchParams.get('personId');
 
         if (!groupId) {
             return NextResponse.json({ error: 'groupId is required' }, { status: 400 });
@@ -408,7 +407,7 @@ export async function DELETE(request: NextRequest) {
                 .delete(userGroupAssignments)
                 .where(and(
                     eq(userGroupAssignments.groupId, groupId),
-                    eq(userGroupAssignments.userId, targetUserId)
+                    eq(userGroupAssignments.personId, targetUserId)
                 ));
 
             // Audit log
@@ -419,7 +418,7 @@ export async function DELETE(request: NextRequest) {
                 targetUserId,
                 targetGroupId: groupId,
                 previousValue: JSON.stringify({ groupName: group.name }),
-                performedBy: userId,
+                performedBy: personId,
                 performedAt: Date.now(),
             });
 
@@ -438,7 +437,7 @@ export async function DELETE(request: NextRequest) {
             action: 'revoke',
             targetGroupId: groupId,
             previousValue: JSON.stringify({ name: group.name }),
-            performedBy: userId,
+            performedBy: personId,
             performedAt: Date.now(),
         });
 

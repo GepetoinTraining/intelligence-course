@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import {
     procedureTemplates,
@@ -25,8 +25,8 @@ export async function GET(
     { params }: { params: Promise<{ executionId: string }> }
 ) {
     try {
-        const { userId, orgId } = await auth();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -107,8 +107,8 @@ export async function POST(
     { params }: { params: Promise<{ executionId: string }> }
 ) {
     try {
-        const { userId, orgId } = await auth();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -243,7 +243,7 @@ export async function POST(
                 status: 'completed',
                 completedAt: now,
                 durationMinutes,
-                performedBy: userId,
+                performedBy: personId,
                 decisionOutcome: data.decisionOutcome,
                 transitionTakenId,
                 stepData: data.stepData ? JSON.stringify(data.stepData) : stepExec.stepData,
@@ -339,7 +339,7 @@ export async function POST(
                 durationMinutes,
                 decisionOutcome: data.decisionOutcome,
             }),
-            actorId: userId,
+            actorId: personId,
             occurredAt: now,
             isProcessed: true,
             matchedProcedureId: execution.procedureId,

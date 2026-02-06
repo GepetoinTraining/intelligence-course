@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import {
     conversations,
@@ -14,6 +14,7 @@ import {
     messages,
     messageAttachments,
     users,
+    persons,
     notificationQueue,
     processDiscoveryEvents,
 } from '@/lib/db/schema';
@@ -26,8 +27,8 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -38,7 +39,7 @@ export async function GET(
             .from(conversationParticipants)
             .where(and(
                 eq(conversationParticipants.conversationId, conversationId),
-                eq(conversationParticipants.userId, userId),
+                eq(conversationParticipants.personId, personId),
                 eq(conversationParticipants.isActive, true)
             ))
             .limit(1);
@@ -109,10 +110,11 @@ export async function GET(
                     const [replyMsg] = await db.select({
                         id: messages.id,
                         content: messages.content,
-                        senderName: users.name,
+                        senderName: persons.firstName,
                     })
                         .from(messages)
                         .leftJoin(users, eq(messages.senderId, users.id))
+                        .leftJoin(persons, eq(users.personId, persons.id))
                         .where(eq(messages.id, msg.replyToMessageId))
                         .limit(1);
 
@@ -208,20 +210,10 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
-
-        // Get user's organization from database
-        const [currentUser] = await db.select({
-            organizationId: users.organizationId,
-        })
-            .from(users)
-            .where(eq(users.id, userId))
-            .limit(1);
-
-        const orgId = currentUser?.organizationId || 'default-org';
 
         const { id: conversationId } = await params;
         const body = await request.json();
@@ -231,7 +223,7 @@ export async function POST(
             .from(conversationParticipants)
             .where(and(
                 eq(conversationParticipants.conversationId, conversationId),
-                eq(conversationParticipants.userId, userId),
+                eq(conversationParticipants.personId, personId),
                 eq(conversationParticipants.isActive, true)
             ))
             .limit(1);
@@ -257,7 +249,7 @@ export async function POST(
 
         // Handle AI conversations differently
         if (conversation.type === 'ai_assistant') {
-            return handleAIMessage(request, conversationId, conversation, userId, orgId, body);
+            return handleAIMessage(request, conversationId, conversation, personId, orgId, body);
         }
 
         // Validate regular message
@@ -278,7 +270,7 @@ export async function POST(
         // Create message
         const [newMessage] = await db.insert(messages).values({
             conversationId,
-            senderId: userId,
+            senderId: personId,
             senderType: 'user',
             content: data.content,
             contentType: data.contentType,
@@ -317,7 +309,7 @@ export async function POST(
             })
             .where(and(
                 eq(conversationParticipants.conversationId, conversationId),
-                sql`${conversationParticipants.userId} != ${userId}`,
+                sql`${conversationParticipants.personId} != ${personId}`,
                 eq(conversationParticipants.isActive, true)
             ));
 
@@ -328,7 +320,7 @@ export async function POST(
                     problemStatus: 'resolved',
                     problemResolution: data.content,
                     resolvedAt: Date.now(),
-                    resolvedBy: userId,
+                    resolvedBy: personId,
                 })
                 .where(eq(conversations.id, conversationId));
 
@@ -344,14 +336,14 @@ export async function POST(
                     conversationId,
                     participantCount: conversation.messageCount,
                 }),
-                actorId: userId,
+                actorId: personId,
             });
         }
 
         // Create notifications for mentions
         if (data.mentions && data.mentions.length > 0) {
             const user = await db.query.users.findFirst({
-                where: eq(users.id, userId),
+                where: eq(users.id, personId),
                 columns: { name: true },
             });
 
@@ -370,7 +362,7 @@ export async function POST(
 
         // Get sender info for response
         const sender = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
             columns: { id: true, name: true, avatarUrl: true },
         });
 
@@ -401,7 +393,7 @@ async function handleAIMessage(
     request: NextRequest,
     conversationId: string,
     conversation: any,
-    userId: string,
+    personId: string,
     orgId: string,
     body: any
 ) {
@@ -445,28 +437,28 @@ async function handleAIMessage(
     // Start memory session for this conversation
     let sessionId: string | undefined;
     try {
-        const session = await startMemorySession(userId);
+        const session = await startMemorySession(personId);
         sessionId = session.sessionId;
     } catch (err) {
         console.warn('Failed to start memory session:', err);
     }
 
     // Check if this is a Lattice interview session
-    const isLatticeInterview = await needsLatticeInterview(userId);
+    const isLatticeInterview = await needsLatticeInterview(personId);
     let interviewState: Awaited<ReturnType<typeof getInterviewState>> | null = null;
 
     if (isLatticeInterview) {
         // Get user's person record
-        const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+        const user = await db.query.users.findFirst({ where: eq(users.id, personId) });
         if (user?.personId) {
-            interviewState = getInterviewState(userId, user.personId, sessionId || 'no-session');
+            interviewState = getInterviewState(personId, user.personId, sessionId || 'no-session');
         }
     }
 
     // Save user message first
     const [userMessage] = await db.insert(messages).values({
         conversationId,
-        senderId: userId,
+        senderId: personId,
         senderType: 'user',
         content: data.content,
         contentType: 'text',
@@ -507,7 +499,7 @@ async function handleAIMessage(
         let memoryContext = '';
         try {
             memoryContext = await getMemoryContextForPrompt(
-                userId,
+                personId,
                 data.content,
                 {
                     maxTokens: 1500,
@@ -619,7 +611,7 @@ ${memoryContext}`
                     try {
                         const input = toolUse.input as any;
                         await completeInterview(
-                            userId,
+                            personId,
                             interviewState.personId,
                             {
                                 dreams: input.dreams || [],
@@ -643,7 +635,7 @@ ${memoryContext}`
                             }),
                         });
 
-                        console.log(`[Synapse] Lattice interview completed for user ${userId}`);
+                        console.log(`[Synapse] Lattice interview completed for user ${personId}`);
                     } catch (err) {
                         console.error('[Synapse] Failed to complete interview:', err);
                         toolResults.push({
@@ -658,7 +650,7 @@ ${memoryContext}`
                 const result = await executeSynapseToolV2(
                     toolUse.name,
                     toolUse.input as Record<string, any>,
-                    userId,
+                    personId,
                     orgId,
                     { useTopology: true, sessionId }
                 );
@@ -672,7 +664,7 @@ ${memoryContext}`
 
             // Update interview state if in interview mode
             if (isLatticeInterview && interviewState) {
-                updateInterviewState(userId, {
+                updateInterviewState(personId, {
                     messageCount: interviewState.messageCount + 1,
                 });
             }
@@ -719,21 +711,21 @@ ${memoryContext}`
         // Form memories from this interaction (async, non-blocking)
         if (sessionId) {
             formMemory({
-                studentId: userId,
+                studentId: personId,
                 content: data.content,
                 role: 'user' as const,
                 sessionId,
             }).catch(err => console.warn('Memory formation failed:', err));
 
             // End memory session after response
-            endMemorySession(userId, sessionId)
+            endMemorySession(personId, sessionId)
                 .catch(err => console.warn('Failed to end memory session:', err));
 
             // Trigger auditor to analyze session metadata (async, non-blocking)
             // NOTE: The auditor only sees metadata, never conversation content
             onSessionEnd({
                 id: sessionId,
-                studentId: userId,
+                studentId: personId,
                 startedAt: new Date(startTime),
                 endedAt: new Date(),
                 messageCount: 2, // user + AI response

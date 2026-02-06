@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Update user preferences
-        const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+        const user = await db.select().from(users).where(eq(users.id, personId)).limit(1);
         const preferences = JSON.parse(user[0]?.preferences || '{}');
 
         preferences.dateOfBirth = dateOfBirth;
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
                 preferences: JSON.stringify(preferences),
                 updatedAt: Math.floor(Date.now() / 1000),
             })
-            .where(eq(users.id, userId));
+            .where(eq(users.id, personId));
 
         // Create initial memory graph for students
         if (user[0]?.role === 'student' && orgId) {
@@ -53,12 +53,12 @@ export async function POST(request: NextRequest) {
             const existingGraph = await db
                 .select()
                 .from(memoryGraphs)
-                .where(eq(memoryGraphs.studentId, userId))
+                .where(eq(memoryGraphs.studentId, personId))
                 .limit(1);
 
             if (existingGraph.length === 0) {
                 await db.insert(memoryGraphs).values({
-                    studentId: userId,
+                    studentId: personId,
                     organizationId: orgId,
                     snr: 1.0,
                 });

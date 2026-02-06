@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { prompts, promptRuns, userApiKeys } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import Anthropic from '@anthropic-ai/sdk';
 
 interface RouteParams {
@@ -11,8 +11,8 @@ interface RouteParams {
 
 // POST /api/prompts/[id]/run - Execute a prompt
 export async function POST(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         const userKey = await db
             .select()
             .from(userApiKeys)
-            .where(eq(userApiKeys.userId, userId))
+            .where(eq(userApiKeys.personId, personId))
             .limit(1);
 
         if (userKey.length > 0 && userKey[0].provider === 'anthropic') {
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         // Create the run record
         const run = await db.insert(promptRuns).values({
             promptId: id,
-            userId,
+            personId,
             provider: 'anthropic',
             model,
             systemPrompt: promptData.currentSystemPrompt || promptData.baseSystemPrompt,

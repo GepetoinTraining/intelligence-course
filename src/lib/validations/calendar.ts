@@ -206,16 +206,16 @@ export const RecurrenceSchema = z.object({
  * Participant schema for meeting creation
  */
 export const MeetingParticipantSchema = z.object({
-    // Either userId (internal) or external info
-    userId: z.string().optional(),
+    // Either personId (internal) or external info
+    personId: z.string().optional(),
     externalEmail: z.string().email().optional(),
     externalName: z.string().max(100).optional(),
     externalPhone: z.string().max(20).optional(),
 
     role: ParticipantRoleEnum.default('required'),
 }).refine(
-    (data) => data.userId || data.externalEmail,
-    { message: 'Must provide either userId or externalEmail' }
+    (data) => data.personId || data.externalEmail,
+    { message: 'Must provide either personId or externalEmail' }
 );
 
 /**

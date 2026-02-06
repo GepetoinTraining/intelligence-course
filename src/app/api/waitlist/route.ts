@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
         const position = existing.length + 1;
 
         const newEntry = await db.insert(waitlist).values({
-            userId,
+            personId,
             classId,
             courseTypeId,
             levelId,

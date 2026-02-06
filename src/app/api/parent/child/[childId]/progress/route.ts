@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { progress, familyLinks } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 interface RouteParams {
     params: Promise<{ childId: string }>;
@@ -10,8 +10,8 @@ interface RouteParams {
 
 // GET /api/parent/child/[childId]/progress - Get child's progress
 export async function GET(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         const link = await db
             .select()
             .from(familyLinks)
-            .where(eq(familyLinks.parentId, userId))
+            .where(eq(familyLinks.parentId, personId))
             .limit(100);
 
         const isAuthorized = link.some(l => l.studentId === childId);
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         const progressData = await db
             .select()
             .from(progress)
-            .where(eq(progress.userId, childId))
+            .where(eq(progress.personId, childId))
             .orderBy(desc(progress.updatedAt))
             .limit(100);
 

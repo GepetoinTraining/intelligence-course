@@ -95,7 +95,7 @@ function getEffectivePermission(
 
 export async function GET(request: NextRequest) {
     try {
-        const { userId: clerkUserId } = await getApiAuthWithOrg();
+        const { personId: clerkUserId } = await getApiAuthWithOrg();
         if (!clerkUserId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -119,7 +119,7 @@ export async function GET(request: NextRequest) {
             // Get user override
             const [override] = await db.select().from(userPermissions)
                 .where(and(
-                    eq(userPermissions.userId, clerkUserId),
+                    eq(userPermissions.personId, clerkUserId),
                     eq(userPermissions.module, singleModule)
                 ))
                 .limit(1);
@@ -137,7 +137,7 @@ export async function GET(request: NextRequest) {
             // Get all overrides for these modules
             const overrides = await db.select().from(userPermissions)
                 .where(and(
-                    eq(userPermissions.userId, clerkUserId),
+                    eq(userPermissions.personId, clerkUserId),
                     inArray(userPermissions.module, modules)
                 ));
 

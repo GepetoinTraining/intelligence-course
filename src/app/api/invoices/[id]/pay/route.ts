@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { invoices, transactions } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -10,8 +10,8 @@ interface RouteParams {
 
 // POST /api/invoices/[id]/pay - Record payment for invoice
 export async function POST(request: NextRequest, { params }: RouteParams) {
-    const { userId, orgId } = await auth();
-    if (!userId || !orgId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         const transaction = await db.insert(transactions).values({
             organizationId: orgId,
             invoiceId: id,
-            userId: invoiceData.payerUserId,
+            personId: invoiceData.payerUserId,
             type: 'payment_received',
             amount: paymentAmount,
             currency: invoiceData.currency || 'BRL',

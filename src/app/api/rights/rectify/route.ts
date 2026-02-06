@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
         // Create rectification request
         const request_record = {
             id: crypto.randomUUID(),
-            requestedBy: userId,
+            requestedBy: personId,
             dataCategory,
             itemId,
             currentValue,

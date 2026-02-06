@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { latticeProjections } from '@/lib/db/schema';
 import {
@@ -25,8 +25,8 @@ interface RouteParams {
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -69,8 +69,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -195,8 +195,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -209,7 +209,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             .where(
                 and(
                     eq(latticeProjections.id, id),
-                    eq(latticeProjections.createdBy, userId)
+                    eq(latticeProjections.createdBy, personId)
                 )
             )
             .limit(1);

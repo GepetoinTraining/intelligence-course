@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
 
         const newWorkshop = await db.insert(problemWorkshops).values({
-            userId,
+            personId,
             rawProblem: body.rawProblem || body.problemStatement || '',
             whyChain: body.whyChain ? JSON.stringify(body.whyChain) : '[]',
             rootCause: body.rootCause,

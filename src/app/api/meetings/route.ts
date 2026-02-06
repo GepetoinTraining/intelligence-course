@@ -36,7 +36,7 @@ async function checkSchedulePermission(
         .from(userRoleAssignments)
         .innerJoin(organizationalRoles, eq(userRoleAssignments.roleId, organizationalRoles.id))
         .where(and(
-            eq(userRoleAssignments.userId, organizerId),
+            eq(userRoleAssignments.personId, organizerId),
             eq(organizationalRoles.organizationId, orgId)
         ));
 
@@ -77,7 +77,7 @@ async function checkSchedulePermission(
             .from(userRoleAssignments)
             .innerJoin(organizationalRoles, eq(userRoleAssignments.roleId, organizationalRoles.id))
             .where(and(
-                eq(userRoleAssignments.userId, targetId),
+                eq(userRoleAssignments.personId, targetId),
                 eq(organizationalRoles.organizationId, orgId)
             ));
 
@@ -129,7 +129,7 @@ async function checkSchedulePermission(
         })
             .from(userRoleAssignments)
             .innerJoin(organizationalRoles, eq(userRoleAssignments.roleId, organizationalRoles.id))
-            .where(eq(userRoleAssignments.userId, targetId));
+            .where(eq(userRoleAssignments.personId, targetId));
 
         const targetMaxHierarchy = Math.max(...targetRoles.map(r => r.hierarchyLevel), 0);
 
@@ -148,7 +148,7 @@ async function checkSchedulePermission(
 async function findApprover(orgId: string, approverRoleId: string | null): Promise<string | undefined> {
     if (!approverRoleId) return undefined;
 
-    const approver = await db.select({ userId: userRoleAssignments.userId })
+    const approver = await db.select({ personId: userRoleAssignments.personId })
         .from(userRoleAssignments)
         .where(and(
             eq(userRoleAssignments.roleId, approverRoleId),
@@ -156,7 +156,7 @@ async function findApprover(orgId: string, approverRoleId: string | null): Promi
         ))
         .limit(1);
 
-    return approver[0]?.userId;
+    return approver[0]?.personId;
 }
 
 export async function GET(request: NextRequest) {
@@ -169,7 +169,7 @@ export async function GET(request: NextRequest) {
         // Parse query params
         const startDate = parseInt(request.nextUrl.searchParams.get('startDate') || '0');
         const endDate = parseInt(request.nextUrl.searchParams.get('endDate') || '0');
-        const viewUserId = request.nextUrl.searchParams.get('userId') || userId;
+        const viewUserId = request.nextUrl.searchParams.get('personId') || personId;
         const includeTeam = request.nextUrl.searchParams.get('includeTeam') === 'true';
         const meetingTypesParam = request.nextUrl.searchParams.get('meetingTypes');
         const meetingTypes = meetingTypesParam ? meetingTypesParam.split(',') : null;
@@ -183,10 +183,10 @@ export async function GET(request: NextRequest) {
 
         if (includeTeam) {
             // Get direct reports
-            const reports = await db.select({ userId: userRoleAssignments.userId })
+            const reports = await db.select({ personId: userRoleAssignments.personId })
                 .from(userRoleAssignments)
                 .where(eq(userRoleAssignments.reportsTo, viewUserId));
-            userIds.push(...reports.map(r => r.userId));
+            userIds.push(...reports.map(r => r.personId));
         }
 
         // Get meetings where user is organizer OR participant
@@ -204,7 +204,7 @@ export async function GET(request: NextRequest) {
         // Get meetings where user is participant
         const participantMeetingIds = await db.select({ meetingId: meetingParticipants.meetingId })
             .from(meetingParticipants)
-            .where(inArray(meetingParticipants.userId, userIds.filter(Boolean)));
+            .where(inArray(meetingParticipants.personId, userIds.filter(Boolean)));
 
         const participantMeetings = participantMeetingIds.length > 0
             ? await db.select()
@@ -233,7 +233,7 @@ export async function GET(request: NextRequest) {
             allMeetings.map(async (meeting) => {
                 const participants = await db.select({
                     id: meetingParticipants.id,
-                    userId: meetingParticipants.userId,
+                    personId: meetingParticipants.personId,
                     externalEmail: meetingParticipants.externalEmail,
                     externalName: meetingParticipants.externalName,
                     role: meetingParticipants.role,
@@ -245,9 +245,9 @@ export async function GET(request: NextRequest) {
                 // Get user details for internal participants
                 const enrichedParticipants = await Promise.all(
                     participants.map(async (p) => {
-                        if (p.userId) {
+                        if (p.personId) {
                             const user = await db.query.users.findFirst({
-                                where: eq(users.id, p.userId),
+                                where: eq(users.id, p.personId),
                                 columns: { name: true, avatarUrl: true, email: true },
                             });
                             return {
@@ -310,13 +310,13 @@ export async function POST(request: NextRequest) {
 
         // Extract internal user IDs from participants
         const internalUserIds = data.participants
-            .filter(p => p.userId)
-            .map(p => p.userId!);
+            .filter(p => p.personId)
+            .map(p => p.personId!);
 
         // Check scheduling permissions
         const permission = await checkSchedulePermission(
             orgId,
-            userId,
+            personId,
             internalUserIds,
             data.meetingType
         );
@@ -344,8 +344,8 @@ export async function POST(request: NextRequest) {
             locationType: data.locationType,
             location: data.location,
             videoProvider: data.videoProvider,
-            organizerId: userId,
-            createdBy: userId,
+            organizerId: personId,
+            createdBy: personId,
             agenda: data.agenda,
             requiresApproval: permission.requiresApproval,
             approvalStatus: permission.requiresApproval ? 'pending' : null,
@@ -356,7 +356,7 @@ export async function POST(request: NextRequest) {
         for (const participant of data.participants) {
             await db.insert(meetingParticipants).values({
                 meetingId: newMeeting.id,
-                userId: participant.userId || null,
+                personId: participant.personId || null,
                 externalEmail: participant.externalEmail || null,
                 externalName: participant.externalName || null,
                 externalPhone: participant.externalPhone || null,
@@ -365,11 +365,11 @@ export async function POST(request: NextRequest) {
         }
 
         // Add organizer as participant
-        const organizerAlreadyAdded = data.participants.some(p => p.userId === userId);
+        const organizerAlreadyAdded = data.participants.some(p => p.personId === personId);
         if (!organizerAlreadyAdded) {
             await db.insert(meetingParticipants).values({
                 meetingId: newMeeting.id,
-                userId,
+                personId,
                 role: 'organizer',
                 responseStatus: 'accepted',
             });
@@ -377,13 +377,13 @@ export async function POST(request: NextRequest) {
 
         // Log activity
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
             columns: { name: true },
         });
 
         await db.insert(activityFeed).values({
             organizationId: orgId,
-            actorId: userId,
+            actorId: personId,
             actorName: user?.name || 'Unknown',
             action: 'meeting_created',
             entityType: 'meeting',

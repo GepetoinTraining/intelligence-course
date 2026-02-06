@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
             category: 'hiring',
             queryText: title,
             queryEmbedding: '[]', // Will be filled after interview
-            createdBy: userId,
+            createdBy: personId,
             organizationId: orgId || null,
             isPublic: 0,
             createdAt: now,
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
             .where(
                 orgId
                     ? eq(latticeProjections.organizationId, orgId)
-                    : eq(latticeProjections.createdBy, userId)
+                    : eq(latticeProjections.createdBy, personId)
             )
             .orderBy(desc(latticeProjections.createdAt))
             .limit(limit)

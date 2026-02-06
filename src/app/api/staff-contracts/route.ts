@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { staffContracts, users } from '@/lib/db/schema';
+import { staffContracts, users, persons } from '@/lib/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { getApiAuthWithOrg } from '@/lib/auth';
 
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
                 }
             })
             .from(staffContracts)
-            .leftJoin(users, eq(staffContracts.userId, users.id))
+            .leftJoin(users, eq(staffContracts.personId, users.id))
             .where(conditions.length > 0 ? and(...conditions) : undefined)
             .orderBy(desc(staffContracts.createdAt))
             .limit(limit)
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/staff-contracts - Create staff contract (and user if needed)
 export async function POST(request: NextRequest) {
-    const { userId: authUserId, orgId } = await getApiAuthWithOrg();
+    const { personId: authUserId, orgId } = await getApiAuthWithOrg();
     if (!authUserId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
 
         // Check if user exists, if not create one
-        let staffUserId = body.userId;
+        let staffUserId = body.personId;
 
         if (!staffUserId && body.email) {
             // Check if user exists by email
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
 
         const newContract = await db.insert(staffContracts).values({
             organizationId: orgId,
-            userId: staffUserId,
+            personId: staffUserId,
             jobTitle: body.jobTitle,
             department: body.department || 'admin',
             contractType: body.contractType || 'clt',

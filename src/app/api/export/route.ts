@@ -186,7 +186,7 @@ export async function GET(request: NextRequest) {
                         user: users,
                     })
                     .from(staffPayroll)
-                    .leftJoin(users, eq(staffPayroll.userId, users.id))
+                    .leftJoin(users, eq(staffPayroll.personId, users.id))
                     .where(and(...conditions))
                     .orderBy(desc(staffPayroll.periodStart));
 

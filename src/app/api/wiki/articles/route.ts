@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
         }
 
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
         });
 
         const { searchParams } = new URL(request.url);
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
         }
 
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
         });
 
         // Check permission (staff+ can create articles)
@@ -191,8 +191,8 @@ export async function POST(request: NextRequest) {
             version: 1,
             linkedProcedureId: data.linkedProcedureId,
             visibility: data.visibility || 'inherit',
-            authorId: userId,
-            lastEditorId: userId,
+            authorId: personId,
+            lastEditorId: personId,
             createdAt: now,
             updatedAt: now,
             publishedAt: status === 'published' ? now : undefined,
@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
             content: data.content,
             summary: data.summary,
             changeNotes: 'Initial creation',
-            editorId: userId,
+            editorId: personId,
             createdAt: now,
         });
 

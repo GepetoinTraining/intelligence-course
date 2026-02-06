@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { wikiArticles, wikiArticleVersions, wikiArticleFeedback, users } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
@@ -34,15 +34,15 @@ export async function GET(
     { params }: { params: Promise<{ slug: string }> }
 ) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const { slug } = await params;
 
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
         });
 
         if (!user?.organizationId) {
@@ -74,7 +74,7 @@ export async function GET(
         const feedback = await db.query.wikiArticleFeedback.findFirst({
             where: and(
                 eq(wikiArticleFeedback.articleId, article.id),
-                eq(wikiArticleFeedback.userId, userId)
+                eq(wikiArticleFeedback.personId, personId)
             ),
         });
 
@@ -100,15 +100,15 @@ export async function PUT(
     { params }: { params: Promise<{ slug: string }> }
 ) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const { slug } = await params;
 
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
         });
 
         if (!user?.organizationId) {
@@ -154,7 +154,7 @@ export async function PUT(
                 content: data.content,
                 summary: data.summary ?? article.summary,
                 changeNotes: data.changeNotes || 'Updated',
-                editorId: userId,
+                editorId: personId,
                 createdAt: now,
             });
         }
@@ -162,7 +162,7 @@ export async function PUT(
         // Update article
         const updateData: any = {
             updatedAt: now,
-            lastEditorId: userId,
+            lastEditorId: personId,
         };
 
         if (data.title) updateData.title = data.title;
@@ -203,15 +203,15 @@ export async function DELETE(
     { params }: { params: Promise<{ slug: string }> }
 ) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const { slug } = await params;
 
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
         });
 
         if (!user?.organizationId) {
@@ -255,8 +255,8 @@ export async function POST(
     { params }: { params: Promise<{ slug: string }> }
 ) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -265,7 +265,7 @@ export async function POST(
         const action = searchParams.get('action');
 
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
         });
 
         if (!user?.organizationId) {
@@ -300,7 +300,7 @@ export async function POST(
             const existing = await db.query.wikiArticleFeedback.findFirst({
                 where: and(
                     eq(wikiArticleFeedback.articleId, article.id),
-                    eq(wikiArticleFeedback.userId, userId)
+                    eq(wikiArticleFeedback.personId, personId)
                 ),
             });
 
@@ -335,7 +335,7 @@ export async function POST(
                 // New feedback
                 await db.insert(wikiArticleFeedback).values({
                     articleId: article.id,
-                    userId,
+                    personId,
                     isHelpful: data.isHelpful,
                     comment: data.comment,
                     createdAt: Math.floor(Date.now() / 1000),

@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { talentProfiles, users } from '@/lib/db/schema';
+import { talentProfiles, users, persons } from '@/lib/db/schema';
 import { eq, desc, sql, like, and, or } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
@@ -46,14 +46,14 @@ export async function GET(request: NextRequest) {
                 interviewCompletedAt: talentProfiles.interviewCompletedAt,
                 createdAt: talentProfiles.createdAt,
                 updatedAt: talentProfiles.updatedAt,
-                userId: talentProfiles.userId,
-                // User info
+                personId: talentProfiles.personId,
+                // User info from persons table
                 userName: persons.firstName,
-                personEmail: persons.primaryEmail,
+                userEmail: persons.primaryEmail,
                 userAvatarUrl: persons.avatarUrl,
             })
             .from(talentProfiles)
-            .leftJoin(users, eq(talentProfiles.userId, users.id))
+            .leftJoin(persons, eq(talentProfiles.personId, persons.id))
             .orderBy(desc(talentProfiles.updatedAt))
             .limit(limit)
             .offset(offset);
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
 
             return {
                 id: p.id,
-                userId: p.userId,
+                personId: p.personId,
                 name: p.userName || 'Unknown',
                 email: p.userEmail || null,
                 avatarUrl: p.userAvatarUrl,

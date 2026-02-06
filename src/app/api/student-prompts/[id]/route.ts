@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { studentPrompts } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -10,8 +10,8 @@ interface RouteParams {
 
 // GET /api/student-prompts/[id]
 export async function GET(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         const result = await db
             .select()
             .from(studentPrompts)
-            .where(and(eq(studentPrompts.id, id), eq(studentPrompts.userId, userId)))
+            .where(and(eq(studentPrompts.id, id), eq(studentPrompts.personId, personId)))
             .limit(1);
 
         if (result.length === 0) {
@@ -37,8 +37,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 // PATCH /api/student-prompts/[id]
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -58,7 +58,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         const updated = await db
             .update(studentPrompts)
             .set(updateData)
-            .where(and(eq(studentPrompts.id, id), eq(studentPrompts.userId, userId)))
+            .where(and(eq(studentPrompts.id, id), eq(studentPrompts.personId, personId)))
             .returning();
 
         if (updated.length === 0) {
@@ -74,8 +74,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 // DELETE /api/student-prompts/[id]
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -84,7 +84,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     try {
         const deleted = await db
             .delete(studentPrompts)
-            .where(and(eq(studentPrompts.id, id), eq(studentPrompts.userId, userId)))
+            .where(and(eq(studentPrompts.id, id), eq(studentPrompts.personId, personId)))
             .returning();
 
         if (deleted.length === 0) {

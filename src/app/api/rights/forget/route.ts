@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
             case 'chat_session':
                 if (targetId) {
                     await db.delete(chatMessages).where(eq(chatMessages.sessionId, targetId));
-                    await db.delete(chatSessions).where(and(eq(chatSessions.id, targetId), eq(chatSessions.studentId, userId)));
+                    await db.delete(chatSessions).where(and(eq(chatSessions.id, targetId), eq(chatSessions.studentId, personId)));
                     deletedCount = 1;
                 }
                 break;

@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import {
     meetings,
@@ -26,8 +26,8 @@ export async function GET(
     { params }: { params: Promise<{ meetingId: string }> }
 ) {
     try {
-        const { userId, orgId } = await auth();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -62,7 +62,7 @@ export async function GET(
             .from(meetingNotes)
             .where(and(
                 eq(meetingNotes.meetingId, meetingId),
-                eq(meetingNotes.userId, userId)
+                eq(meetingNotes.personId, personId)
             ))
             .limit(1);
 
@@ -106,8 +106,8 @@ export async function POST(
     { params }: { params: Promise<{ meetingId: string }> }
 ) {
     try {
-        const { userId, orgId } = await auth();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -132,12 +132,12 @@ export async function POST(
             .from(meetingParticipants)
             .where(and(
                 eq(meetingParticipants.meetingId, meetingId),
-                eq(meetingParticipants.userId, userId)
+                eq(meetingParticipants.personId, personId)
             ))
             .limit(1);
 
         // Allow organizer or participant to add transcripts
-        const isOrganizer = meeting.organizerId === userId;
+        const isOrganizer = meeting.organizerId === personId;
         const isParticipant = !!participant;
 
         if (!isOrganizer && !isParticipant) {
@@ -165,7 +165,7 @@ export async function POST(
             // Create initial transcript record
             const [transcript] = await db.insert(meetingTranscripts).values({
                 meetingId,
-                recordedBy: userId,
+                recordedBy: personId,
                 deviceType,
                 chunkIndex: 0,
                 rawTranscript: '',
@@ -213,7 +213,7 @@ export async function POST(
 
             const [newChunk] = await db.insert(meetingTranscripts).values({
                 meetingId,
-                recordedBy: userId,
+                recordedBy: personId,
                 chunkIndex: nextChunkIndex,
                 rawTranscript,
                 speakerLabels: speakerLabels ? JSON.stringify(speakerLabels) : '{}',
@@ -253,7 +253,7 @@ export async function POST(
                 .from(meetingNotes)
                 .where(and(
                     eq(meetingNotes.meetingId, meetingId),
-                    eq(meetingNotes.userId, userId)
+                    eq(meetingNotes.personId, personId)
                 ))
                 .limit(1);
 
@@ -271,7 +271,7 @@ export async function POST(
             } else {
                 [notes] = await db.insert(meetingNotes).values({
                     meetingId,
-                    userId,
+                    personId,
                     content,
                     contentFormat,
                     isPrivate,

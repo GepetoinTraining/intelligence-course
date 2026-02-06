@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users, memoryGraphs, memoryNodes, memoryEdges, memoryLedger, chatSessions, chatMessages, progress, attendance, enrollments } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 interface RouteParams {
     params: Promise<{ studentId: string }>;
@@ -10,14 +10,14 @@ interface RouteParams {
 
 // GET /api/rights/export/[studentId] - Export all data (LGPD right of portability)
 export async function GET(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { studentId } = await params;
 
-    if (userId !== studentId) {
+    if (personId !== studentId) {
         return NextResponse.json({ error: 'You can only export your own data' }, { status: 403 });
     }
 
@@ -43,9 +43,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             allMessages.push(...messages.map(m => ({ ...m, sessionId: session.id })));
         }
 
-        const progressRecords = await db.select().from(progress).where(eq(progress.userId, studentId));
-        const attendanceRecords = await db.select().from(attendance).where(eq(attendance.userId, studentId));
-        const enrollmentRecords = await db.select().from(enrollments).where(eq(enrollments.userId, studentId));
+        const progressRecords = await db.select().from(progress).where(eq(progress.personId, studentId));
+        const attendanceRecords = await db.select().from(attendance).where(eq(attendance.personId, studentId));
+        const enrollmentRecords = await db.select().from(enrollments).where(eq(enrollments.personId, studentId));
 
         const exportData = {
             exportedAt: new Date().toISOString(),

@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { leads, enrollments, users, crmAuditLog } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
@@ -15,8 +15,8 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userId, orgId } = await auth();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -47,7 +47,7 @@ export async function POST(
 
         // Check permissions - only owner/admin can undo
         const currentUser = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
             columns: { name: true, role: true },
         });
 
@@ -85,7 +85,7 @@ export async function POST(
             await db.update(crmAuditLog)
                 .set({
                     undoneAt: Date.now(),
-                    undoneBy: userId,
+                    undoneBy: personId,
                     undoReason: reason,
                 })
                 .where(eq(crmAuditLog.id, logId));
@@ -101,7 +101,7 @@ export async function POST(
                 newValue: logEntry.previousValue, // What it is after undo
                 changeDescription: `Undo: ${logEntry.changeDescription}`,
                 reason: reason || 'Undo by owner',
-                changedBy: userId,
+                changedBy: personId,
                 changedByName: currentUser.name || undefined,
                 changedByRole: currentUser.role || undefined,
                 undoesLogId: logId,
@@ -134,7 +134,7 @@ export async function POST(
             await db.update(crmAuditLog)
                 .set({
                     undoneAt: Date.now(),
-                    undoneBy: userId,
+                    undoneBy: personId,
                     undoReason: reason,
                 })
                 .where(eq(crmAuditLog.id, logId));
@@ -150,7 +150,7 @@ export async function POST(
                 newValue: logEntry.previousValue,
                 changeDescription: `Undo: ${logEntry.changeDescription}`,
                 reason: reason || 'Undo by owner',
-                changedBy: userId,
+                changedBy: personId,
                 changedByName: currentUser.name || undefined,
                 changedByRole: currentUser.role || undefined,
                 undoesLogId: logId,

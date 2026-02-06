@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
             organizationId: orgId,
             invoiceId,
             type,
-            userId,
+            personId,
             amount,
             currency,
             status: status || 'pending',

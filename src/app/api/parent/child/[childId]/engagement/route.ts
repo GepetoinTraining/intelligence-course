@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { chatSessions, familyLinks } from '@/lib/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 interface RouteParams {
     params: Promise<{ childId: string }>;
@@ -10,8 +10,8 @@ interface RouteParams {
 
 // GET /api/parent/child/[childId]/engagement - Session frequency, duration
 export async function GET(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         const familyLink = await db
             .select()
             .from(familyLinks)
-            .where(and(eq(familyLinks.parentId, userId), eq(familyLinks.studentId, childId)))
+            .where(and(eq(familyLinks.parentId, personId), eq(familyLinks.studentId, childId)))
             .limit(1);
 
         if (familyLink.length === 0) {

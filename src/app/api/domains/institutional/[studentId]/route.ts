@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users, enrollments, classes, courses } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 interface RouteParams {
     params: Promise<{ studentId: string }>;
@@ -10,8 +10,8 @@ interface RouteParams {
 
 // GET /api/domains/institutional/[studentId] - Get institutional data
 export async function GET(request: NextRequest, { params }: RouteParams) {
-    const { userId, orgId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         const studentEnrollments = await db
             .select()
             .from(enrollments)
-            .where(eq(enrollments.userId, studentId));
+            .where(eq(enrollments.personId, studentId));
 
         return NextResponse.json({
             data: {

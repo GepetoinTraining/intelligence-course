@@ -116,7 +116,7 @@ Return ONLY the JSON.`;
                 confidence: analysisResult.confidence,
             }),
             interactionId: validated.interactionId,
-            analyzedBy: userId,
+            analyzedBy: personId,
             analyzedAt: now,
         });
 
@@ -285,7 +285,7 @@ export async function PUT(request: NextRequest) {
             sentiment: validated.sentiment,
             source: 'user_observation',
             context: validated.reason,
-            analyzedBy: userId,
+            analyzedBy: personId,
             analyzedAt: now,
         });
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { leads, users, enrollments, classes } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -10,8 +10,8 @@ interface RouteParams {
 
 // POST /api/leads/[id]/convert - Convert lead to student
 export async function POST(request: NextRequest, { params }: RouteParams) {
-    const { userId, orgId } = await auth();
-    if (!userId || !orgId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         if (body.classId) {
             const enrollmentResult = await db.insert(enrollments).values({
                 organizationId: orgId,
-                userId: newUserId,
+                personId: newUserId,
                 classId: body.classId,
                 termId: body.termId,
                 leadId: id,

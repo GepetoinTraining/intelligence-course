@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
             goalEnrollments: body.goalEnrollments,
             goalRevenueCents: body.goalRevenueCents,
             status: body.status || 'draft',
-            createdBy: userId,
+            createdBy: personId,
         }).returning();
 
         return NextResponse.json({ data: newCampaign[0] }, { status: 201 });

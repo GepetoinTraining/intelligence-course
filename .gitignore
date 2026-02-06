@@ -36,6 +36,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# AI planning artifacts (proprietary — never commit)
+.gemini/
+
+# Claude Code local config (hooks, MCP, personal settings)
+.claude/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

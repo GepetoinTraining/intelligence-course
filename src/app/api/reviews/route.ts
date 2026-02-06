@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
         const reviews = await db
             .select()
             .from(peerReviews)
-            .where(eq(peerReviews.reviewerId, userId))
+            .where(eq(peerReviews.reviewerId, personId))
             .orderBy(desc(peerReviews.createdAt))
             .limit(limit);
 
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
 
         const newReview = await db.insert(peerReviews).values({
             submissionId,
-            reviewerId: userId,
+            reviewerId: personId,
             heldCharacter,
             creativity,
             techniqueUsage,

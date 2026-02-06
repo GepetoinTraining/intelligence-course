@@ -1,6 +1,6 @@
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { users } from '@/lib/db/schema';
+import { users, persons } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 // Role hierarchy - higher roles have access to lower role features
@@ -25,16 +25,24 @@ export interface AuthUser {
 
 // Get current user with role from database
 export async function getCurrentUser(): Promise<AuthUser | null> {
-    const { userId } = await auth();
+    const { personId, orgId } = await getApiAuthWithOrg();
 
-    if (!userId) {
+    if (!personId) {
         return null;
     }
 
     const user = await db
-        .select()
+        .select({
+            id: users.id,
+            personId: users.personId,
+            role: users.role,
+            organizationId: users.organizationId,
+            email: persons.primaryEmail,
+            name: persons.firstName,
+        })
         .from(users)
-        .where(eq(users.id, userId))
+        .leftJoin(persons, eq(users.personId, persons.id))
+        .where(eq(users.id, personId))
         .limit(1);
 
     if (user.length === 0) {
@@ -43,10 +51,10 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
     return {
         id: user[0].id,
-        email: user[0].email,
+        email: user[0].email || '',
         name: user[0].name,
         role: (user[0].role as UserRole) || 'student',
-        organizationId: user[0].organizationId,
+        organizationId: user[0].organizationId || orgId,
     };
 }
 

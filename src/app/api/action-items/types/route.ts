@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 
         // Check if user is owner/admin
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
             columns: { role: true },
         });
 
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
             autoCreateFollowUp: autoCreateFollowUp || false,
             visibleToRoles: visibleToRoles ? JSON.stringify(visibleToRoles) : '["owner", "admin", "staff"]',
             sortOrder: maxSort + 1,
-            createdBy: userId,
+            createdBy: personId,
         }).returning();
 
         return NextResponse.json({

@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         const [run] = await db
             .insert(promptRuns)
             .values({
-                userId,
+                personId,
                 promptId: promptId || null,
                 provider: 'anthropic',
                 model,

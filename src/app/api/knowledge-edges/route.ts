@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
         }
 
         const newEdge = await db.insert(knowledgeEdges).values({
-            userId,
+            personId,
             fromNodeId: sourceNodeId,
             toNodeId: targetNodeId,
             edgeType,

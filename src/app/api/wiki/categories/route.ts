@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 
         // Get user's organization
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
         });
 
         if (!user?.organizationId) {
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         }
 
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
         });
 
         if (!user?.organizationId) {
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
             parentId: data.parentId,
             visibility: data.visibility || 'internal',
             allowedRoles: data.allowedRoles ? JSON.stringify(data.allowedRoles) : '[]',
-            createdBy: userId,
+            createdBy: personId,
             createdAt: now,
             updatedAt: now,
         }).returning();

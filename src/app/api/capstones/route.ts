@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
         }
 
         const newSubmission = await db.insert(capstoneSubmissions).values({
-            userId,
+            personId,
             title,
             moduleId,
             description,

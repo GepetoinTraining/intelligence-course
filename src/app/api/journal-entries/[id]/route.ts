@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { journalEntries, journalEntryLines, chartOfAccounts } from '@/lib/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -10,8 +10,8 @@ interface RouteParams {
 
 // GET /api/journal-entries/[id] - Get entry with lines
 export async function GET(request: NextRequest, { params }: RouteParams) {
-    const { userId, orgId } = await auth();
-    if (!userId || !orgId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -69,8 +69,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 // PATCH /api/journal-entries/[id] - Update entry (post, reverse, update memo)
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
-    const { userId, orgId } = await auth();
-    if (!userId || !orgId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -114,7 +114,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             updateData.status = body.status;
 
             if (body.status === 'posted') {
-                updateData.postedBy = userId;
+                updateData.postedBy = personId;
                 updateData.postedAt = Date.now();
             }
         }
@@ -170,8 +170,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                 status: 'posted',
                 isReversal: 1,
                 reversesEntryId: id,
-                createdBy: userId,
-                postedBy: userId,
+                createdBy: personId,
+                postedBy: personId,
                 postedAt: Date.now(),
             }).returning();
 
@@ -211,8 +211,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 // DELETE /api/journal-entries/[id] - Cancel draft entry
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
-    const { userId, orgId } = await auth();
-    if (!userId || !orgId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

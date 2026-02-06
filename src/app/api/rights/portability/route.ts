@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
         // Create portability package request
         const portabilityRequest = {
             id: crypto.randomUUID(),
-            requestedBy: userId,
+            requestedBy: personId,
             targetPlatform: targetPlatform || 'generic',
             format: format || 'json',
             includeCategories: includeCategories || ['all'],

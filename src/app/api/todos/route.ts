@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
         }
 
         const newTodo = await db.insert(todoItems).values({
-            userId,
+            personId,
             title,
             description,
             priority,

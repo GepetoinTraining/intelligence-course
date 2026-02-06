@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
                     canDelegate: validated.canDelegate,
                     conditions: validated.conditions ? JSON.stringify(validated.conditions) : null,
                     grantedAt: Date.now(),
-                    grantedBy: userId,
+                    grantedBy: personId,
                 })
                 .where(eq(positionPermissions.id, existing[0].id));
 
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
                 actionTypeId: validated.actionTypeId,
                 previousValue: JSON.stringify({ scope: existing[0].scope }),
                 newValue: JSON.stringify({ scope: validated.scope, canDelegate: validated.canDelegate }),
-                performedBy: userId,
+                performedBy: personId,
                 performedAt: Date.now(),
             });
 
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
             canDelegate: validated.canDelegate,
             conditions: validated.conditions ? JSON.stringify(validated.conditions) : null,
             grantedAt: Date.now(),
-            grantedBy: userId,
+            grantedBy: personId,
         });
 
         // Log the change
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
             targetPositionId: validated.positionId,
             actionTypeId: validated.actionTypeId,
             newValue: JSON.stringify({ scope: validated.scope, canDelegate: validated.canDelegate }),
-            performedBy: userId,
+            performedBy: personId,
             performedAt: Date.now(),
         });
 
@@ -239,7 +239,7 @@ export async function PUT(request: NextRequest) {
                             scope: perm.scope,
                             canDelegate: perm.canDelegate,
                             grantedAt: Date.now(),
-                            grantedBy: userId,
+                            grantedBy: personId,
                         })
                         .where(eq(positionPermissions.id, existing.id));
                     updated++;
@@ -252,7 +252,7 @@ export async function PUT(request: NextRequest) {
                         scope: perm.scope,
                         canDelegate: perm.canDelegate,
                         grantedAt: Date.now(),
-                        grantedBy: userId,
+                        grantedBy: personId,
                     });
                     created++;
                 }
@@ -272,7 +272,7 @@ export async function PUT(request: NextRequest) {
             action: 'modify',
             targetPositionId: validated.positionId,
             newValue: JSON.stringify({ created, updated, deleted }),
-            performedBy: userId,
+            performedBy: personId,
             performedAt: Date.now(),
         });
 
@@ -349,7 +349,7 @@ export async function DELETE(request: NextRequest) {
             targetPositionId: positionId,
             actionTypeId,
             previousValue: JSON.stringify({ scope: existing[0].scope }),
-            performedBy: userId,
+            performedBy: personId,
             performedAt: Date.now(),
         });
 

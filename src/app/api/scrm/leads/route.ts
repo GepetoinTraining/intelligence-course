@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
             insightHobbies: validated.insightHobbies ? JSON.stringify(validated.insightHobbies) : null,
             insightAspirations: validated.insightAspirations ? JSON.stringify(validated.insightAspirations) : null,
             notes: validated.notes,
-            assignedTo: userId,
+            assignedTo: personId,
             createdAt: now,
             updatedAt: now,
         }).returning();
@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
             leadId: newLead.id,
             stage: funnelStage,
             funnelSegment: getFunnelSegment(funnelStage),
-            changedBy: userId,
+            changedBy: personId,
             changedAt: now,
         });
 
@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
                     insightType: 'dream',
                     content: validated.insightDreams[i],
                     position: i,
-                    createdBy: userId,
+                    createdBy: personId,
                     createdAt: now,
                 });
             }
@@ -214,7 +214,7 @@ export async function POST(request: NextRequest) {
                     insightType: 'hobby',
                     content: validated.insightHobbies[i],
                     position: i,
-                    createdBy: userId,
+                    createdBy: personId,
                     createdAt: now,
                 });
             }
@@ -226,7 +226,7 @@ export async function POST(request: NextRequest) {
                     insightType: 'aspiration',
                     content: validated.insightAspirations[i],
                     position: i,
-                    createdBy: userId,
+                    createdBy: personId,
                     createdAt: now,
                 });
             }

@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
 
         const newCourse = await db.insert(courses).values({
-            createdBy: userId,
+            createdBy: personId,
             organizationId: orgId || body.organizationId,
             title: JSON.stringify(body.title),
             description: JSON.stringify(body.description || {}),

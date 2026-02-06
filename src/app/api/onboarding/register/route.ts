@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
         const existing = await db
             .select()
             .from(users)
-            .where(eq(users.id, userId))
+            .where(eq(users.id, personId))
             .limit(1);
 
         if (existing.length > 0) {
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
                     role: role || 'student',
                     updatedAt: Math.floor(Date.now() / 1000),
                 })
-                .where(eq(users.id, userId))
+                .where(eq(users.id, personId))
                 .returning();
 
             return NextResponse.json({ data: updated[0] });
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
         // Create new user
         const newUser = await db.insert(users).values({
-            id: userId,
+            id: personId,
             email,
             name,
             role: role || 'student',

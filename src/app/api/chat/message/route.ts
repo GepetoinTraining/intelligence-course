@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ error: 'Organization required' }, { status: 400 });
             }
             const newSession = await db.insert(chatSessions).values({
-                studentId: userId,
+                studentId: personId,
                 organizationId: orgId,
             }).returning();
             activeSessionId = newSession[0].id;

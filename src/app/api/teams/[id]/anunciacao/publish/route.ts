@@ -18,9 +18,9 @@ export async function POST(
 ) {
     try {
         const { id: teamId } = await params;
-        const { userId, orgId: organizationId } = await getApiAuthWithOrg();
+        const { personId, orgId: organizationId } = await getApiAuthWithOrg();
 
-        if (!userId || !organizationId) {
+        if (!personId || !organizationId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -29,7 +29,7 @@ export async function POST(
 
         // Get user's person record
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
         });
 
         if (!user?.personId) {
@@ -90,7 +90,7 @@ export async function POST(
         // Clear any drafts in the drafts table for this anunciação
         await db.delete(drafts).where(
             and(
-                eq(drafts.userId, userId),
+                eq(drafts.personId, personId),
                 eq(drafts.type, 'anunciacao'),
                 eq(drafts.referenceId, teamId)
             )

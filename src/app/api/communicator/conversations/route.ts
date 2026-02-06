@@ -15,6 +15,8 @@ import {
     users,
     meetings,
     organizations,
+    organizationMemberships,
+    persons,
 } from '@/lib/db/schema';
 import { eq, and, desc, or, sql, inArray } from 'drizzle-orm';
 import {
@@ -40,7 +42,7 @@ export async function GET(request: NextRequest) {
             organizationId: organizationMemberships.organizationId,
         })
             .from(users)
-            .where(eq(users.id, userId))
+            .where(eq(users.id, personId))
             .limit(1);
 
         const orgId = currentUser?.organizationId;
@@ -88,7 +90,7 @@ export async function GET(request: NextRequest) {
             })
                 .from(conversationParticipants)
                 .where(and(
-                    eq(conversationParticipants.userId, participantIdFilter),
+                    eq(conversationParticipants.personId, participantIdFilter),
                     eq(conversationParticipants.isActive, true),
                     inArray(conversationParticipants.conversationId, conversationIds)
                 ));
@@ -141,13 +143,13 @@ export async function GET(request: NextRequest) {
             results.map(async (conv) => {
                 // Get participants
                 const participants = await db.select({
-                    id: conversationParticipants.userId,
+                    id: conversationParticipants.personId,
                     name: persons.firstName,
                     avatarUrl: persons.avatarUrl,
                     role: conversationParticipants.role,
                 })
                     .from(conversationParticipants)
-                    .innerJoin(users, eq(conversationParticipants.userId, users.id))
+                    .innerJoin(users, eq(conversationParticipants.personId, users.id))
                     .where(and(
                         eq(conversationParticipants.conversationId, conv.id),
                         eq(conversationParticipants.isActive, true)
@@ -174,14 +176,14 @@ export async function GET(request: NextRequest) {
                 // Get display name for direct conversations
                 let displayName = conv.name;
                 if (conv.type === 'direct' && !displayName) {
-                    const otherParticipant = participants.find(p => p.id !== userId);
+                    const otherParticipant = participants.find(p => p.id !== personId);
                     displayName = otherParticipant?.name || 'Unknown';
                 }
 
                 // Get avatar for direct conversations
                 let displayAvatar = conv.avatarUrl;
                 if (conv.type === 'direct' && !displayAvatar) {
-                    const otherParticipant = participants.find(p => p.id !== userId);
+                    const otherParticipant = participants.find(p => p.id !== personId);
                     displayAvatar = otherParticipant?.avatarUrl || null;
                 }
 
@@ -273,21 +275,23 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Get user's organization from database
+        // Get user's organization from database  
         const [currentUser] = await db.select({
             organizationId: organizationMemberships.organizationId,
             email: persons.primaryEmail,
             name: persons.firstName,
         })
             .from(users)
-            .where(eq(users.id, userId))
+            .innerJoin(persons, eq(users.personId, persons.id))
+            .leftJoin(organizationMemberships, eq(persons.id, organizationMemberships.personId))
+            .where(eq(users.id, personId))
             .limit(1);
 
-        let orgId = currentUser?.organizationId;
+        let orgId: string | null = currentUser?.organizationId || null;
 
         // If user has no org, create a personal org for them
         if (!orgId) {
-            const personalOrgId = `personal-${userId}`;
+            const personalOrgId = `personal-${personId}`;
 
             // Check if personal org already exists
             const existingOrg = await db.select({ id: organizations.id })
@@ -300,7 +304,7 @@ export async function POST(request: NextRequest) {
                 await db.insert(organizations).values({
                     id: personalOrgId,
                     name: currentUser?.name ? `${currentUser.name}'s Workspace` : 'Personal Workspace',
-                    slug: `personal-${userId.slice(0, 8)}`,
+                    slug: `personal-${personId.slice(0, 8)}`,
                     plan: 'trial',
                 });
             }
@@ -309,7 +313,7 @@ export async function POST(request: NextRequest) {
             if (currentUser) {
                 await db.update(users)
                     .set({ organizationId: personalOrgId })
-                    .where(eq(users.id, userId));
+                    .where(eq(users.id, personId));
             }
 
             orgId = personalOrgId;
@@ -323,7 +327,7 @@ export async function POST(request: NextRequest) {
         }
 
         let conversation: any;
-        let participantIds: string[] = [userId];
+        let participantIds: string[] = [personId];
 
         switch (type as ConversationType) {
             case 'direct': {
@@ -349,7 +353,7 @@ export async function POST(request: NextRequest) {
                         eq(conversations.type, 'direct'),
                         or(
                             eq(conversationParticipants.personId, personId),
-                            eq(conversationParticipants.userId, participantId)
+                            eq(conversationParticipants.personId, participantId)
                         )
                     ));
 
@@ -379,14 +383,14 @@ export async function POST(request: NextRequest) {
                 [conversation] = await db.insert(conversations).values({
                     organizationId: orgId,
                     type: 'direct',
-                    createdBy: userId,
+                    createdBy: personId,
                 }).returning();
 
                 // Create initial message if provided
                 if (initialMessage) {
                     await db.insert(messages).values({
                         conversationId: conversation.id,
-                        senderId: userId,
+                        senderId: personId,
                         senderType: 'user',
                         content: initialMessage,
                         contentType: 'text',
@@ -422,7 +426,7 @@ export async function POST(request: NextRequest) {
                     aiModel,
                     aiSystemPrompt,
                     aiContext: aiContext ? JSON.stringify(aiContext) : '[]',
-                    createdBy: userId,
+                    createdBy: personId,
                 }).returning();
 
                 break;
@@ -464,7 +468,7 @@ export async function POST(request: NextRequest) {
                 }
                 // TODO: Handle 'team' scope when team membership is implemented
 
-                participantIds = [...new Set([userId, ...recipientIds])];
+                participantIds = [...new Set([personId, ...recipientIds])];
 
                 [conversation] = await db.insert(conversations).values({
                     organizationId: orgId,
@@ -474,13 +478,13 @@ export async function POST(request: NextRequest) {
                     broadcastScope,
                     broadcastRoleFilter: broadcastRoleFilter ? JSON.stringify(broadcastRoleFilter) : null,
                     broadcastTeamId,
-                    createdBy: userId,
+                    createdBy: personId,
                 }).returning();
 
                 // Create the initial broadcast message
                 await db.insert(messages).values({
                     conversationId: conversation.id,
-                    senderId: userId,
+                    senderId: personId,
                     senderType: 'user',
                     content,
                     contentType,
@@ -498,9 +502,9 @@ export async function POST(request: NextRequest) {
                 for (const recipientId of participantIds) {
                     await db.insert(conversationParticipants).values({
                         conversationId: conversation.id,
-                        userId: recipientId,
-                        role: recipientId === userId ? 'owner' : 'member',
-                        canReply: recipientId === userId || allowReplies,
+                        personId: recipientId,
+                        role: recipientId === personId ? 'owner' : 'member',
+                        canReply: recipientId === personId || allowReplies,
                     });
                 }
 
@@ -521,7 +525,7 @@ export async function POST(request: NextRequest) {
                 }
 
                 const { name, description, avatarUrl, participantIds: groupParticipants, initialMessage, nodeId, graphPath } = validation.data;
-                participantIds = [...new Set([userId, ...groupParticipants])];
+                participantIds = [...new Set([personId, ...groupParticipants])];
 
                 [conversation] = await db.insert(conversations).values({
                     organizationId: orgId,
@@ -531,13 +535,13 @@ export async function POST(request: NextRequest) {
                     avatarUrl,
                     nodeId,
                     graphPath,
-                    createdBy: userId,
+                    createdBy: personId,
                 }).returning();
 
                 if (initialMessage) {
                     await db.insert(messages).values({
                         conversationId: conversation.id,
-                        senderId: userId,
+                        senderId: personId,
                         senderType: 'user',
                         content: initialMessage,
                         contentType: 'text',
@@ -600,7 +604,7 @@ export async function POST(request: NextRequest) {
                     type: 'meeting',
                     name: name || meeting.title,
                     meetingId,
-                    createdBy: userId,
+                    createdBy: personId,
                 }).returning();
 
                 // TODO: Add meeting participants as conversation participants
@@ -618,7 +622,7 @@ export async function POST(request: NextRequest) {
                 }
 
                 const { problemTitle, description, participantIds: problemParticipants, linkedEntityType, linkedEntityId, nodeId } = validation.data;
-                participantIds = [...new Set([userId, ...problemParticipants])];
+                participantIds = [...new Set([personId, ...problemParticipants])];
 
                 [conversation] = await db.insert(conversations).values({
                     organizationId: orgId,
@@ -627,7 +631,7 @@ export async function POST(request: NextRequest) {
                     problemTitle,
                     problemStatus: 'open',
                     nodeId,
-                    createdBy: userId,
+                    createdBy: personId,
                 }).returning();
 
                 // Create system message describing the problem
@@ -661,8 +665,8 @@ export async function POST(request: NextRequest) {
             for (const participantId of participantIds) {
                 await db.insert(conversationParticipants).values({
                     conversationId: conversation.id,
-                    userId: participantId,
-                    role: participantId === userId ? 'owner' : 'member',
+                    personId: participantId,
+                    role: participantId === personId ? 'owner' : 'member',
                 }).onConflictDoNothing();
             }
         }

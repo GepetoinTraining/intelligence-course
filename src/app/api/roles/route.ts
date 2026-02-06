@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
 
         // Check if user is owner
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
             columns: { role: true },
         });
 
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
             icon: data.icon,
             color: data.color,
             canHaveReports: data.canHaveReports,
-            createdBy: userId,
+            createdBy: personId,
         }).returning();
 
         return NextResponse.json({

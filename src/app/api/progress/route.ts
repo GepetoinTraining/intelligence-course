@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
         } else {
             // Create new
             await db.insert(progress).values({
-                userId,
+                personId,
                 moduleId,
                 lessonId,
                 taskId,

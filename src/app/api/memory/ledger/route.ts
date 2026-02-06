@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
         }
 
         const dbUser = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
         });
 
         if (!dbUser) {
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
         }
 
         const dbUser = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
         });
 
         if (!dbUser) {

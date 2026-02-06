@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import {
     getEvidenceById,
     removeEvidence,
@@ -20,8 +20,8 @@ interface Context {
 
 export async function GET(request: NextRequest, context: Context) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json(
                 { error: 'Unauthorized' },
                 { status: 401 }
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest, context: Context) {
         }
 
         // Check ownership (only owner can see their evidence)
-        if (evidence.personId !== userId) {
+        if (evidence.personId !== personId) {
             // TODO: Check if user has share access
             return NextResponse.json(
                 { error: 'Access denied' },
@@ -59,8 +59,8 @@ export async function GET(request: NextRequest, context: Context) {
 
 export async function DELETE(request: NextRequest, context: Context) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json(
                 { error: 'Unauthorized' },
                 { status: 401 }
@@ -78,7 +78,7 @@ export async function DELETE(request: NextRequest, context: Context) {
         }
 
         // Only owner can delete
-        if (evidence.personId !== userId) {
+        if (evidence.personId !== personId) {
             return NextResponse.json(
                 { error: 'Access denied' },
                 { status: 403 }
@@ -99,8 +99,8 @@ export async function DELETE(request: NextRequest, context: Context) {
 
 export async function POST(request: NextRequest, context: Context) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId) {
             return NextResponse.json(
                 { error: 'Unauthorized' },
                 { status: 401 }
@@ -122,14 +122,14 @@ export async function POST(request: NextRequest, context: Context) {
             }
 
             // Only owner can contest
-            if (evidence.personId !== userId) {
+            if (evidence.personId !== personId) {
                 return NextResponse.json(
                     { error: 'Access denied' },
                     { status: 403 }
                 );
             }
 
-            await contestEvidence(id, body.reason, userId);
+            await contestEvidence(id, body.reason, personId);
 
             return NextResponse.json({ success: true });
         }

@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { meetings, meetingParticipants, users, activityFeed } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -18,8 +18,8 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userId, orgId } = await auth();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -39,7 +39,7 @@ export async function GET(
         // Get participants with user details
         const participants = await db.select({
             id: meetingParticipants.id,
-            userId: meetingParticipants.userId,
+            personId: meetingParticipants.personId,
             externalEmail: meetingParticipants.externalEmail,
             externalName: meetingParticipants.externalName,
             externalPhone: meetingParticipants.externalPhone,
@@ -53,9 +53,9 @@ export async function GET(
 
         const enrichedParticipants = await Promise.all(
             participants.map(async (p) => {
-                if (p.userId) {
+                if (p.personId) {
                     const user = await db.query.users.findFirst({
-                        where: eq(users.id, p.userId),
+                        where: eq(users.id, p.personId),
                         columns: { name: true, avatarUrl: true, email: true },
                     });
                     return {
@@ -112,8 +112,8 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userId, orgId } = await auth();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -134,11 +134,11 @@ export async function PATCH(
 
         // Check if user can edit (organizer or admin)
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
             columns: { role: true, name: true },
         });
 
-        if (meeting.organizerId !== userId && !['owner', 'admin'].includes(user?.role || '')) {
+        if (meeting.organizerId !== personId && !['owner', 'admin'].includes(user?.role || '')) {
             return NextResponse.json({ error: 'Only organizer can edit meeting' }, { status: 403 });
         }
 
@@ -152,7 +152,7 @@ export async function PATCH(
             await db.update(meetings)
                 .set({
                     approvalStatus: approvalValidation.data.approved ? 'approved' : 'rejected',
-                    approvedBy: userId,
+                    approvedBy: personId,
                     approvedAt: Date.now(),
                     approvalNotes: approvalValidation.data.notes,
                     status: approvalValidation.data.approved ? 'confirmed' : 'cancelled',
@@ -162,7 +162,7 @@ export async function PATCH(
 
             await db.insert(activityFeed).values({
                 organizationId: orgId,
-                actorId: userId,
+                actorId: personId,
                 actorName: user?.name || 'Unknown',
                 action: approvalValidation.data.approved ? 'meeting_approved' : 'meeting_rejected',
                 entityType: 'meeting',
@@ -203,7 +203,7 @@ export async function PATCH(
 
         await db.insert(activityFeed).values({
             organizationId: orgId,
-            actorId: userId,
+            actorId: personId,
             actorName: user?.name || 'Unknown',
             action: 'meeting_updated',
             entityType: 'meeting',
@@ -228,8 +228,8 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userId, orgId } = await auth();
-        if (!userId || !orgId) {
+        const { personId, orgId } = await getApiAuthWithOrg();
+        if (!personId || !orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -249,11 +249,11 @@ export async function DELETE(
 
         // Check permission
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.id, personId),
             columns: { role: true, name: true },
         });
 
-        if (meeting.organizerId !== userId && !['owner', 'admin'].includes(user?.role || '')) {
+        if (meeting.organizerId !== personId && !['owner', 'admin'].includes(user?.role || '')) {
             return NextResponse.json({ error: 'Only organizer can cancel meeting' }, { status: 403 });
         }
 
@@ -262,7 +262,7 @@ export async function DELETE(
             .set({
                 status: 'cancelled',
                 cancelledAt: Date.now(),
-                cancelledBy: userId,
+                cancelledBy: personId,
                 cancellationReason: body.reason || null,
                 updatedAt: Date.now(),
             })
@@ -270,7 +270,7 @@ export async function DELETE(
 
         await db.insert(activityFeed).values({
             organizationId: orgId,
-            actorId: userId,
+            actorId: personId,
             actorName: user?.name || 'Unknown',
             action: 'meeting_cancelled',
             entityType: 'meeting',

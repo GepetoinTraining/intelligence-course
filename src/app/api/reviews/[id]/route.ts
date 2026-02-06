@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { peerReviews } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { auth } from '@clerk/nextjs/server';
+import { getApiAuthWithOrg } from '@/lib/auth';
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -10,8 +10,8 @@ interface RouteParams {
 
 // GET /api/reviews/[id]
 export async function GET(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -37,8 +37,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 // PATCH /api/reviews/[id]
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -59,7 +59,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         const updated = await db
             .update(peerReviews)
             .set(updateData)
-            .where(and(eq(peerReviews.id, id), eq(peerReviews.reviewerId, userId)))
+            .where(and(eq(peerReviews.id, id), eq(peerReviews.reviewerId, personId)))
             .returning();
 
         if (updated.length === 0) {
@@ -75,8 +75,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 // DELETE /api/reviews/[id]
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
-    const { userId } = await auth();
-    if (!userId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -85,7 +85,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     try {
         const deleted = await db
             .delete(peerReviews)
-            .where(and(eq(peerReviews.id, id), eq(peerReviews.reviewerId, userId)))
+            .where(and(eq(peerReviews.id, id), eq(peerReviews.reviewerId, personId)))
             .returning();
 
         if (deleted.length === 0) {

@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 
         const newReferral = await db.insert(referrals).values({
             organizationId: orgId || body.organizationId,
-            referrerId: body.referrerId || userId,
+            referrerId: body.referrerId || personId,
             leadId: body.leadId,
             referredUserId: body.referredUserId,
             status: 'pending',

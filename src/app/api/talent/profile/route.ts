@@ -26,7 +26,7 @@ export async function GET() {
         if (!profile) {
             // Create new profile
             const [newProfile] = await db.insert(talentProfiles).values({
-                userId,
+                personId,
                 status: 'incomplete',
             }).returning();
             profile = newProfile;

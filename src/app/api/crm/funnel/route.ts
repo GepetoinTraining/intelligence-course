@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiAuthWithOrg } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { users, leads, enrollments, classes, courses } from '@/lib/db/schema';
+import { users, leads, enrollments, classes, courses, persons } from '@/lib/db/schema';
 import { eq, and, isNotNull, sql } from 'drizzle-orm';
 
 // ============================================================================
@@ -10,7 +10,7 @@ import { eq, and, isNotNull, sql } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
     try {
-        const { userId: clerkUserId } = await getApiAuthWithOrg();
+        const { personId: clerkUserId } = await getApiAuthWithOrg();
         if (!clerkUserId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
 
         const enrollmentsData = await db.select({
             id: enrollments.id,
-            userId: enrollments.userId,
+            personId: enrollments.personId,
             status: enrollments.status,
             enrolledAt: enrollments.enrolledAt,
             classId: enrollments.classId,
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
             .where(eq(enrollments.organizationId, currentUser.organizationId));
 
         // Get enrolled user details
-        const enrolledUserIds = [...new Set(enrollmentsData.map(e => e.userId))];
+        const enrolledUserIds = [...new Set(enrollmentsData.map(e => e.personId))];
         const enrolledUsers = enrolledUserIds.length > 0
             ? await db.select({
                 id: users.id,
@@ -145,7 +145,7 @@ export async function GET(request: NextRequest) {
 
         // LTV items (enrollments)
         for (const enrollment of enrollmentsData) {
-            const user = enrolledUserMap.get(enrollment.userId);
+            const user = enrolledUserMap.get(enrollment.personId);
             if (!user) continue;
 
             const classInfo = enrollment.classId ? classMap.get(enrollment.classId) : null;
@@ -226,7 +226,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId: clerkUserId } = await getApiAuthWithOrg();
+        const { personId: clerkUserId } = await getApiAuthWithOrg();
         if (!clerkUserId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }

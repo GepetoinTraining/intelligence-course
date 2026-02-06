@@ -14,7 +14,7 @@ import {
     meetingTranscripts,
     conversations,
     messages,
-    users,
+    users, persons
 } from '@/lib/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { GenerateSummarySchema, AI_SUMMARY_PROMPTS } from '@/lib/validations/communicator';
@@ -204,7 +204,7 @@ export async function POST(request: NextRequest) {
             tokensUsed,
             processingTimeMs: processingTime,
             linkedNodeId,
-            generatedBy: userId,
+            generatedBy: personId,
         }).returning();
 
         return NextResponse.json({
