@@ -139,7 +139,7 @@ async function bootstrap() {
         await db.insert(users).values({
             id: OWNER_CLERK_ID,
             personId,
-            onboardingCompleted: true,
+            onboardingCompleted: 1,  // 1 = true, 0 = false (integer in schema)
             createdAt: now,
             updatedAt: now,
         });

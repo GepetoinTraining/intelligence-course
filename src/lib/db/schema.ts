@@ -471,10 +471,22 @@ export const personContacts = sqliteTable('person_contacts', {
  * 
  * This table contains ONLY auth-related state. All identity data is in `persons`.
  * The id is the Clerk user_id, personId links to the canonical identity.
+ * 
+ * ⚠️ DEPRECATED COLUMNS BELOW: These are temporary shims for backward compatibility
+ * during the identity migration. Code should use persons table for email/name/avatarUrl
+ * and organizationMemberships for role/organizationId. See migration_plan_v2.md
  */
 export const users = sqliteTable('users', {
     id: text('id').primaryKey(), // Clerk user_id
-    personId: text('person_id').notNull().references(() => persons.id),  // Canonical identity
+    personId: text('person_id').references(() => persons.id),  // Canonical identity (nullable during migration)
+
+    // ⚠️ DEPRECATED SHIM COLUMNS - To be removed after Phase 5 migration complete
+    // Use persons.primaryEmail, persons.firstName, persons.avatarUrl instead
+    email: text('email'),  // DEPRECATED: use persons.primaryEmail
+    name: text('name'),    // DEPRECATED: use persons.firstName
+    avatarUrl: text('avatar_url'),  // DEPRECATED: use persons.avatarUrl
+    role: text('role', { enum: ['student', 'parent', 'teacher', 'staff', 'admin', 'owner', 'talent'] }),  // DEPRECATED: use organizationMemberships
+    organizationId: text('organization_id').references(() => organizations.id),  // DEPRECATED: use organizationMemberships
 
     // Onboarding state
     onboardingCompleted: integer('onboarding_completed').default(0),
@@ -490,6 +502,7 @@ export const users = sqliteTable('users', {
     archivedAt: integer('archived_at'),
 }, (table) => [
     index('idx_users_person').on(table.personId),
+    index('idx_users_org').on(table.organizationId),  // Temp index for deprecated column
 ]);
 
 /**

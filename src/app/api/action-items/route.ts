@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
         // Filter by assigned user (for personal calendar)
         if (view === 'my' || assignedTo) {
-            conditions.push(eq(actionItems.assignedTo, assignedTo || userId));
+            conditions.push(eq(actionItems.assignedTo, assignedTo || personId));
         }
 
         // Filter by status
@@ -154,11 +154,10 @@ export async function POST(request: NextRequest) {
 
         // Get user name for activity feed
         const user = await db.query.users.findFirst({
-            where: eq(users.id, userId),
+            where: eq(users.personId, personId),
             columns: { name: true },
         });
 
-        // Create the action item
         const [newItem] = await db.insert(actionItems).values({
             organizationId: orgId,
             title,
@@ -166,8 +165,8 @@ export async function POST(request: NextRequest) {
             actionTypeId: actionTypeId || null,
             linkedEntityType: linkedEntityType || null,
             linkedEntityId: linkedEntityId || null,
-            assignedTo: assignedTo || userId,
-            createdBy: userId,
+            assignedTo: assignedTo || personId,
+            createdBy: personId,
             priority: priority || 'medium',
             dueDate: dueDate || null,
             dueTime: dueTime || null,
@@ -175,10 +174,9 @@ export async function POST(request: NextRequest) {
             reminders: reminders ? JSON.stringify(reminders) : '[]',
         }).returning();
 
-        // Log to activity feed
         await db.insert(activityFeed).values({
             organizationId: orgId,
-            actorId: userId,
+            actorId: personId,
             actorName: user?.name || 'Unknown',
             action: 'task_created',
             entityType: linkedEntityType || 'action_item',
