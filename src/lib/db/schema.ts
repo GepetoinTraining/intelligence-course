@@ -7340,8 +7340,8 @@ export const attendanceRecords = sqliteTable('attendance_records', {
     recordedAt: integer('recorded_at').default(timestamp()),
 }, (table) => [
     uniqueIndex('idx_attendance_session_person').on(table.sessionId, table.personId),
-    index('idx_attendance_person').on(table.personId),
-    index('idx_attendance_status').on(table.status),
+    index('idx_attendance_records_person').on(table.personId),
+    index('idx_attendance_records_status').on(table.status),
 ]);
 
 // ============================================================================
@@ -13682,9 +13682,120 @@ export const anunciacoes = sqliteTable('anunciacoes', {
 ]);
 
 // ============================================================================
-// TYPE EXPORTS - Team & Role Management
+// GENESIS: Cross-Session Memory Graph (Platform-Only Module)
 // ============================================================================
 
+export const genesisNodes = sqliteTable('genesis_nodes', {
+    id: text('id').primaryKey().default(uuid()),
+    personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
+    organizationId: text('organization_id').notNull().references(() => organizations.id),
+
+    // Content
+    content: text('content').notNull(),
+    summary: text('summary'),
+    nodeType: text('node_type', {
+        enum: ['conversation', 'concept', 'insight', 'decision', 'pattern', 'question', 'contradiction']
+    }).notNull(),
+
+    // Hypersphere topology
+    depth: real('depth').notNull().default(1.0),        // Distance from soul (0 = core identity, 1 = periphery)
+    gravity: real('gravity').notNull().default(1.0),     // Importance weight (0-10)
+
+    // Access control
+    accessLevel: integer('access_level').notNull().default(1), // Minimum trust to see this
+
+    // Tags for gravity bumping
+    tags: text('tags').default('[]'), // JSON array of strings
+
+    // Temporal
+    createdAt: integer('created_at').default(timestamp()),
+    updatedAt: integer('updated_at').default(timestamp()),
+    accessedAt: integer('accessed_at').default(timestamp()),
+    accessCount: integer('access_count').default(0),
+
+    // Source tracking
+    sourceSessionType: text('source_session_type', {
+        enum: ['claude_code', 'claude_desktop', 'claude_web', 'antigravity', 'subconscious', 'manual']
+    }),
+    sourceSessionId: text('source_session_id'),
+}, (table) => [
+    index('idx_genesis_nodes_person').on(table.personId),
+    index('idx_genesis_nodes_org').on(table.organizationId),
+    index('idx_genesis_nodes_gravity').on(table.gravity),
+    index('idx_genesis_nodes_depth').on(table.depth),
+    index('idx_genesis_nodes_type').on(table.nodeType),
+]);
+
+export const genesisEdges = sqliteTable('genesis_edges', {
+    id: text('id').primaryKey().default(uuid()),
+    sourceId: text('source_id').notNull().references(() => genesisNodes.id, { onDelete: 'cascade' }),
+    targetId: text('target_id').notNull().references(() => genesisNodes.id, { onDelete: 'cascade' }),
+
+    relationType: text('relation_type', {
+        enum: ['references', 'develops', 'contradicts', 'branches', 'causes', 'supports', 'temporal', 'semantic']
+    }).notNull(),
+
+    weight: real('weight').notNull().default(1.0),
+    context: text('context'),  // Why this connection exists
+
+    createdAt: integer('created_at').default(timestamp()),
+    strengthenedCount: integer('strengthened_count').default(0),
+    lastStrengthened: integer('last_strengthened'),
+}, (table) => [
+    index('idx_genesis_edges_source').on(table.sourceId),
+    index('idx_genesis_edges_target').on(table.targetId),
+    index('idx_genesis_edges_type').on(table.relationType),
+]);
+
+export const genesisCubePositions = sqliteTable('genesis_cube_positions', {
+    id: text('id').primaryKey().default(uuid()),
+    personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
+
+    // Trust topology — 3D position in the hypersphere
+    trustLevel: real('trust_level').notNull().default(1.0),      // 0-10: stranger to co-creator
+    accessDepth: real('access_depth').notNull().default(1.0),    // 0-10: public to subconscious
+    roleClarity: real('role_clarity').notNull().default(2.0),    // 0-10: undefined to SELF
+
+    createdAt: integer('created_at').default(timestamp()),
+    updatedAt: integer('updated_at').default(timestamp()),
+}, (table) => [
+    uniqueIndex('idx_genesis_cube_person').on(table.personId),
+]);
+
+export const genesisLedger = sqliteTable('genesis_ledger', {
+    id: text('id').primaryKey().default(uuid()),
+    personId: text('person_id').notNull().references(() => persons.id),
+    nodeId: text('node_id').references(() => genesisNodes.id),
+
+    entryType: text('entry_type', {
+        enum: ['observation', 'inference', 'commitment', 'question', 'decision', 'pattern', 'surfaced']
+    }).notNull(),
+
+    content: text('content').notNull(),
+    confidence: real('confidence').notNull().default(1.0),
+
+    // Source
+    sourceSessionType: text('source_session_type', {
+        enum: ['claude_code', 'claude_desktop', 'claude_web', 'antigravity', 'subconscious', 'manual']
+    }),
+
+    createdAt: integer('created_at').default(timestamp()),
+}, (table) => [
+    index('idx_genesis_ledger_person').on(table.personId),
+    index('idx_genesis_ledger_type').on(table.entryType),
+    index('idx_genesis_ledger_time').on(table.createdAt),
+]);
+
+export const genesisEmbeddings = sqliteTable('genesis_embeddings', {
+    nodeId: text('node_id').primaryKey().references(() => genesisNodes.id, { onDelete: 'cascade' }),
+    vector: text('vector').notNull(),  // JSON array of 768 floats (Nomic/Gemini)
+    modelVersion: text('model_version').notNull().default('nomic-embed-text-v2-moe'),
+    createdAt: integer('created_at').default(timestamp()),
+});
+
+// ============================================================================
+// TYPE EXPORTS - Team & Role Management
+// ============================================================================
 
 export type Team = typeof teams.$inferSelect;
 export type TeamInsert = typeof teams.$inferInsert;
