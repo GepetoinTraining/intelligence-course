@@ -94,7 +94,7 @@ export default function MatriculasPage() {
                     <Text size="sm" c="dimmed">Operacional</Text>
                     <Title order={2}>Matrículas</Title>
                 </div>
-                <Button leftSection={<IconPlus size={16} />}>
+                <Button leftSection={<IconPlus size={16} />} component="a" href="/admin/operacional/matriculas/nova">
                     Nova Matrícula
                 </Button>
             </Group>

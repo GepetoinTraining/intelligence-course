@@ -99,50 +99,7 @@ const MAX_TOTAL_SCORE = RUBRIC_CRITERIA.reduce((acc, c) => acc + c.maxScore, 0);
 // MOCK DATA
 // ============================================================================
 
-const MOCK_PEER_SUBMISSIONS: PeerSubmission[] = [
-    {
-        id: 'peer-1',
-        studentId: 's2',
-        studentName: 'Colega #1',
-        isAnonymous: true,
-        moduleName: 'Module 1: The Orbit',
-        title: 'Exploring Temporal Contexts',
-        description: 'An experiment with adding temporal layers to AI conversations, focusing on how time-based context affects persona consistency.',
-        promptCount: 4,
-        runCount: 8,
-        reviewed: false,
-    },
-    {
-        id: 'peer-2',
-        studentId: 's3',
-        studentName: 'Colega #2',
-        isAnonymous: true,
-        moduleName: 'Module 1: The Orbit',
-        title: 'Character Development Study',
-        description: 'I created three different personas and tested how they maintained character across different types of questions.',
-        promptCount: 6,
-        runCount: 12,
-        reviewed: false,
-    },
-    {
-        id: 'peer-3',
-        studentId: 's4',
-        studentName: 'Colega #3',
-        isAnonymous: true,
-        moduleName: 'Module 1: The Orbit',
-        title: 'The Spatial Layer Experiment',
-        description: 'Testing how adding location and environment context changes AI responses.',
-        promptCount: 3,
-        runCount: 7,
-        reviewed: true,
-        myReview: {
-            submissionId: 'peer-3',
-            rubricScores: { character: 4, technique: 5, creativity: 4, clarity: 3, overall: 4 },
-            feedback: 'Very creative approach! I loved how you explored different environments.',
-            createdAt: '2026-02-01',
-        },
-    },
-];
+const MOCK_PEER_SUBMISSIONS: PeerSubmission[] = [];
 
 // ============================================================================
 // COMPONENT

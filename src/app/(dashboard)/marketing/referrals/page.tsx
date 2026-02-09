@@ -54,41 +54,9 @@ const TIERS = {
     platinum: { color: 'violet', label: 'Platina', minReferrals: 30, rewardMultiplier: 2 },
 };
 
-const MOCK_REFERRERS: Referrer[] = [
-    {
-        id: '1', name: 'Ana Paula Costa', email: 'ana@email.com',
-        referralCode: 'ANA2026', referrals: 12, conversions: 8,
-        pendingReward: 400, paidReward: 1200, tier: 'silver', joinedAt: '2025-09-15'
-    },
-    {
-        id: '2', name: 'Carlos Mendes', email: 'carlos@email.com',
-        referralCode: 'CARLOS26', referrals: 25, conversions: 18,
-        pendingReward: 600, paidReward: 3600, tier: 'gold', joinedAt: '2025-06-20'
-    },
-    {
-        id: '3', name: 'Beatriz Lima', email: 'bia@email.com',
-        referralCode: 'BIA2026', referrals: 35, conversions: 28,
-        pendingReward: 1000, paidReward: 8400, tier: 'platinum', joinedAt: '2025-03-10'
-    },
-    {
-        id: '4', name: 'Daniel Rocha', email: 'daniel@email.com',
-        referralCode: 'DANIEL26', referrals: 3, conversions: 2,
-        pendingReward: 200, paidReward: 200, tier: 'bronze', joinedAt: '2026-01-05'
-    },
-    {
-        id: '5', name: 'Fernanda Souza', email: 'fer@email.com',
-        referralCode: 'FER2026', referrals: 7, conversions: 5,
-        pendingReward: 300, paidReward: 750, tier: 'silver', joinedAt: '2025-11-12'
-    },
-];
+const MOCK_REFERRERS: Referrer[] = [];
 
-const MOCK_REFERRALS: Referral[] = [
-    { id: '1', referrerId: '3', referrerName: 'Beatriz Lima', leadName: 'João Silva', leadEmail: 'joao@email.com', status: 'enrolled', enrolledCourse: 'AI Mastery', reward: 150, createdAt: '2026-02-01' },
-    { id: '2', referrerId: '2', referrerName: 'Carlos Mendes', leadName: 'Maria Santos', leadEmail: 'maria@email.com', status: 'trial', reward: 0, createdAt: '2026-02-02' },
-    { id: '3', referrerId: '1', referrerName: 'Ana Paula Costa', leadName: 'Pedro Costa', leadEmail: 'pedro@email.com', status: 'enrolled', enrolledCourse: 'IA para Jovens', reward: 100, createdAt: '2026-01-28' },
-    { id: '4', referrerId: '3', referrerName: 'Beatriz Lima', leadName: 'Lucas Oliveira', leadEmail: 'lucas@email.com', status: 'pending', reward: 0, createdAt: '2026-02-03' },
-    { id: '5', referrerId: '2', referrerName: 'Carlos Mendes', leadName: 'Ana Clara', leadEmail: 'anaclara@email.com', status: 'enrolled', enrolledCourse: 'AI Mastery', reward: 150, createdAt: '2026-01-25' },
-];
+const MOCK_REFERRALS: Referral[] = [];
 
 // ============================================================================
 // COMPONENT

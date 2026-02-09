@@ -25,14 +25,7 @@ interface Student {
 }
 
 // Mock data
-const MOCK_STUDENTS: Student[] = [
-    { id: '1', name: 'Ana Silva', email: 'ana@escola.com', lessonsCompleted: 6, totalLessons: 6, lastActive: '2h atrás', capstoneStatus: 'graded', capstoneGrade: 92 },
-    { id: '2', name: 'Bruno Santos', email: 'bruno@escola.com', lessonsCompleted: 5, totalLessons: 6, lastActive: '1d atrás', capstoneStatus: 'submitted' },
-    { id: '3', name: 'Carla Oliveira', email: 'carla@escola.com', lessonsCompleted: 4, totalLessons: 6, lastActive: '3h atrás', capstoneStatus: 'in_progress' },
-    { id: '4', name: 'Daniel Costa', email: 'daniel@escola.com', lessonsCompleted: 3, totalLessons: 6, lastActive: '5h atrás', capstoneStatus: 'not_started' },
-    { id: '5', name: 'Elena Ferreira', email: 'elena@escola.com', lessonsCompleted: 6, totalLessons: 6, lastActive: '30min atrás', capstoneStatus: 'graded', capstoneGrade: 88 },
-    { id: '6', name: 'Felipe Lima', email: 'felipe@escola.com', lessonsCompleted: 2, totalLessons: 6, lastActive: '2d atrás', capstoneStatus: 'not_started' },
-];
+const MOCK_STUDENTS: Student[] = [];
 
 const CLASS_INFO = {
     name: 'Turma A - Manhã',

@@ -34,41 +34,7 @@ interface Term {
 // MOCK DATA
 // ============================================================================
 
-const MOCK_TERMS: Term[] = [
-    {
-        id: '1',
-        name: '2026.1 - Primeiro Semestre',
-        startDate: '2026-02-15',
-        endDate: '2026-06-30',
-        enrollmentStart: '2026-01-15',
-        enrollmentEnd: '2026-02-10',
-        status: 'current',
-        classCount: 8,
-        studentCount: 120
-    },
-    {
-        id: '2',
-        name: '2026.2 - Segundo Semestre',
-        startDate: '2026-08-01',
-        endDate: '2026-12-15',
-        enrollmentStart: '2026-07-01',
-        enrollmentEnd: '2026-07-25',
-        status: 'upcoming',
-        classCount: 0,
-        studentCount: 0
-    },
-    {
-        id: '3',
-        name: '2025.2 - Segundo Semestre',
-        startDate: '2025-08-01',
-        endDate: '2025-12-15',
-        enrollmentStart: '2025-07-01',
-        enrollmentEnd: '2025-07-25',
-        status: 'past',
-        classCount: 6,
-        studentCount: 85
-    },
-];
+const MOCK_TERMS: Term[] = [];
 
 // ============================================================================
 // COMPONENT

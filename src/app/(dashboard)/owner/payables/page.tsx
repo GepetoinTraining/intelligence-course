@@ -51,13 +51,7 @@ const statusConfig: Record<string, { label: string; color: string }> = {
     cancelled: { label: 'Cancelado', color: 'gray' },
 };
 
-const MOCK_PAYABLES: Payable[] = [
-    { id: '1', vendorName: 'Imobiliária Central', vendorDocument: '12.345.678/0001-90', invoiceNumber: null, description: 'Aluguel mensal - Janeiro', category: 'rent', amountCents: 500000, dueDate: Date.now() + 5 * 24 * 60 * 60 * 1000, paidDate: null, status: 'pending', isRecurring: true },
-    { id: '2', vendorName: 'CPFL Energia', vendorDocument: null, invoiceNumber: 'EL-2026-001234', description: 'Conta de luz', category: 'utilities', amountCents: 85000, dueDate: Date.now() + 10 * 24 * 60 * 60 * 1000, paidDate: null, status: 'pending', isRecurring: true },
-    { id: '3', vendorName: 'Sabesp', vendorDocument: null, invoiceNumber: 'AG-2026-005678', description: 'Conta de água', category: 'utilities', amountCents: 32000, dueDate: Date.now() - 2 * 24 * 60 * 60 * 1000, paidDate: null, status: 'overdue', isRecurring: true },
-    { id: '4', vendorName: 'Google Workspace', vendorDocument: null, invoiceNumber: 'GWS-789456', description: 'Licenças Google Workspace', category: 'software', amountCents: 45000, dueDate: Date.now() + 15 * 24 * 60 * 60 * 1000, paidDate: null, status: 'scheduled', isRecurring: true },
-    { id: '5', vendorName: 'Papelaria ABC', vendorDocument: '98.765.432/0001-10', invoiceNumber: 'NF-12345', description: 'Material de escritório', category: 'supplies', amountCents: 15500, dueDate: Date.now() - 10 * 24 * 60 * 60 * 1000, paidDate: Date.now() - 8 * 24 * 60 * 60 * 1000, status: 'paid', isRecurring: false },
-];
+const MOCK_PAYABLES: Payable[] = [];
 
 export default function OwnerPayablesPage() {
     const [payables, setPayables] = useState<Payable[]>([]);

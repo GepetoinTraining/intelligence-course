@@ -13,6 +13,7 @@ import {
     IconCheck, IconBrain, IconSparkles, IconListCheck
 } from '@tabler/icons-react';
 import Link from 'next/link';
+import type { ModuleRef } from '@/types/domain';
 
 // ============================================================================
 // TYPES
@@ -44,11 +45,7 @@ interface Lesson {
 // MOCK DATA
 // ============================================================================
 
-const MOCK_MODULES = [
-    { id: '1', name: 'O que é Inteligência Artificial?', courseName: 'Fundamentos de IA para Jovens' },
-    { id: '2', name: 'Conversando com a Máquina', courseName: 'Fundamentos de IA para Jovens' },
-    { id: '5', name: 'Fundamentos de LLMs', courseName: 'AI Mastery para Profissionais' },
-];
+const MOCK_MODULES: ModuleRef[] = [];
 
 const ACTIVITY_TYPES = [
     { value: 'prompt', label: '🤖 Prompt Practice', icon: IconRobot, color: 'violet' },
@@ -58,45 +55,7 @@ const ACTIVITY_TYPES = [
     { value: 'reflection', label: '🧠 Reflexão', icon: IconBrain, color: 'pink' },
 ];
 
-const MOCK_LESSONS: Lesson[] = [
-    {
-        id: '1', moduleId: '1', moduleName: 'O que é Inteligência Artificial?', courseName: 'Fundamentos de IA para Jovens',
-        title: 'O que é IA afinal?', description: 'Introdução ao conceito de inteligência artificial',
-        order: 1, duration: 30, status: 'published', hasPrerequisites: false,
-        activities: [
-            { id: 'a1', type: 'discussion', title: 'O que você acha que é IA?', instructions: 'Compartilhe sua ideia sobre o que é inteligência artificial', aiEnabled: false },
-            { id: 'a2', type: 'prompt', title: 'Primeiro contato', instructions: 'Faça uma pergunta simples para a IA', aiEnabled: true },
-        ]
-    },
-    {
-        id: '2', moduleId: '1', moduleName: 'O que é Inteligência Artificial?', courseName: 'Fundamentos de IA para Jovens',
-        title: 'IA no dia-a-dia', description: 'Exemplos de IA que usamos todos os dias',
-        order: 2, duration: 25, status: 'published', hasPrerequisites: true,
-        activities: [
-            { id: 'a3', type: 'exercise', title: 'Caça ao tesouro de IA', instructions: 'Liste 5 exemplos de IA que você usa no celular', aiEnabled: false },
-            { id: 'a4', type: 'quiz', title: 'Teste seus conhecimentos', instructions: 'Responda o quiz sobre IA no dia-a-dia', aiEnabled: false },
-        ]
-    },
-    {
-        id: '3', moduleId: '2', moduleName: 'Conversando com a Máquina', courseName: 'Fundamentos de IA para Jovens',
-        title: 'Escrevendo prompts claros', description: 'Como se comunicar de forma eficaz com a IA',
-        order: 1, duration: 35, status: 'published', hasPrerequisites: false,
-        activities: [
-            { id: 'a5', type: 'prompt', title: 'Prompt vago vs claro', instructions: 'Compare resultados de prompts vagos e claros', aiEnabled: true },
-            { id: 'a6', type: 'reflection', title: 'O que funcionou?', instructions: 'Reflita sobre por que o prompt claro funcionou melhor', aiEnabled: false },
-        ]
-    },
-    {
-        id: '4', moduleId: '5', moduleName: 'Fundamentos de LLMs', courseName: 'AI Mastery para Profissionais',
-        title: 'Entendendo Tokenização', description: 'Como LLMs processam texto em tokens',
-        order: 1, duration: 45, status: 'draft', hasPrerequisites: false,
-        activities: [
-            { id: 'a7', type: 'exercise', title: 'Contando tokens', instructions: 'Use o tokenizer para contar tokens em diferentes textos', aiEnabled: true },
-            { id: 'a8', type: 'prompt', title: 'Otimizando tokens', instructions: 'Reescreva o prompt usando menos tokens sem perder significado', aiEnabled: true },
-            { id: 'a9', type: 'quiz', title: 'Quiz de Tokenização', instructions: 'Teste seus conhecimentos sobre tokenização', aiEnabled: false },
-        ]
-    },
-];
+const MOCK_LESSONS: Lesson[] = [];
 
 // ============================================================================
 // COMPONENT

@@ -64,35 +64,7 @@ const MEDIUM_PRESETS = [
     { value: 'affiliate', label: 'Affiliate' },
 ];
 
-const MOCK_SAVED_LINKS: SavedLink[] = [
-    {
-        id: '1',
-        baseUrl: 'https://escola.com/matricula',
-        params: { source: 'instagram', medium: 'social', campaign: 'fev_2026_promo', content: 'stories_urgencia' },
-        fullUrl: 'https://escola.com/matricula?utm_source=instagram&utm_medium=social&utm_campaign=fev_2026_promo&utm_content=stories_urgencia',
-        name: 'Promo Fevereiro - Stories',
-        createdAt: '2026-02-01',
-        clicks: 245,
-    },
-    {
-        id: '2',
-        baseUrl: 'https://escola.com/ingles-fluente',
-        params: { source: 'google', medium: 'cpc', campaign: 'ingles_fluente', term: 'curso ingles' },
-        fullUrl: 'https://escola.com/ingles-fluente?utm_source=google&utm_medium=cpc&utm_campaign=ingles_fluente&utm_term=curso+ingles',
-        name: 'Google Ads - Inglês Fluente',
-        createdAt: '2026-01-28',
-        clicks: 892,
-    },
-    {
-        id: '3',
-        baseUrl: 'https://escola.com/aula-experimental',
-        params: { source: 'email', medium: 'email', campaign: 'newsletter_jan', content: 'cta_principal' },
-        fullUrl: 'https://escola.com/aula-experimental?utm_source=email&utm_medium=email&utm_campaign=newsletter_jan&utm_content=cta_principal',
-        name: 'Newsletter Janeiro - CTA',
-        createdAt: '2026-01-15',
-        clicks: 156,
-    },
-];
+const MOCK_SAVED_LINKS: SavedLink[] = [];
 
 // ============================================================================
 // MAIN COMPONENT

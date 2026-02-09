@@ -24,25 +24,7 @@ interface Workshop {
     firstAction: string;
 }
 
-const MOCK_WORKSHOPS: Workshop[] = [
-    {
-        id: '1',
-        title: 'Dificuldade com prompts longos',
-        status: 'completed',
-        createdAt: '2026-01-28',
-        problem: 'Minhas prompts muito longas confundem o modelo',
-        whys: [
-            'Por que o modelo se confunde? - Porque há muitas instruções conflitantes',
-            'Por que há instruções conflitantes? - Porque não estruturo bem o prompt',
-            'Por que não estruturo bem? - Porque não planejo antes de escrever',
-            'Por que não planejo? - Porque tenho pressa de ver resultados',
-            'Por que tenho pressa? - Porque subestimo o tempo necessário',
-        ],
-        rootCause: 'Falta de planejamento prévio antes de escrever prompts',
-        successSign: 'Conseguir respostas consistentes em prompts com mais de 3 parágrafos',
-        firstAction: 'Criar um template de estrutura para prompts complexos',
-    },
-];
+const MOCK_WORKSHOPS: Workshop[] = [];
 
 export default function ProblemWorkshopPage() {
     const [workshops, setWorkshops] = useState<Workshop[]>(MOCK_WORKSHOPS);

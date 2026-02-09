@@ -24,76 +24,7 @@ interface Technique {
     lastUsed?: string;
 }
 
-const MOCK_TECHNIQUES: Technique[] = [
-    {
-        id: 'orbit',
-        name: 'The Orbit',
-        module: 'Módulo 1',
-        icon: <IconRocket size={24} />,
-        color: 'blue',
-        description: 'Defina o contexto e a persona antes de tudo',
-        usageCount: 45,
-        mastery: 85,
-        badges: [
-            { name: 'Primeiro Uso', earned: true },
-            { name: '10 Prompts', earned: true },
-            { name: '50 Prompts', earned: false },
-            { name: 'Mestre', earned: false },
-        ],
-        lastUsed: '2026-02-02',
-    },
-    {
-        id: 'slingshot',
-        name: 'The Slingshot',
-        module: 'Módulo 2',
-        icon: <IconTarget size={24} />,
-        color: 'violet',
-        description: 'Adicione camadas de contexto temporal e espacial',
-        usageCount: 32,
-        mastery: 65,
-        badges: [
-            { name: 'Primeiro Uso', earned: true },
-            { name: '10 Prompts', earned: true },
-            { name: '50 Prompts', earned: false },
-            { name: 'Mestre', earned: false },
-        ],
-        lastUsed: '2026-02-01',
-    },
-    {
-        id: 'black_hole',
-        name: 'The Black Hole',
-        module: 'Módulo 3',
-        icon: <IconBolt size={24} />,
-        color: 'orange',
-        description: 'Explore as fronteiras do modelo com perguntas difíceis',
-        usageCount: 18,
-        mastery: 40,
-        badges: [
-            { name: 'Primeiro Uso', earned: true },
-            { name: '10 Prompts', earned: true },
-            { name: '50 Prompts', earned: false },
-            { name: 'Mestre', earned: false },
-        ],
-        lastUsed: '2026-01-28',
-    },
-    {
-        id: 'constellation',
-        name: 'The Constellation',
-        module: 'Módulo 4',
-        icon: <IconStars size={24} />,
-        color: 'cyan',
-        description: 'Conecte ideias em uma rede de conhecimento',
-        usageCount: 5,
-        mastery: 15,
-        badges: [
-            { name: 'Primeiro Uso', earned: true },
-            { name: '10 Prompts', earned: false },
-            { name: '50 Prompts', earned: false },
-            { name: 'Mestre', earned: false },
-        ],
-        lastUsed: '2026-01-25',
-    },
-];
+const MOCK_TECHNIQUES: Technique[] = [];
 
 export default function TechniqueTrackerPage() {
     const [techniques] = useState<Technique[]>(MOCK_TECHNIQUES);

@@ -42,13 +42,7 @@ const AMENITY_OPTIONS = [
     { value: 'audio', label: 'Sistema de Áudio' },
 ];
 
-const MOCK_ROOMS: Room[] = [
-    { id: '1', name: 'Sala Principal', code: 'A1', capacity: 20, amenities: ['wifi', 'projector', 'ac', 'whiteboard'], isActive: true, currentOccupancy: 15, nextSession: { time: '14:00', class: 'Turma A' } },
-    { id: '2', name: 'Lab de Informática', code: 'LAB1', capacity: 15, amenities: ['wifi', 'computers', 'ac'], isActive: true, currentOccupancy: 0 },
-    { id: '3', name: 'Sala de Reuniões', code: 'REU1', capacity: 8, amenities: ['wifi', 'projector', 'ac'], isActive: true, currentOccupancy: 4 },
-    { id: '4', name: 'Auditório', code: 'AUD', capacity: 50, amenities: ['wifi', 'projector', 'ac', 'audio'], isActive: true },
-    { id: '5', name: 'Sala Kids', code: 'KIDS', capacity: 12, amenities: ['wifi', 'whiteboard'], isActive: false },
-];
+const MOCK_ROOMS: Room[] = [];
 
 const AMENITY_ICONS: Record<string, React.ReactNode> = {
     wifi: <IconWifi size={14} />,

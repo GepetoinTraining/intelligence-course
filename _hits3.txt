@@ -1,0 +1,8 @@
+110: method: p.method,
+111: amount: formatCurrency(p.amount),
+112: count: p.count,
+113: percentage: `${p.percentage}%`,
+116: name: c.name,
+117: revenue: formatCurrency(c.revenue),
+118: students: c.students,
+119: percentage: `${c.percentage}%`,

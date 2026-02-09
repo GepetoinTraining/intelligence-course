@@ -1,0 +1,16 @@
+[dotenv@17.2.3] injecting env (13) from .env.local -- tip: ÔÜÖ´©Å  override existing env vars with { override: true }
+Found 1 Clerk users:
+
+  Clerk ID: user_39Iyu2YeqvvErr8FlYA3J3BY0gV
+  Email: garcia.pedro.wow@gmail.com
+  Name: Pedro Garcia
+
+Ô£à Real Clerk ID for Pedro: user_39Iyu2YeqvvErr8FlYA3J3BY0gV
+
+DB users: 1
+  DB user ID: user_39Cjn2l4w4hKlmGEbXGr8rS506i, personId: f73634c0-1b4b-449f-90ac-96a8407aa9ab
+
+ÔÜá´©Å  MISMATCH! DB has: user_39Cjn2l4w4hKlmGEbXGr8rS506i, Clerk has: user_39Iyu2YeqvvErr8FlYA3J3BY0gV
+Updating DB to use real Clerk ID...
+
+Ô£à Updated! DB user ID is now: user_39Iyu2YeqvvErr8FlYA3J3BY0gV

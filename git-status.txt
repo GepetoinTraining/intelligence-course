@@ -1,0 +1,123 @@
+ M src/app/(dashboard)/financial/page.tsx
+ M src/app/(dashboard)/graveyard/page.tsx
+ M src/app/(dashboard)/inbox/[threadId]/page.tsx
+ M src/app/(dashboard)/inbox/page.tsx
+ M src/app/(dashboard)/journal/page.tsx
+ M src/app/(dashboard)/marketing/campaigns/page.tsx
+ M src/app/(dashboard)/marketing/referrals/page.tsx
+ M src/app/(dashboard)/marketing/templates/page.tsx
+ M src/app/(dashboard)/owner/employees/page.tsx
+ M src/app/(dashboard)/owner/page.tsx
+ M src/app/(dashboard)/owner/payables/page.tsx
+ M src/app/(dashboard)/owner/reports/page.tsx
+ M src/app/(dashboard)/owner/unit-economics/page.tsx
+ M src/app/(dashboard)/parent/billing/page.tsx
+ M src/app/(dashboard)/parent/page.tsx
+ M src/app/(dashboard)/prompts/page.tsx
+ M src/app/(dashboard)/school/classes/page.tsx
+ M src/app/(dashboard)/school/courses/[courseId]/page.tsx
+ M src/app/(dashboard)/school/courses/page.tsx
+ M src/app/(dashboard)/school/discounts/page.tsx
+ M src/app/(dashboard)/school/enrollments/page.tsx
+ M src/app/(dashboard)/school/lessons/page.tsx
+ M src/app/(dashboard)/school/modules/page.tsx
+ M src/app/(dashboard)/school/page.tsx
+ M src/app/(dashboard)/school/products/page.tsx
+ M src/app/(dashboard)/school/rooms/page.tsx
+ M src/app/(dashboard)/school/schedules/page.tsx
+ M src/app/(dashboard)/school/teachers/page.tsx
+ M src/app/(dashboard)/school/terms/page.tsx
+ M src/app/(dashboard)/staff/marketing/calendar/page.tsx
+ M src/app/(dashboard)/staff/marketing/copy-generator/page.tsx
+ M src/app/(dashboard)/staff/marketing/landing-builder/page.tsx
+ M src/app/(dashboard)/staff/marketing/page.tsx
+ M src/app/(dashboard)/staff/marketing/utm-builder/page.tsx
+ M src/app/(dashboard)/staff/payments/page.tsx
+ M src/app/(dashboard)/staff/pipeline/page.tsx
+ M src/app/(dashboard)/staff/sales-manager/page.tsx
+ M src/app/(dashboard)/staff/scrm/[id]/page.tsx
+ M src/app/(dashboard)/staff/scrm/page.tsx
+ M src/app/(dashboard)/student/capstone/page.tsx
+ M src/app/(dashboard)/student/challenges/page.tsx
+ M src/app/(dashboard)/student/constellation/page.tsx
+ M src/app/(dashboard)/student/review/page.tsx
+ M src/app/(dashboard)/student/techniques/page.tsx
+ M src/app/(dashboard)/student/todo/page.tsx
+ M src/app/(dashboard)/student/workshop/page.tsx
+ M src/app/(dashboard)/teacher/attendance/page.tsx
+ M src/app/(dashboard)/teacher/classes/[classId]/page.tsx
+ M src/app/(dashboard)/teacher/grades/page.tsx
+ M src/app/(dashboard)/teacher/page.tsx
+ M src/app/(dashboard)/teacher/student/[id]/page.tsx
+ M src/app/admin/operacional/matriculas/page.tsx
+ M src/app/admin/page.tsx
+ M src/app/go/page.tsx
+ M src/components/admin/AdminSidebar.tsx
+ M src/lib/db/schema.ts
+ M src/lib/validations/procedures.ts
+?? _hits.txt
+?? _hits2.txt
+?? _hits3.txt
+?? approve_output.txt
+?? bootstrap_output.txt
+?? build-output.txt
+?? build_output.txt
+?? debug_output.txt
+?? docs/ideas/
+?? fix_clerk_output.txt
+?? fix_onboarding_output.txt
+?? git-status.txt
+?? memberships_output.txt
+?? nul
+?? person_check.txt
+?? scripts/debug-db.ts
+?? scripts/enforce-types.mjs
+?? scripts/fix-clerk-id.ts
+?? scripts/fix-mock-types.mjs
+?? scripts/fix-onboarding.ts
+?? scripts/remove-mocks.mjs
+?? src/app/(dashboard)/staff/minha-fila/
+?? src/app/admin/agenda/direcao/
+?? src/app/admin/agenda/letivo/
+?? src/app/admin/agenda/lideres/
+?? src/app/admin/agenda/recursos/
+?? src/app/admin/agenda/total/
+?? src/app/admin/ai/analises/
+?? src/app/admin/ai/geradores/
+?? src/app/admin/ai/uso/
+?? src/app/admin/comunicacao/comunicador/
+?? src/app/admin/comunicacao/enviados/
+?? src/app/admin/comunicacao/rascunhos/
+?? src/app/admin/comunicacao/whatsapp/
+?? src/app/admin/configuracoes/api-keys/
+?? src/app/admin/configuracoes/auditoria/
+?? src/app/admin/configuracoes/branding/
+?? src/app/admin/configuracoes/webhooks/
+?? src/app/admin/contabil/balanco/
+?? src/app/admin/contabil/contador/
+?? src/app/admin/contabil/documentos/
+?? src/app/admin/kaizen/pesquisas/
+?? src/app/admin/kaizen/quadro/
+?? src/app/admin/kaizen/retrospectivas/
+?? src/app/admin/operacional/matriculas/nova/
+?? src/app/admin/relatorios/agendados/
+?? src/app/admin/relatorios/comercial/
+?? src/app/admin/relatorios/exportar/
+?? src/app/admin/relatorios/financeiro/
+?? src/app/admin/relatorios/pedagogico/
+?? src/app/admin/relatorios/personalizado/
+?? src/app/admin/relatorios/rh/
+?? src/app/admin/rh/comissoes/
+?? src/app/admin/rh/contratos/
+?? src/app/admin/rh/metas/
+?? src/app/admin/rh/organograma/
+?? src/app/admin/rh/treinamentos/
+?? src/app/api/enrollment-flow/
+?? src/app/api/notifications/
+?? src/app/api/procedures/seed-pipelines/
+?? src/app/api/reports/
+?? src/app/api/teams/my-memberships/
+?? src/app/api/webhooks/esign/
+?? src/lib/esign.ts
+?? src/lib/notifications.ts
+?? src/types/

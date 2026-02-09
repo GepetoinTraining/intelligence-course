@@ -1,0 +1,31 @@
+57: const totalTeacherCost = MOCK_TEACHERS.reduce((acc, t) => acc + t.totalCost, 0);
+58: const totalRevenueFromTeachers = MOCK_TEACHERS.reduce((acc, t) => acc + t.revenueGenerated, 0);
+59: const avgEfficiency = MOCK_TEACHERS.reduce((acc, t) => acc + t.efficiency, 0) / MOCK_TEACHERS.length;
+91: salary: formatCurrency(t.salary),
+92: bonus: formatCurrency(t.bonus),
+93: totalCost: formatCurrency(t.totalCost),
+96: hoursPerWeek: t.hoursPerWeek,
+97: revenueGenerated: formatCurrency(t.revenueGenerated),
+98: efficiency: `${t.efficiency.toFixed(2)}x`,
+99: costPerStudent: formatCurrency(t.costPerStudent),
+100: trend: `${t.trend > 0 ? '+' : ''}${t.trend}%`,
+128: { key: 'totalCost', label: 'Custo Total' },
+131: { key: 'hoursPerWeek', label: 'Horas/Sem' },
+132: { key: 'revenueGenerated', label: 'Receita Gerada' },
+134: { key: 'costPerStudent', label: 'Custo/Aluno' },
+348: <Text size="sm" fw={500}>{formatCurrency(MOCK_COST_BREAKDOWN.bonuses)}</Text>
+350: <Progress value={(MOCK_COST_BREAKDOWN.bonuses / MOCK_COST_BREAKDOWN.total) * 100} size="sm" color="green" />
+413: <Text size="sm" fw={500}>{formatCurrency(teacher.totalCost)}</Text>
+414: <Text size="xs" c="dimmed">{formatCurrency(teacher.costPerStudent)}/aluno</Text>
+418: <Text size="sm" fw={500} c="green">{formatCurrency(teacher.revenueGenerated)}</Text>
+422: color={teacher.efficiency >= 2.5 ? 'green' : teacher.efficiency >= 2 ? 'yellow' : 'red'}
+425: {teacher.efficiency.toFixed(2)}x
+430: color={teacher.trend > 0 ? 'green' : 'red'}
+432: leftSection={teacher.trend > 0 ? <IconArrowUpRight size={10} /> : <IconArrowDownRight size={10} />}
+434: {teacher.trend > 0 ? '+' : ''}{teacher.trend}%
+449: {MOCK_TEACHERS.sort((a, b) => b.efficiency - a.efficiency).map((teacher, i) => (
+459: <Text size="xs" c="dimmed">{teacher.hoursPerWeek}h/semana</Text>
+460: <Text size="sm" fw={600}>{teacher.efficiency.toFixed(2)}x</Text>
+464: value={(teacher.efficiency / 3) * 100}
+467: color={teacher.efficiency >= 2.5 ? 'green' : teacher.efficiency >= 2 ? 'yellow' : 'red'}
+478: {MOCK_TEACHERS.filter(t => t.efficiency >= 2.5).length} de {MOCK_TEACHERS.length} professores atingem a meta

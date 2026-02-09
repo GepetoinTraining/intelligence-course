@@ -14,6 +14,7 @@ import {
 } from '@tabler/icons-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import type { StudentProgress } from '@/types/domain';
 
 // Dynamic import for R3F to avoid SSR issues
 const TodoCube3D = dynamic(() => import('@/components/todo/TodoCube3D'), {
@@ -56,21 +57,16 @@ const UNLOCK_LEVELS: UnlockLevel[] = [
 ];
 
 // Mock student progress
-const MOCK_STUDENT_PROGRESS = {
-    completedModules: 2, // Student has completed 2 modules
-    totalModules: 5,
+const MOCK_STUDENT_PROGRESS: StudentProgress = {
+    level: 0,
+    currentXP: 0,
+    nextLevelXP: 100,
+    completedModules: 0,
+    totalModules: 0,
+    streak: 0,
 };
 
-const MOCK_TODOS: Todo[] = [
-    { id: '1', title: 'Completar Lição 3', description: 'Terminar os exercícios de The Orbit', urgent: true, important: true, effort: 'medium', completed: false, dueDate: '2026-02-05', linkedLesson: 'Lição 3 - Contexto Avançado' },
-    { id: '2', title: 'Revisar anotações do Módulo 1', urgent: false, important: true, effort: 'low', completed: false },
-    { id: '3', title: 'Praticar prompt no Playground', urgent: true, important: false, effort: 'low', completed: false },
-    { id: '4', title: 'Assistir vídeo extra', urgent: false, important: false, effort: 'low', completed: false },
-    { id: '5', title: 'Submeter capstone', description: 'Entrega do Módulo 2', urgent: true, important: true, effort: 'high', completed: true, dueDate: '2026-01-30' },
-    { id: '6', title: 'Projeto final de IA', description: 'Criar agente personalizado', urgent: false, important: true, effort: 'high', completed: false, dueDate: '2026-02-20' },
-    { id: '7', title: 'Responder fórum', urgent: true, important: false, effort: 'medium', completed: false },
-    { id: '8', title: 'Organizar anotações', urgent: false, important: false, effort: 'medium', completed: false },
-];
+const MOCK_TODOS: Todo[] = [];
 
 export default function TodoCubePage() {
     const [todos, setTodos] = useState<Todo[]>(MOCK_TODOS);

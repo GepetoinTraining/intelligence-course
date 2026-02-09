@@ -46,26 +46,11 @@ interface LeaderboardEntry {
     challenges: number;
 }
 
-const MOCK_CHALLENGES: Challenge[] = [
-    { id: '1', title: 'O Paradoxo do Viajante', description: 'Crie um prompt que faça o AI explicar o paradoxo do avô de forma simples', authorId: 'u1', authorName: 'Maria S.', createdAt: '2026-02-01', attempts: 15, bestScore: 95, status: 'open', difficulty: 'medium' },
-    { id: '2', title: 'Poesia em Código', description: 'Faça o AI escrever um poema onde cada linha seja também código válido', authorId: 'u2', authorName: 'João C.', createdAt: '2026-01-28', attempts: 8, bestScore: 88, status: 'attempted', difficulty: 'hard' },
-    { id: '3', title: 'Explicação para Criança', description: 'Explique mecânica quântica para uma criança de 5 anos', authorId: 'u3', authorName: 'Ana L.', createdAt: '2026-01-25', attempts: 23, bestScore: 92, status: 'solved', difficulty: 'easy' },
-];
+const MOCK_CHALLENGES: Challenge[] = [];
 
-const MOCK_SOLUTIONS: Solution[] = [
-    { id: 's1', challengeId: '1', authorId: 'u4', authorName: 'Pedro A.', prompt: 'Imagine que você tem uma máquina do tempo...', score: 95, upvotes: 12, downvotes: 1, userVote: null, submittedAt: '2026-02-01T14:00:00' },
-    { id: 's2', challengeId: '1', authorId: 'u5', authorName: 'Carla M.', prompt: 'Vamos fingir que você é um viajante do tempo...', score: 88, upvotes: 8, downvotes: 2, userVote: 'up', submittedAt: '2026-02-01T15:30:00' },
-    { id: 's3', challengeId: '3', authorId: 'u6', authorName: 'Lucas R.', prompt: 'Pense em coisas muito pequenininhas...', score: 92, upvotes: 15, downvotes: 0, userVote: null, submittedAt: '2026-01-26T10:00:00' },
-    { id: 's4', challengeId: '3', authorId: 'u1', authorName: 'Maria S.', prompt: 'Sabe quando você brinca de esconde-esconde...', score: 85, upvotes: 10, downvotes: 3, userVote: 'down', submittedAt: '2026-01-26T11:00:00' },
-];
+const MOCK_SOLUTIONS: Solution[] = [];
 
-const MOCK_LEADERBOARD: LeaderboardEntry[] = [
-    { rank: 1, name: 'Pedro Alves', score: 450, challenges: 12 },
-    { rank: 2, name: 'Maria Santos', score: 380, challenges: 10 },
-    { rank: 3, name: 'João Costa', score: 320, challenges: 8 },
-    { rank: 4, name: 'Ana Lima', score: 280, challenges: 7 },
-    { rank: 5, name: 'Bruno Silva', score: 240, challenges: 6 },
-];
+const MOCK_LEADERBOARD: LeaderboardEntry[] = [];
 
 export default function ChallengeBoardPage() {
     const [challenges, setChallenges] = useState<Challenge[]>(MOCK_CHALLENGES);

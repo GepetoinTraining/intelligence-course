@@ -204,6 +204,8 @@ export const CreateProcedureStepSchema = z.object({
     isOptional: z.boolean().default(false),
     isStartStep: z.boolean().default(false),
     isEndStep: z.boolean().default(false),
+    falloutProcedureId: z.string().uuid().optional(),
+    autoAdvance: z.boolean().default(false),
     displayOrder: z.number().int().default(0),
 });
 

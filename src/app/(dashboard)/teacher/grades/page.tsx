@@ -17,6 +17,7 @@ import {
 } from '@tabler/icons-react';
 import Link from 'next/link';
 import { ExportButton } from '@/components/shared';
+import type { ClassRef, ModuleRef } from '@/types/domain';
 
 // ============================================================================
 // TYPES
@@ -85,79 +86,11 @@ const MAX_TOTAL_SCORE = RUBRIC_CRITERIA.reduce((acc, c) => acc + c.maxScore, 0);
 // MOCK DATA
 // ============================================================================
 
-const MOCK_CLASSES = [
-    { id: 'class-1', name: 'Turma A - Manhã' },
-    { id: 'class-2', name: 'Turma B - Tarde' },
-    { id: 'class-3', name: 'Turma C - Noite' },
-];
+const MOCK_CLASSES: ClassRef[] = [];
 
-const MOCK_MODULES = [
-    { id: 'mod-1', name: 'Module 1: The Orbit' },
-    { id: 'mod-2', name: 'Module 2: The Slingshot' },
-    { id: 'mod-3', name: 'Module 3: The Black Hole' },
-];
+const MOCK_MODULES: ModuleRef[] = [];
 
-const MOCK_SUBMISSIONS: Record<string, CapstoneSubmission[]> = {
-    'class-1': [
-        {
-            id: 'sub-1',
-            studentId: 's1',
-            studentName: 'Ana Silva',
-            moduleId: 'mod-1',
-            title: 'Orbital Prompting Project',
-            status: 'graded',
-            submittedAt: '2026-01-28',
-            selfScore: 22,
-            selfFeedback: 'I felt confident in my character development but could improve on technique.',
-            teacherScore: 20,
-            teacherFeedback: 'Excellent work on maintaining character. Technique usage was good but could be more systematic.',
-            peerScore: 21,
-            peerCount: 5,
-            finalScore: 20.5, // (22 + 20*2 + 21) / 4
-        },
-        {
-            id: 'sub-2',
-            studentId: 's2',
-            studentName: 'Bruno Costa',
-            moduleId: 'mod-1',
-            title: 'AI Character Study',
-            status: 'under_review',
-            submittedAt: '2026-01-29',
-            selfScore: 18,
-            selfFeedback: 'I struggled with the reflection but loved the creative process.',
-            teacherScore: undefined,
-            teacherFeedback: undefined,
-            peerScore: 19,
-            peerCount: 4,
-            finalScore: undefined,
-        },
-        {
-            id: 'sub-3',
-            studentId: 's3',
-            studentName: 'Carla Dias',
-            moduleId: 'mod-1',
-            title: 'Prompt Engineering Lab',
-            status: 'submitted',
-            submittedAt: '2026-01-30',
-            selfScore: undefined,
-            peerScore: undefined,
-            peerCount: 0,
-            finalScore: undefined,
-        },
-        {
-            id: 'sub-4',
-            studentId: 's4',
-            studentName: 'Diego Lima',
-            moduleId: 'mod-1',
-            title: 'Context Layer Exploration',
-            status: 'draft',
-            selfScore: undefined,
-            peerScore: undefined,
-            peerCount: 0,
-            finalScore: undefined,
-        },
-    ],
-};
+const MOCK_SUBMISSIONS: Record<string, CapstoneSubmission[]> = {};
 
 // ============================================================================
 // HELPER FUNCTIONS

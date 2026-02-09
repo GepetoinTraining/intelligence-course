@@ -13,62 +13,26 @@ import {
     IconBriefcase,
 } from '@tabler/icons-react';
 import Link from 'next/link';
+import type { FinancialSummary, MonthlyFinancial, CashFlowProjection } from '@/types/domain';
 
-// Mock Data - Current Year
-const MOCK_FINANCIALS = {
-    revenue: { current: 45000, previous: 42000 },
-    expenses: { current: 28000, previous: 26000 },
-    profit: { current: 17000, previous: 16000 },
-    students: { current: 120, previous: 110 },
-    pendingPayments: 8500,
-    payrollDue: 12000,
+// Empty data — will be populated from API
+const MOCK_FINANCIALS: FinancialSummary = {
+    revenue: { current: 0, previous: 0 },
+    expenses: { current: 0, previous: 0 },
+    profit: { current: 0, previous: 0 },
+    students: { current: 0, previous: 0 },
+    pendingPayments: 0,
+    payrollDue: 0,
 };
 
-// Monthly data for current and previous year
-const MOCK_MONTHLY_2026 = [
-    { month: 'Jan', revenue: 43000, expenses: 27000, students: 115 },
-    { month: 'Fev', revenue: 45000, expenses: 28000, students: 120 },
-    { month: 'Mar', revenue: 0, expenses: 0, students: 0 }, // projected
-    { month: 'Abr', revenue: 0, expenses: 0, students: 0 },
-    { month: 'Mai', revenue: 0, expenses: 0, students: 0 },
-    { month: 'Jun', revenue: 0, expenses: 0, students: 0 },
-    { month: 'Jul', revenue: 0, expenses: 0, students: 0 },
-    { month: 'Ago', revenue: 0, expenses: 0, students: 0 },
-    { month: 'Set', revenue: 0, expenses: 0, students: 0 },
-    { month: 'Out', revenue: 0, expenses: 0, students: 0 },
-    { month: 'Nov', revenue: 0, expenses: 0, students: 0 },
-    { month: 'Dez', revenue: 0, expenses: 0, students: 0 },
-];
+const MOCK_MONTHLY_2026: MonthlyFinancial[] = [];
 
-const MOCK_MONTHLY_2025 = [
-    { month: 'Jan', revenue: 35000, expenses: 22000, students: 90 },
-    { month: 'Fev', revenue: 36000, expenses: 23000, students: 92 },
-    { month: 'Mar', revenue: 37500, expenses: 23500, students: 95 },
-    { month: 'Abr', revenue: 38000, expenses: 24000, students: 98 },
-    { month: 'Mai', revenue: 39000, expenses: 24500, students: 100 },
-    { month: 'Jun', revenue: 38500, expenses: 24000, students: 99 },
-    { month: 'Jul', revenue: 30000, expenses: 20000, students: 85 }, // vacation dip
-    { month: 'Ago', revenue: 38000, expenses: 24000, students: 100 },
-    { month: 'Set', revenue: 40000, expenses: 25000, students: 105 },
-    { month: 'Out', revenue: 41000, expenses: 26000, students: 108 },
-    { month: 'Nov', revenue: 42000, expenses: 26500, students: 110 },
-    { month: 'Dez', revenue: 40000, expenses: 25000, students: 108 },
-];
+const MOCK_MONTHLY_2025: MonthlyFinancial[] = [];
 
-// Cash flow projection data
-const MOCK_CASH_FLOW = {
-    currentBalance: 85000,
-    projectedInflows: [
-        { month: 'Fev', amount: 45000, source: 'Mensalidades' },
-        { month: 'Mar', amount: 47000, source: 'Mensalidades (projetado)' },
-        { month: 'Abr', amount: 48000, source: 'Mensalidades (projetado)' },
-    ],
-    projectedOutflows: [
-        { month: 'Fev', amount: 28000, category: 'Despesas Operacionais' },
-        { month: 'Fev', amount: 12000, category: 'Folha de Pagamento' },
-        { month: 'Mar', amount: 29000, category: 'Despesas Operacionais (projetado)' },
-        { month: 'Mar', amount: 12500, category: 'Folha de Pagamento (projetado)' },
-    ],
+const MOCK_CASH_FLOW: CashFlowProjection = {
+    currentBalance: 0,
+    projectedInflows: [],
+    projectedOutflows: [],
 };
 
 export default function OwnerDashboardPage() {
@@ -111,8 +75,8 @@ export default function OwnerDashboardPage() {
 
     // Cash flow projection
     const projectedBalance = MOCK_CASH_FLOW.currentBalance
-        + MOCK_CASH_FLOW.projectedInflows.reduce((acc, i) => acc + i.amount, 0)
-        - MOCK_CASH_FLOW.projectedOutflows.reduce((acc, o) => acc + o.amount, 0);
+        + MOCK_CASH_FLOW.projectedInflows.reduce((acc: number, i: any) => acc + i.amount, 0)
+        - MOCK_CASH_FLOW.projectedOutflows.reduce((acc: number, o: any) => acc + o.amount, 0);
 
     return (
         <Stack gap="xl">
@@ -396,10 +360,10 @@ export default function OwnerDashboardPage() {
                     <Grid.Col span={{ base: 12, md: 8 }}>
                         <SimpleGrid cols={3} spacing="md">
                             {['Fev', 'Mar', 'Abr'].map((month, i) => {
-                                const inflow = MOCK_CASH_FLOW.projectedInflows.find(f => f.month === month)?.amount || 0;
+                                const inflow = MOCK_CASH_FLOW.projectedInflows.find((f: any) => f.month === month)?.amount || 0;
                                 const outflow = MOCK_CASH_FLOW.projectedOutflows
-                                    .filter(o => o.month === month)
-                                    .reduce((acc, o) => acc + o.amount, 0);
+                                    .filter((o: any) => o.month === month)
+                                    .reduce((acc: number, o: any) => acc + o.amount, 0);
                                 const net = inflow - outflow;
                                 const isProjected = i > 0;
 

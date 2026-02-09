@@ -31,63 +31,7 @@ interface Message {
 }
 
 // Mock data
-const MOCK_MESSAGES: Message[] = [
-    {
-        id: 'thread-1',
-        subject: 'Reunião de pais - Módulo 1',
-        preview: 'Gostaríamos de agendar uma reunião para discutir o progresso dos alunos no primeiro módulo do curso...',
-        sender: { name: 'Coordenação Pedagógica', role: 'school' },
-        recipients: ['Todos os Professores'],
-        isRead: false,
-        isStarred: true,
-        date: '10:30',
-        threadCount: 3,
-    },
-    {
-        id: 'thread-2',
-        subject: 'Dúvida sobre o Capstone do Lucas',
-        preview: 'Olá professora, gostaria de entender melhor como funciona a avaliação do projeto final...',
-        sender: { name: 'Carlos Silva', role: 'parent' },
-        recipients: ['Prof. Maria Santos'],
-        isRead: false,
-        isStarred: false,
-        date: 'Ontem',
-        threadCount: 5,
-    },
-    {
-        id: 'thread-3',
-        subject: 'Material complementar - Lição 1.4',
-        preview: 'Segue o material adicional que preparei para a aula sobre Context Stacking. Pode ser útil para suas turmas...',
-        sender: { name: 'Prof. João Lima', role: 'teacher' },
-        recipients: ['Prof. Maria Santos'],
-        isRead: true,
-        isStarred: false,
-        date: '28 Jan',
-        threadCount: 2,
-    },
-    {
-        id: 'thread-4',
-        subject: 'Atualização do currículo - Módulo 2',
-        preview: 'Informamos que o Módulo 2 (The Slingshot) estará disponível a partir de 15 de Fevereiro...',
-        sender: { name: 'Direção Acadêmica', role: 'school' },
-        recipients: ['Todos os Professores', 'Todos os Responsáveis'],
-        isRead: true,
-        isStarred: true,
-        date: '25 Jan',
-        threadCount: 1,
-    },
-    {
-        id: 'thread-5',
-        subject: 'Aluno com dificuldades',
-        preview: 'Percebi que o aluno Daniel Costa está com dificuldades nas últimas lições. Gostaria de alinhar uma estratégia...',
-        sender: { name: 'Prof. Maria Santos', role: 'teacher' },
-        recipients: ['Coordenação Pedagógica'],
-        isRead: true,
-        isStarred: false,
-        date: '22 Jan',
-        threadCount: 8,
-    },
-];
+const MOCK_MESSAGES: Message[] = [];
 
 export default function InboxPage() {
     const [messages, setMessages] = useState<Message[]>(MOCK_MESSAGES);

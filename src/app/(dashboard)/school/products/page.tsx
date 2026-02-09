@@ -57,76 +57,7 @@ const LEVELS = [
     { value: 'b2', label: 'B2 - Avançado' },
 ];
 
-const MOCK_PRODUCTS: Product[] = [
-    {
-        id: '1',
-        name: 'Mensalidade - Alfabetização IA',
-        type: 'tuition',
-        basePrice: 450,
-        description: 'Mensalidade padrão do curso de alfabetização em IA',
-        courseId: 'intelligence',
-        courseName: 'Alfabetização em IA',
-        levelId: 'a1',
-        levelName: 'A1 - Iniciante',
-        pricingTiers: [
-            { id: 't1', name: 'Mensal', price: 450, description: 'Pagamento mensal', features: ['Flexibilidade', 'Cancelamento a qualquer momento'] },
-            { id: 't2', name: 'Semestral', price: 405, description: '10% de desconto', features: ['10% desconto', 'Material incluso'] },
-            { id: 't3', name: 'Anual', price: 360, description: '20% de desconto', features: ['20% desconto', 'Material incluso', 'Workshop extra'] },
-        ],
-        isActive: true,
-        salesCount: 45,
-    },
-    {
-        id: '2',
-        name: 'Mensalidade - Kids',
-        type: 'tuition',
-        basePrice: 380,
-        description: 'Mensalidade do curso Kids (6-9 anos)',
-        courseId: 'kids',
-        courseName: 'Intelligence Kids',
-        pricingTiers: [
-            { id: 't1', name: 'Mensal', price: 380, description: 'Pagamento mensal', features: ['Flexibilidade'] },
-            { id: 't2', name: 'Semestral', price: 342, description: '10% de desconto', features: ['10% desconto'] },
-        ],
-        isActive: true,
-        salesCount: 28,
-    },
-    {
-        id: '3',
-        name: 'Kit Material Didático',
-        type: 'material',
-        basePrice: 150,
-        description: 'Kit completo com apostilas e recursos',
-        courseId: 'intelligence',
-        courseName: 'Alfabetização em IA',
-        pricingTiers: [],
-        isActive: true,
-        salesCount: 67,
-    },
-    {
-        id: '4',
-        name: 'Workshop Extra - Prompt Avançado',
-        type: 'event',
-        basePrice: 80,
-        description: 'Workshop avulso de técnicas avançadas',
-        pricingTiers: [
-            { id: 't1', name: 'Individual', price: 80, description: 'Por aluno', features: ['Certificado'] },
-            { id: 't2', name: 'Dupla', price: 140, description: 'Traga um amigo', features: ['Certificado', '12% desconto'] },
-        ],
-        isActive: true,
-        salesCount: 23,
-    },
-    {
-        id: '5',
-        name: 'Taxa de Matrícula',
-        type: 'other',
-        basePrice: 100,
-        description: 'Taxa única de matrícula',
-        pricingTiers: [],
-        isActive: true,
-        salesCount: 89,
-    },
-];
+const MOCK_PRODUCTS: Product[] = [];
 
 export default function ProductCatalogPage() {
     const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);

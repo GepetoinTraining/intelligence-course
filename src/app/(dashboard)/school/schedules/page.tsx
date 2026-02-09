@@ -98,16 +98,7 @@ const ROOMS: RoomOption[] = [
     { id: '4', name: 'Auditório', capacity: 50 },
 ];
 
-const MOCK_SCHEDULE: ScheduleSlot[] = [
-    { id: '1', classId: '1', className: 'Turma A - Manhã', teacherId: '1', teacherName: 'Prof. Maria Santos', roomId: '1', roomName: 'Sala 101', dayOfWeek: 1, startTime: '09:00', endTime: '11:00', color: '#7950f2', termId: '1' },
-    { id: '2', classId: '1', className: 'Turma A - Manhã', teacherId: '1', teacherName: 'Prof. Maria Santos', roomId: '1', roomName: 'Sala 101', dayOfWeek: 3, startTime: '09:00', endTime: '11:00', color: '#7950f2', termId: '1' },
-    { id: '3', classId: '2', className: 'Turma B - Tarde', teacherId: '2', teacherName: 'Prof. João Silva', roomId: '2', roomName: 'Sala 102', dayOfWeek: 1, startTime: '14:00', endTime: '16:00', color: '#228be6', termId: '1' },
-    { id: '4', classId: '2', className: 'Turma B - Tarde', teacherId: '2', teacherName: 'Prof. João Silva', roomId: '2', roomName: 'Sala 102', dayOfWeek: 4, startTime: '14:00', endTime: '16:00', color: '#228be6', termId: '1' },
-    { id: '5', classId: '3', className: 'Turma C - Noite', teacherId: '3', teacherName: 'Prof. Ana Costa', roomId: '3', roomName: 'Laboratório A', dayOfWeek: 2, startTime: '19:00', endTime: '21:00', color: '#40c057', termId: '1' },
-    { id: '6', classId: '3', className: 'Turma C - Noite', teacherId: '3', teacherName: 'Prof. Ana Costa', roomId: '3', roomName: 'Laboratório A', dayOfWeek: 5, startTime: '19:00', endTime: '21:00', color: '#40c057', termId: '1' },
-    { id: '7', classId: '4', className: 'Turma D - Manhã', teacherId: '4', teacherName: 'Prof. Carlos Mendes', roomId: '1', roomName: 'Sala 101', dayOfWeek: 2, startTime: '10:00', endTime: '12:00', color: '#fd7e14', termId: '1' },
-    { id: '8', classId: '5', className: 'Intensivo Verão', teacherId: '1', teacherName: 'Prof. Maria Santos', roomId: '4', roomName: 'Auditório', dayOfWeek: 6, startTime: '09:00', endTime: '13:00', color: '#e64980', termId: '1' },
-];
+const MOCK_SCHEDULE: ScheduleSlot[] = [];
 
 // ============================================================================
 // UTILITY FUNCTIONS

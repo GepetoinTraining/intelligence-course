@@ -78,53 +78,7 @@ const GOALS = [
     { value: 'reactivation', label: '🔄 Reativação de ex-alunos' },
 ];
 
-const MOCK_CAMPAIGNS: Campaign[] = [
-    {
-        id: '1',
-        name: 'Campanha de Verão 2026',
-        description: 'Promoção especial para o programa de férias',
-        goal: 'enrollment',
-        targetCourses: ['bootcamp-verao'],
-        targetDemographics: ['teens', 'adults'],
-        channels: ['instagram', 'whatsapp'],
-        budget: 5000,
-        spent: 3200,
-        startDate: '2026-01-15',
-        endDate: '2026-02-28',
-        status: 'active',
-        metrics: { impressions: 45000, clicks: 2800, leads: 156, conversions: 23 },
-    },
-    {
-        id: '2',
-        name: 'IA para Profissionais - LinkedIn',
-        description: 'Campanha B2B focada em profissionais',
-        goal: 'leads',
-        targetCourses: ['ai-profissionais'],
-        targetDemographics: ['professionals'],
-        channels: ['email'],
-        budget: 3000,
-        spent: 1500,
-        startDate: '2026-01-20',
-        endDate: '2026-03-20',
-        status: 'active',
-        metrics: { impressions: 28000, clicks: 1200, leads: 89, conversions: 12 },
-    },
-    {
-        id: '3',
-        name: 'Volta às Aulas - Crianças',
-        description: 'Campanha para pais de crianças e adolescentes',
-        goal: 'trials',
-        targetCourses: ['ia-jovens'],
-        targetDemographics: ['kids', 'teens', 'parents'],
-        channels: ['instagram', 'facebook', 'whatsapp'],
-        budget: 8000,
-        spent: 0,
-        startDate: '2026-02-15',
-        endDate: '2026-03-15',
-        status: 'draft',
-        metrics: { impressions: 0, clicks: 0, leads: 0, conversions: 0 },
-    },
-];
+const MOCK_CAMPAIGNS: Campaign[] = [];
 
 // ============================================================================
 // COMPONENT

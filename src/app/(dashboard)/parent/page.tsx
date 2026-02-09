@@ -37,49 +37,7 @@ interface ChildProgress {
 }
 
 // Mock data
-const MOCK_CHILDREN: ChildProgress[] = [
-    {
-        id: '1',
-        name: 'Lucas Silva',
-        currentModule: 'Módulo 1: The Orbit',
-        lessonsCompleted: 4,
-        totalLessons: 6,
-        lastActive: '2h atrás',
-        teacher: 'Prof. Maria Santos',
-        className: 'Turma A - Manhã',
-        xp: 1250,
-        level: 5,
-        streak: 7,
-        badges: 4,
-        recentActivity: [
-            { lesson: '1.4 O Context Stack', date: 'Hoje, 14:30', status: 'completed' },
-            { lesson: '1.3 A Camada Espacial', date: 'Ontem, 16:00', status: 'completed' },
-            { lesson: '1.2 A Camada Temporal', date: '28 Jan, 15:00', status: 'completed' },
-        ],
-        grades: [
-            { module: 'Introdução à IA', grade: 9.2, maxGrade: 10, date: '2026-01-20' },
-            { module: 'Fundamentos de Prompts', grade: 8.5, maxGrade: 10, date: '2026-01-25' },
-        ],
-        upcomingDeadlines: [
-            { title: 'Capstone Módulo 1', dueDate: '2026-02-15', type: 'capstone' },
-            { title: 'Peer Review', dueDate: '2026-02-10', type: 'review' },
-        ],
-        attendance: [
-            { date: '2026-02-03', status: 'present' },
-            { date: '2026-01-31', status: 'present' },
-            { date: '2026-01-29', status: 'late', notes: 'Chegou 10 min atrasado' },
-            { date: '2026-01-27', status: 'present' },
-            { date: '2026-01-24', status: 'absent', notes: 'Falta justificada - médico' },
-            { date: '2026-01-22', status: 'justified', notes: 'Consulta médica' },
-            { date: '2026-01-20', status: 'present' },
-            { date: '2026-01-17', status: 'present' },
-            { date: '2026-01-15', status: 'present' },
-            { date: '2026-01-13', status: 'late', notes: 'Trânsito' },
-            { date: '2026-01-10', status: 'present' },
-            { date: '2026-01-08', status: 'present' },
-        ],
-    },
-];
+const MOCK_CHILDREN: ChildProgress[] = [];
 
 export default function ParentDashboard() {
     const [children] = useState<ChildProgress[]>(MOCK_CHILDREN);

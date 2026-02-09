@@ -1,0 +1,17 @@
+[dotenv@17.2.3] injecting env (13) from .env.local -- tip: ­ƒùé´©Å backup and recover secrets: https://dotenvx.com/ops
+Current prefs: {
+  approvalStatus: 'approved',
+  approvedAt: 1770415622987,
+  approvedBy: 'script',
+  requestedRole: null
+}
+Updated prefs: {
+  approvalStatus: 'approved',
+  approvedAt: 1770415622987,
+  approvedBy: 'script',
+  requestedRole: null,
+  onboardingCompletedAt: 1770415828859
+}
+onboarding_completed: 1
+
+Ô£à Done ÔÇö onboarding flag set.

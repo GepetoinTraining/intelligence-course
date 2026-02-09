@@ -70,75 +70,15 @@ interface GradeRecord {
 }
 
 // Mock data
-const MOCK_STUDENT: StudentDetail = {
-    id: 'student-1',
-    name: 'Ana Carolina Silva',
-    email: 'ana.silva@email.com',
-    phone: '(11) 99999-1234',
-    enrolledAt: '2026-01-15',
-    classId: 'class-1',
-    className: 'Turma A - Manhã',
-    level: 'AI Explorer',
-    parentName: 'Maria Silva',
-    parentEmail: 'maria.silva@email.com',
-    parentPhone: '(11) 98888-5678',
-};
+const MOCK_STUDENT: StudentDetail = {} as StudentDetail as StudentDetail;
 
-const MOCK_ATTENDANCE: AttendanceRecord[] = [
-    { date: '2026-02-02', status: 'present' },
-    { date: '2026-01-30', status: 'present' },
-    { date: '2026-01-28', status: 'late', notes: '10 min de atraso' },
-    { date: '2026-01-26', status: 'present' },
-    { date: '2026-01-23', status: 'absent' },
-    { date: '2026-01-21', status: 'excused', notes: 'Consulta médica' },
-    { date: '2026-01-19', status: 'present' },
-    { date: '2026-01-16', status: 'present' },
-];
+const MOCK_ATTENDANCE: AttendanceRecord[] = [];
 
-const MOCK_PROGRESS: ProgressRecord[] = [
-    { moduleId: 'm1', moduleName: 'Module 1: Orbit', progress: 100, completedLessons: 6, totalLessons: 6 },
-    { moduleId: 'm2', moduleName: 'Module 2: Slingshot', progress: 60, completedLessons: 3, totalLessons: 5 },
-    { moduleId: 'm3', moduleName: 'Module 3: Black Hole', progress: 0, completedLessons: 0, totalLessons: 5 },
-];
+const MOCK_PROGRESS: ProgressRecord[] = [];
 
-const MOCK_ACTIVITY: ActivityRecord[] = [
-    { id: 'a1', type: 'lesson_completed', title: 'Lesson Completed', description: 'Aula 3.3: Validating AI Output', date: '2026-02-02T14:30:00' },
-    { id: 'a2', type: 'badge_earned', title: 'Badge Earned', description: 'Slingshot Master 🏅', date: '2026-02-01T10:15:00' },
-    { id: 'a3', type: 'prompt_run', title: 'AI Experiment', description: 'Ran 5 prompts in Playground', date: '2026-01-30T16:45:00' },
-    { id: 'a4', type: 'attendance', title: 'Attendance', description: 'Checked in for class', date: '2026-01-30T08:02:00' },
-    { id: 'a5', type: 'lesson_completed', title: 'Lesson Completed', description: 'Aula 3.2: Memory Management', date: '2026-01-28T15:00:00' },
-];
+const MOCK_ACTIVITY: ActivityRecord[] = [];
 
-const MOCK_GRADES: GradeRecord[] = [
-    {
-        id: 'g1',
-        moduleId: 'm1',
-        moduleName: 'Module 1: Orbit',
-        capstoneTitle: 'The World Builder',
-        submittedAt: '2026-01-25T16:00:00',
-        selfScore: 22,
-        teacherScore: 21,
-        peerScore: 20.5,
-        peerCount: 4,
-        finalScore: 21.13,
-        status: 'graded',
-        teacherFeedback: 'Excelente criatividade na construção do mundo. Prompts bem estruturados.',
-    },
-    {
-        id: 'g2',
-        moduleId: 'm2',
-        moduleName: 'Module 2: Slingshot',
-        capstoneTitle: 'Chain of Thought Challenge',
-        submittedAt: '2026-02-01T14:30:00',
-        selfScore: 20,
-        teacherScore: 19,
-        peerScore: 18.5,
-        peerCount: 3,
-        finalScore: 19.13,
-        status: 'graded',
-        teacherFeedback: 'Bom uso da técnica, mas poderia explorar mais variações.',
-    },
-];
+const MOCK_GRADES: GradeRecord[] = [];
 
 const attendanceStatusColors = {
     present: 'green',

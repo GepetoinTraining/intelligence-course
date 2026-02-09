@@ -6203,6 +6203,162 @@ export const contracts = sqliteTable('contracts', {
 ]);
 
 // ============================================================================
+// CONTRACT TEMPLATES (Contract Builder Engine)
+// Reusable templates with variable placeholders for document generation
+// Inspired by Práxis Legal clause/template architecture
+// ============================================================================
+
+export const contractTemplates = sqliteTable('contract_templates', {
+    id: text('id').primaryKey().default(uuid()),
+    organizationId: text('organization_id').notNull().references(() => organizations.id),
+
+    // Identification
+    name: text('name').notNull(),                    // "Contrato de Prestação de Serviços Educacionais"
+    description: text('description'),
+
+    // Type scoping (service-focused)
+    contractType: text('contract_type', {
+        enum: ['enrollment', 'renewal', 'material', 'event', 'employment', 'service', 'other']
+    }).notNull().default('enrollment'),
+
+    // Template content with {{VARIABLE}} placeholders
+    contentMd: text('content_md').notNull(),          // Full markdown template
+
+    // Variable definitions (JSON array)
+    // [{name: "NOME_ALUNO", label: "Nome do Aluno", type: "text", required: true},
+    //  {name: "VALOR_MENSAL", label: "Valor Mensal", type: "currency", required: true}]
+    variables: text('variables').default('[]'),
+
+    // Clause structure (JSON array of clause refs with order)
+    // [{id: "objeto", type: "OBJETO", required: true, order: 1},
+    //  {id: "preco", type: "PRECO_PAGAMENTO", required: true, order: 2}]
+    clauseStructure: text('clause_structure').default('[]'),
+
+    // Classification
+    complexity: text('complexity', {
+        enum: ['simple', 'medium', 'complex']
+    }).default('medium'),
+
+    // Versioning
+    version: integer('version').default(1),
+    isActive: integer('is_active').default(1),
+
+    // Usage stats
+    useCount: integer('use_count').default(0),
+    lastUsedAt: integer('last_used_at'),
+
+    createdBy: text('created_by').references(() => persons.id),
+    createdAt: integer('created_at').default(timestamp()),
+    updatedAt: integer('updated_at').default(timestamp()),
+}, (table) => [
+    index('idx_contract_templates_org').on(table.organizationId, table.contractType),
+    index('idx_contract_templates_active').on(table.isActive),
+]);
+
+// ============================================================================
+// CONTRACT CLAUSES (Clause instances on a contract)
+// Individual clauses attached to generated contracts
+// ============================================================================
+
+export const contractClauses = sqliteTable('contract_clauses', {
+    id: text('id').primaryKey().default(uuid()),
+
+    contractId: text('contract_id').notNull(),       // References contracts.id
+
+    // Clause identification
+    number: text('number').notNull(),                 // "1", "1.1", "PRIMEIRA"
+    title: text('title'),                             // "DO OBJETO"
+
+    // Clause type (from Práxis Legal taxonomy, scoped for services)
+    clauseType: text('clause_type', {
+        enum: [
+            'objeto',                    // Object/Purpose
+            'preco_pagamento',           // Price and payment
+            'prazo_vigencia',            // Term and duration
+            'obrigacoes_contratante',    // Obligations of hiring party (parent)
+            'obrigacoes_contratado',     // Obligations of hired party (school)
+            'entrega',                   // Delivery of service
+            'garantia',                  // Warranty/guarantee
+            'reajuste',                  // Price adjustment
+            'multa',                     // Penalties
+            'juros',                     // Interest
+            'rescisao',                  // Termination
+            'renovacao',                 // Renewal
+            'responsabilidade',          // Liability
+            'confidencialidade',         // Confidentiality
+            'lgpd',                      // Data protection (LGPD)
+            'foro',                      // Jurisdiction
+            'disposicoes_gerais',        // General provisions
+            'outro',                     // Other
+        ]
+    }).notNull(),
+
+    // Content (rendered, with variables already filled)
+    content: text('content').notNull(),
+
+    // Hierarchy
+    parentId: text('parent_id'),
+    sortOrder: integer('sort_order').default(0),
+
+    // Negotiation tracking
+    isNegotiationPoint: integer('is_negotiation_point').default(0),
+    negotiationNotes: text('negotiation_notes'),
+
+    // Source
+    fromTemplateId: text('from_template_id'),
+    wasModified: integer('was_modified').default(0),
+
+    createdAt: integer('created_at').default(timestamp()),
+}, (table) => [
+    index('idx_contract_clauses_contract').on(table.contractId, table.sortOrder),
+]);
+
+// ============================================================================
+// CONTRACT PARTIES (Multi-party support)
+// Links persons to contracts with their contractual role
+// ============================================================================
+
+export const contractParties = sqliteTable('contract_parties', {
+    id: text('id').primaryKey().default(uuid()),
+
+    contractId: text('contract_id').notNull(),       // References contracts.id
+
+    personId: text('person_id').notNull().references(() => persons.id),
+
+    // Role in contract (scoped for services)
+    role: text('role', {
+        enum: [
+            'contratante',       // Hiring party (parent/student)
+            'contratado',        // Service provider (school)
+            'responsavel_legal', // Legal guardian (for minors)
+            'fiador',            // Guarantor
+            'testemunha',        // Witness
+            'anuente',           // Consenting party
+        ]
+    }).notNull(),
+
+    roleDescription: text('role_description'),         // "Responsável Legal do Aluno"
+    isOurClient: integer('is_our_client').default(0),
+
+    // Representation (for companies - who signs)
+    representativeName: text('representative_name'),
+    representativeCpf: text('representative_cpf'),
+    representativeRole: text('representative_role'),   // "Diretor(a)"
+
+    // Signature
+    signedAt: integer('signed_at'),
+    signatureMethod: text('signature_method', {
+        enum: ['gov_br', 'icp_brasil', 'd4sign', 'docusign', 'clicksign', 'zapsign', 'in_person', 'other']
+    }),
+    signatureData: text('signature_data'),              // JSON signature details
+
+    createdAt: integer('created_at').default(timestamp()),
+}, (table) => [
+    index('idx_contract_parties_contract').on(table.contractId),
+    index('idx_contract_parties_person').on(table.personId),
+]);
+
+// ============================================================================
 // OPERATIONS: Payment Reminders
 // Automated and manual reminders for upcoming/late payments
 // ============================================================================
@@ -11266,6 +11422,12 @@ export const procedureSteps = sqliteTable('procedure_steps', {
     isStartStep: integer('is_start_step', { mode: 'boolean' }).default(false),
     isEndStep: integer('is_end_step', { mode: 'boolean' }).default(false),
 
+    // Pipeline Engine — fallout and auto-advance
+    // When a person drops out of this stage, which procedure do they enter? (retention branching)
+    falloutProcedureId: text('fallout_procedure_id'),
+    // Does the person advance automatically when exit conditions are met?
+    autoAdvance: integer('auto_advance', { mode: 'boolean' }).default(false),
+
     displayOrder: integer('display_order').default(0),
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
@@ -11473,6 +11635,52 @@ export const procedureAnalytics = sqliteTable('procedure_analytics', {
 }, (table) => [
     index('idx_analytics_procedure').on(table.procedureId),
     index('idx_analytics_period').on(table.periodType, table.periodStart),
+]);
+
+/**
+ * Pipeline Events - Event bus for pipeline state changes
+ * Records every significant transition for analytics, notifications, and system reactions
+ * Write points identified but not wired in Phase 1:
+ *   - pipeline_entered:  POST /api/procedures/[id]/execute
+ *   - stage_entered:     PATCH /api/procedures/executions/[executionId]
+ *   - stage_completed:   PATCH /api/procedures/executions/[executionId]
+ *   - stage_timed_out:   Future cron/middleware
+ *   - pipeline_completed: PATCH /api/procedures/executions/[executionId]
+ *   - pipeline_dropped:  PATCH /api/procedures/executions/[executionId]
+ *   - pipeline_paused:   PATCH /api/procedures/executions/[executionId]
+ *   - pipeline_resumed:  PATCH /api/procedures/executions/[executionId]
+ */
+export const pipelineEvents = sqliteTable('pipeline_events', {
+    id: text('id').primaryKey().default(uuid()),
+    organizationId: text('organization_id').notNull().references(() => organizations.id),
+
+    // Event type
+    eventType: text('event_type', {
+        enum: [
+            'pipeline_entered', 'stage_entered', 'stage_completed',
+            'stage_timed_out', 'pipeline_completed', 'pipeline_dropped',
+            'pipeline_paused', 'pipeline_resumed'
+        ]
+    }).notNull(),
+
+    // References
+    executionId: text('execution_id').references(() => procedureExecutions.id),
+    stepId: text('step_id').references(() => procedureSteps.id),
+    previousStepId: text('previous_step_id'),
+    personId: text('person_id').references(() => persons.id),
+
+    // Event data
+    payload: text('payload').default('{}'), // JSON - contextual data for event consumers
+
+    // Timing
+    durationSeconds: integer('duration_seconds'), // Time spent in the previous stage
+    createdAt: integer('created_at').default(timestamp()),
+}, (table) => [
+    index('idx_pipeline_events_org').on(table.organizationId),
+    index('idx_pipeline_events_type').on(table.eventType),
+    index('idx_pipeline_events_execution').on(table.executionId),
+    index('idx_pipeline_events_person').on(table.personId),
+    index('idx_pipeline_events_time').on(table.createdAt),
 ]);
 
 /**

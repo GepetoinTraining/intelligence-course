@@ -102,41 +102,7 @@ const MAX_TOTAL_SCORE = RUBRIC_CRITERIA.reduce((acc, c) => acc + c.maxScore, 0);
 // MOCK DATA
 // ============================================================================
 
-const MOCK_SUBMISSIONS: CapstoneSubmission[] = [
-    {
-        id: 'sub-1',
-        moduleId: 'mod-1',
-        moduleName: 'Module 1: The Orbit',
-        title: '',
-        description: '',
-        status: 'draft',
-        promptIds: ['p1', 'p2', 'p3'],
-        runIds: ['r1', 'r2', 'r3', 'r4', 'r5'],
-        attachments: [],
-    },
-    {
-        id: 'sub-2',
-        moduleId: 'mod-2',
-        moduleName: 'Module 2: The Slingshot',
-        title: 'Context Layer Experiment',
-        description: 'I explored how adding temporal and spatial context improved AI responses.',
-        status: 'graded',
-        submittedAt: '2026-01-28',
-        selfScore: 20,
-        selfFeedback: 'I felt strong about technique usage but could improve clarity.',
-        selfRubric: { character: 4, technique: 5, creativity: 4, clarity: 3, reflection: 4 },
-        teacherScore: 22,
-        teacherFeedback: 'Excellent work! Your context layering was sophisticated.',
-        peerScore: 19.5,
-        peerCount: 5,
-        finalScore: 20.75,
-        promptIds: ['p4', 'p5'],
-        runIds: ['r6', 'r7', 'r8'],
-        attachments: [
-            { name: 'experiment_notes.pdf', url: '#', type: 'pdf' }
-        ],
-    },
-];
+const MOCK_SUBMISSIONS: CapstoneSubmission[] = [];
 
 // ============================================================================
 // HELPER FUNCTIONS

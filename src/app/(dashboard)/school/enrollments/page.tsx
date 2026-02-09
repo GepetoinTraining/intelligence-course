@@ -13,6 +13,7 @@ import {
     IconArrowsExchange, IconLogout, IconCheck, IconClock, IconAlertCircle
 } from '@tabler/icons-react';
 import Link from 'next/link';
+import type { SelectOption } from '@/types/domain';
 
 // ============================================================================
 // TYPES
@@ -34,20 +35,9 @@ interface Enrollment {
 // MOCK DATA
 // ============================================================================
 
-const MOCK_CLASSES = [
-    { value: 'c1', label: 'Turma A - Manhã' },
-    { value: 'c2', label: 'Turma B - Tarde' },
-    { value: 'c3', label: 'Turma C - Noite' },
-];
+const MOCK_CLASSES: SelectOption[] = [];
 
-const MOCK_ENROLLMENTS: Enrollment[] = [
-    { id: '1', studentId: 's1', studentName: 'Ana Silva', classId: 'c1', className: 'Turma A - Manhã', status: 'active', enrolledAt: '2026-02-01' },
-    { id: '2', studentId: 's2', studentName: 'Bruno Costa', classId: 'c1', className: 'Turma A - Manhã', status: 'active', enrolledAt: '2026-02-01' },
-    { id: '3', studentId: 's3', studentName: 'Carla Dias', classId: 'c2', className: 'Turma B - Tarde', status: 'active', enrolledAt: '2026-02-01' },
-    { id: '4', studentId: 's4', studentName: 'Diego Lima', classId: 'c1', className: 'Turma A - Manhã', status: 'waitlist', enrolledAt: '2026-02-03' },
-    { id: '5', studentId: 's5', studentName: 'Elena Martins', classId: 'c2', className: 'Turma B - Tarde', status: 'transferred', enrolledAt: '2025-08-01', droppedAt: '2026-01-15', notes: 'Transferido para Turma C' },
-    { id: '6', studentId: 's6', studentName: 'Felipe Santos', classId: 'c3', className: 'Turma C - Noite', status: 'dropped', enrolledAt: '2025-08-01', droppedAt: '2025-10-20', notes: 'Motivo pessoal' },
-];
+const MOCK_ENROLLMENTS: Enrollment[] = [];
 
 // ============================================================================
 // COMPONENT

@@ -1,0 +1,537 @@
+
+> nodezero-app@0.1.0 build
+> next build
+
+ÔÜá Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\Users\CLIENTE\Desktop\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\CLIENTE\Desktop\NodeZero\intelligence-course\package-lock.json
+
+Ôû▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local, .env
+
+ÔÜá The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+Turbopack build encountered 1 warnings:
+./NodeZero/intelligence-course/src/lib/export/exportService.ts:172:28
+Module not found: Can't resolve 'xlsx'
+  170 |         // Dynamic import to avoid SSR issues - xlsx is an optional dependency
+  171 |         // @ts-ignore - xlsx may not be installed
+> 172 |         const XLSX = await import('xlsx').catch(() => null);
+      |                            ^^^^^^^^^^^^^^
+  173 |
+  174 |         if (!XLSX) {
+  175 |             // Fallback to CSV if xlsx is not available
+
+
+
+Import traces:
+  Client Component Browser:
+    ./NodeZero/intelligence-course/src/lib/export/exportService.ts [Client Component Browser]
+    ./NodeZero/intelligence-course/src/app/accountant/page.tsx [Client Component Browser]
+    ./NodeZero/intelligence-course/src/app/accountant/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./NodeZero/intelligence-course/src/lib/export/exportService.ts [Client Component SSR]
+    ./NodeZero/intelligence-course/src/app/accountant/page.tsx [Client Component SSR]
+    ./NodeZero/intelligence-course/src/app/accountant/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+Ô£ô Compiled successfully in 24.5s
+  Running TypeScript ...
+  Collecting page data using 15 workers ...
+  Generating static pages using 15 workers (0/343) ...
+  Generating static pages using 15 workers (85/343) 
+  Generating static pages using 15 workers (171/343) 
+  Generating static pages using 15 workers (257/343) 
+Ô£ô Generating static pages using 15 workers (343/343) in 2.0s
+  Finalizing page optimization ...
+
+Route (app)
+Ôöî Ôùï /
+Ôö£ Ôùï /_not-found
+Ôö£ ãÆ /[orgSlug]
+Ôö£ ãÆ /[orgSlug]/admin/setup
+Ôö£ ãÆ /[orgSlug]/admin/setup/blueprint
+Ôö£ ãÆ /[orgSlug]/admin/setup/financial
+Ôö£ ãÆ /[orgSlug]/admin/setup/products
+Ôö£ ãÆ /[orgSlug]/admin/setup/rules
+Ôö£ ãÆ /[orgSlug]/admin/setup/team
+Ôö£ ãÆ /[orgSlug]/onboarding
+Ôö£ Ôùï /accountant
+Ôö£ Ôùï /admin
+Ôö£ Ôùï /admin/agenda
+Ôö£ Ôùï /admin/agenda/calendario
+Ôö£ Ôùï /admin/agenda/pessoal
+Ôö£ Ôùï /admin/agenda/salas
+Ôö£ Ôùï /admin/agenda/time
+Ôö£ Ôùï /admin/ai
+Ôö£ Ôùï /admin/ai/automacoes
+Ôö£ Ôùï /admin/ai/chat
+Ôö£ Ôùï /admin/ai/insights
+Ôö£ Ôùï /admin/comercial
+Ôö£ Ôùï /admin/comercial/clientes
+Ôö£ Ôùï /admin/comercial/desempenho
+Ôö£ Ôùï /admin/comercial/followups
+Ôö£ Ôùï /admin/comercial/metas
+Ôö£ Ôùï /admin/comercial/negociacoes
+Ôö£ Ôùï /admin/comercial/oportunidades
+Ôö£ Ôùï /admin/comercial/pipeline
+Ôö£ Ôùï /admin/comercial/propostas
+Ôö£ Ôùï /admin/comunicacao
+Ôö£ Ôùï /admin/comunicacao/automacoes
+Ôö£ Ôùï /admin/comunicacao/avisos
+Ôö£ Ôùï /admin/comunicacao/inbox
+Ôö£ Ôùï /admin/comunicacao/templates
+Ôö£ Ôùï /admin/comunicacoes
+Ôö£ Ôùï /admin/comunicacoes/mensagens
+Ôö£ Ôùï /admin/configuracoes
+Ôö£ Ôùï /admin/configuracoes/backup
+Ôö£ Ôùï /admin/configuracoes/cargos
+Ôö£ Ôùï /admin/configuracoes/escola
+Ôö£ Ôùï /admin/configuracoes/integracoes
+Ôö£ Ôùï /admin/configuracoes/notificacoes
+Ôö£ Ôùï /admin/configuracoes/permissoes
+Ôö£ Ôùï /admin/configuracoes/roles
+Ôö£ Ôùï /admin/configuracoes/seguranca
+Ôö£ Ôùï /admin/configuracoes/usuarios
+Ôö£ Ôùï /admin/conhecimento
+Ôö£ Ôùï /admin/conhecimento/arquivos
+Ôö£ Ôùï /admin/conhecimento/faq
+Ôö£ Ôùï /admin/conhecimento/politicas
+Ôö£ Ôùï /admin/conhecimento/procedimentos
+Ôö£ Ôùï /admin/conhecimento/templates
+Ôö£ Ôùï /admin/conhecimento/treinamentos
+Ôö£ Ôùï /admin/conhecimento/wiki
+Ôö£ Ôùï /admin/contabil
+Ôö£ Ôùï /admin/contabil/balancete
+Ôö£ Ôùï /admin/contabil/centros-custo
+Ôö£ Ôùï /admin/contabil/dre
+Ôö£ Ôùï /admin/contabil/fechamento
+Ôö£ Ôùï /admin/contabil/lancamentos
+Ôö£ Ôùï /admin/contabil/nfse
+Ôö£ Ôùï /admin/contabil/plano-contas
+Ôö£ Ôùï /admin/contabil/sped
+Ôö£ Ôùï /admin/financeiro
+Ôö£ Ôùï /admin/financeiro/conciliacao
+Ôö£ Ôùï /admin/financeiro/contas
+Ôö£ Ôùï /admin/financeiro/contas-pagar
+Ôö£ Ôùï /admin/financeiro/despesas
+Ôö£ Ôùï /admin/financeiro/faturamento
+Ôö£ Ôùï /admin/financeiro/fluxo-caixa
+Ôö£ Ôùï /admin/financeiro/inadimplencia
+Ôö£ Ôùï /admin/financeiro/pagamentos
+Ôö£ Ôùï /admin/financeiro/recebiveis
+Ôö£ Ôùï /admin/kaizen
+Ôö£ Ôùï /admin/kaizen/feedback
+Ôö£ Ôùï /admin/kaizen/historico
+Ôö£ Ôùï /admin/kaizen/melhorias
+Ôö£ Ôùï /admin/kaizen/nps
+Ôö£ Ôùï /admin/kaizen/sugestoes
+Ôö£ Ôùï /admin/marketing
+Ôö£ Ôùï /admin/marketing/analytics
+Ôö£ Ôùï /admin/marketing/anuncios
+Ôö£ Ôùï /admin/marketing/campanhas
+Ôö£ Ôùï /admin/marketing/conteudo
+Ôö£ Ôùï /admin/marketing/eventos
+Ôö£ Ôùï /admin/marketing/indicacoes
+Ôö£ Ôùï /admin/marketing/landing-pages
+Ôö£ Ôùï /admin/marketing/leads
+Ôö£ Ôùï /admin/marketing/origens
+Ôö£ Ôùï /admin/operacional
+Ôö£ Ôùï /admin/operacional/alunos
+Ôö£ Ôùï /admin/operacional/cancelamentos
+Ôö£ Ôùï /admin/operacional/checkin
+Ôö£ Ôùï /admin/operacional/contratos
+Ôö£ Ôùï /admin/operacional/matriculas
+Ôö£ Ôùï /admin/operacional/renovacoes
+Ôö£ Ôùï /admin/operacional/responsaveis
+Ôö£ Ôùï /admin/operacional/transferencias
+Ôö£ Ôùï /admin/pedagogico
+Ôö£ Ôùï /admin/pedagogico/aulas
+Ôö£ Ôùï /admin/pedagogico/avaliacoes
+Ôö£ Ôùï /admin/pedagogico/certificados
+Ôö£ Ôùï /admin/pedagogico/cursos
+Ôö£ Ôùï /admin/pedagogico/grade
+Ôö£ Ôùï /admin/pedagogico/materiais
+Ôö£ Ôùï /admin/pedagogico/notas
+Ôö£ Ôùï /admin/pedagogico/presenca
+Ôö£ Ôùï /admin/pedagogico/turmas
+Ôö£ Ôùï /admin/relatorios
+Ôö£ Ôùï /admin/relatorios/dashboards
+Ôö£ Ôùï /admin/relatorios/kpis
+Ôö£ Ôùï /admin/relatorios/relatorios
+Ôö£ Ôùï /admin/rh
+Ôö£ Ôùï /admin/rh/colaboradores
+Ôö£ Ôùï /admin/rh/ferias
+Ôö£ Ôùï /admin/rh/folha
+Ôö£ Ôùï /admin/rh/ponto
+Ôö£ Ôùï /admin/rh/vagas
+Ôö£ Ôùï /admin/suporte
+Ôö£ Ôùï /admin/suporte/tickets
+Ôö£ ãÆ /api/action-items
+Ôö£ ãÆ /api/action-items/[id]
+Ôö£ ãÆ /api/action-items/types
+Ôö£ ãÆ /api/actions
+Ôö£ ãÆ /api/alerts
+Ôö£ ãÆ /api/alerts/[id]
+Ôö£ ãÆ /api/alerts/[id]/acknowledge
+Ôö£ ãÆ /api/alerts/[id]/escalate
+Ôö£ ãÆ /api/alerts/[id]/resolve
+Ôö£ ãÆ /api/annotations
+Ôö£ ãÆ /api/annotations/[id]
+Ôö£ ãÆ /api/api-keys
+Ôö£ ãÆ /api/attendance
+Ôö£ ãÆ /api/auditor/alerts
+Ôö£ ãÆ /api/auditor/analyze
+Ôö£ ãÆ /api/auditor/engagement/[studentId]
+Ôö£ ãÆ /api/auditor/verify-integrity/[studentId]
+Ôö£ ãÆ /api/auditor/wellbeing/[studentId]
+Ôö£ ãÆ /api/campaigns
+Ôö£ ãÆ /api/campaigns/[id]
+Ôö£ ãÆ /api/capstones
+Ôö£ ãÆ /api/capstones/[id]
+Ôö£ ãÆ /api/careers
+Ôö£ ãÆ /api/careers/[id]
+Ôö£ ãÆ /api/careers/[id]/apply
+Ôö£ ãÆ /api/careers/talent-pool
+Ôö£ ãÆ /api/challenges
+Ôö£ ãÆ /api/challenges/[id]
+Ôö£ ãÆ /api/chart-of-accounts
+Ôö£ ãÆ /api/chart-of-accounts/[id]
+Ôö£ ãÆ /api/chat/context/[studentId]
+Ôö£ ãÆ /api/chat/message
+Ôö£ ãÆ /api/chat/sessions
+Ôö£ ãÆ /api/chat/sessions/[id]/messages
+Ôö£ ãÆ /api/chat/stream
+Ôö£ ãÆ /api/classes
+Ôö£ ãÆ /api/classes/[id]
+Ôö£ ãÆ /api/communicator/contacts
+Ôö£ ãÆ /api/communicator/conversations
+Ôö£ ãÆ /api/communicator/conversations/[id]/messages
+Ôö£ ãÆ /api/communicator/meetings/[meetingId]/transcripts
+Ôö£ ãÆ /api/communicator/summaries
+Ôö£ ãÆ /api/cost-centers
+Ôö£ ãÆ /api/cost-centers/[id]
+Ôö£ ãÆ /api/courses
+Ôö£ ãÆ /api/courses/[id]
+Ôö£ ãÆ /api/crm/[id]
+Ôö£ ãÆ /api/crm/[id]/undo
+Ôö£ ãÆ /api/crm/funnel
+Ôö£ ãÆ /api/delegation
+Ôö£ ãÆ /api/discounts
+Ôö£ ãÆ /api/discounts/[id]
+Ôö£ ãÆ /api/domains/institutional/[studentId]
+Ôö£ ãÆ /api/domains/relational/[studentId]
+Ôö£ ãÆ /api/domains/supervision/[studentId]
+Ôö£ ãÆ /api/drafts/[type]/[id]
+Ôö£ ãÆ /api/enrollments
+Ôö£ ãÆ /api/enrollments/[id]
+Ôö£ ãÆ /api/enrollments/[id]/drop
+Ôö£ ãÆ /api/enrollments/[id]/transfer
+Ôö£ ãÆ /api/export
+Ôö£ ãÆ /api/family-links
+Ôö£ ãÆ /api/family-links/[id]
+Ôö£ ãÆ /api/fiscal-documents
+Ôö£ ãÆ /api/fiscal-documents/[id]
+Ôö£ ãÆ /api/graveyard
+Ôö£ ãÆ /api/graveyard/[id]
+Ôö£ ãÆ /api/integrity/hash/[studentId]
+Ôö£ ãÆ /api/integrity/log/[studentId]
+Ôö£ ãÆ /api/integrity/report
+Ôö£ ãÆ /api/integrity/verify
+Ôö£ ãÆ /api/invoices
+Ôö£ ãÆ /api/invoices/[id]
+Ôö£ ãÆ /api/invoices/[id]/pay
+Ôö£ ãÆ /api/journal-entries
+Ôö£ ãÆ /api/journal-entries/[id]
+Ôö£ ãÆ /api/kaizen/suggestions
+Ôö£ ãÆ /api/kaizen/suggestions/[id]
+Ôö£ ãÆ /api/knowledge-edges
+Ôö£ ãÆ /api/knowledge-edges/[id]
+Ôö£ ãÆ /api/knowledge-nodes
+Ôö£ ãÆ /api/knowledge-nodes/[id]
+Ôö£ ãÆ /api/lattice/evidence
+Ôö£ ãÆ /api/lattice/evidence/[id]
+Ôö£ ãÆ /api/lattice/jobs
+Ôö£ ãÆ /api/lattice/jobs/[id]
+Ôö£ ãÆ /api/lattice/projections
+Ôö£ ãÆ /api/lattice/projections/[id]
+Ôö£ ãÆ /api/leads
+Ôö£ ãÆ /api/leads/[id]
+Ôö£ ãÆ /api/leads/[id]/convert
+Ôö£ ãÆ /api/leads/[id]/interact
+Ôö£ ãÆ /api/lessons
+Ôö£ ãÆ /api/lessons/[id]
+Ôö£ ãÆ /api/levels
+Ôö£ ãÆ /api/marketing/tracking
+Ôö£ ãÆ /api/meetings
+Ôö£ ãÆ /api/meetings/[id]
+Ôö£ ãÆ /api/members/[id]
+Ôö£ ãÆ /api/memory/compress/[studentId]
+Ôö£ ãÆ /api/memory/compress/stats/[studentId]
+Ôö£ ãÆ /api/memory/contradictions
+Ôö£ ãÆ /api/memory/contradictions/[id]/resolve
+Ôö£ ãÆ /api/memory/edges
+Ôö£ ãÆ /api/memory/graph
+Ôö£ ãÆ /api/memory/ledger
+Ôö£ ãÆ /api/memory/ledger/[id]
+Ôö£ ãÆ /api/memory/ledger/trigger
+Ôö£ ãÆ /api/memory/nodes
+Ôö£ ãÆ /api/memory/nodes/[id]
+Ôö£ ãÆ /api/memory/overlay/[studentId]
+Ôö£ ãÆ /api/memory/snr
+Ôö£ ãÆ /api/modules
+Ôö£ ãÆ /api/modules/[id]
+Ôö£ ãÆ /api/notes
+Ôö£ ãÆ /api/onboarding
+Ôö£ ãÆ /api/onboarding/complete
+Ôö£ ãÆ /api/onboarding/register
+Ôö£ ãÆ /api/onboarding/verify-email
+Ôö£ ãÆ /api/owner/talent-pool
+Ôö£ ãÆ /api/parent/child/[childId]/alerts
+Ôö£ ãÆ /api/parent/child/[childId]/engagement
+Ôö£ ãÆ /api/parent/child/[childId]/progress
+Ôö£ ãÆ /api/parent/child/[childId]/recommendations
+Ôö£ ãÆ /api/parent/child/[childId]/wellbeing
+Ôö£ ãÆ /api/payables
+Ôö£ ãÆ /api/payables/[id]
+Ôö£ ãÆ /api/payment-methods
+Ôö£ ãÆ /api/payment-methods/[id]
+Ôö£ ãÆ /api/payouts
+Ôö£ ãÆ /api/payouts/[id]
+Ôö£ ãÆ /api/payouts/[id]/approve
+Ôö£ ãÆ /api/payroll-payments
+Ôö£ ãÆ /api/payroll-payments/[id]
+Ôö£ ãÆ /api/permission-expiry
+Ôö£ ãÆ /api/permission-groups
+Ôö£ ãÆ /api/permissions
+Ôö£ ãÆ /api/permissions/check
+Ôö£ ãÆ /api/placements
+Ôö£ ãÆ /api/placements/[id]
+Ôö£ ãÆ /api/platform/genesis/process
+Ôö£ ãÆ /api/platform/mcp/genesis
+Ôö£ ãÆ /api/position-permissions
+Ôö£ ãÆ /api/positions
+Ôö£ ãÆ /api/procedures
+Ôö£ ãÆ /api/procedures/[id]/execute
+Ôö£ ãÆ /api/procedures/[id]/steps
+Ôö£ ãÆ /api/procedures/executions/[executionId]
+Ôö£ ãÆ /api/products
+Ôö£ ãÆ /api/products/[id]
+Ôö£ ãÆ /api/profile
+Ôö£ ãÆ /api/profile/address
+Ôö£ ãÆ /api/profile/password
+Ôö£ ãÆ /api/profile/payment-history
+Ôö£ ãÆ /api/profile/payment-methods
+Ôö£ ãÆ /api/profile/preferences
+Ôö£ ãÆ /api/profile/sessions
+Ôö£ ãÆ /api/profile/sessions/[id]
+Ôö£ ãÆ /api/progress
+Ôö£ ãÆ /api/prompts
+Ôö£ ãÆ /api/prompts/[id]
+Ôö£ ãÆ /api/prompts/[id]/run
+Ôö£ ãÆ /api/qr/generate
+Ôö£ ãÆ /api/qr/scan/[code]
+Ôö£ ãÆ /api/referrals
+Ôö£ ãÆ /api/referrals/[id]
+Ôö£ ãÆ /api/reviews
+Ôö£ ãÆ /api/reviews/[id]
+Ôö£ ãÆ /api/rights/access/[studentId]
+Ôö£ ãÆ /api/rights/export/[studentId]
+Ôö£ ãÆ /api/rights/forget
+Ôö£ ãÆ /api/rights/negotiate
+Ôö£ ãÆ /api/rights/portability
+Ôö£ ãÆ /api/rights/rectify
+Ôö£ ãÆ /api/roles
+Ôö£ ãÆ /api/rooms
+Ôö£ ãÆ /api/rooms/[id]
+Ôö£ ãÆ /api/runs
+Ôö£ ãÆ /api/schedules
+Ôö£ ãÆ /api/schedules/[id]
+Ôö£ ãÆ /api/scrm/crm-insights
+Ôö£ ãÆ /api/scrm/insights/[leadId]
+Ôö£ ãÆ /api/scrm/leads
+Ôö£ ãÆ /api/scrm/leads/[id]
+Ôö£ ãÆ /api/scrm/persona/generate
+Ôö£ ãÆ /api/scrm/sentiment/analyze
+Ôö£ ãÆ /api/sessions
+Ôö£ ãÆ /api/sessions/[id]
+Ôö£ ãÆ /api/staff-contracts
+Ôö£ ãÆ /api/staff-contracts/[id]
+Ôö£ ãÆ /api/staff-leave
+Ôö£ ãÆ /api/staff-leave/[id]
+Ôö£ ãÆ /api/staff-payroll
+Ôö£ ãÆ /api/staff-payroll/[id]
+Ôö£ ãÆ /api/student-prompts
+Ôö£ ãÆ /api/student-prompts/[id]
+Ôö£ ãÆ /api/talent/documents
+Ôö£ ãÆ /api/talent/gap-interview
+Ôö£ ãÆ /api/talent/profile
+Ôö£ ãÆ /api/teacher-contracts
+Ôö£ ãÆ /api/teacher-contracts/[id]
+Ôö£ ãÆ /api/teams
+Ôö£ ãÆ /api/teams/[id]
+Ôö£ ãÆ /api/teams/[id]/anunciacao
+Ôö£ ãÆ /api/teams/[id]/anunciacao/generate-ai
+Ôö£ ãÆ /api/teams/[id]/anunciacao/history
+Ôö£ ãÆ /api/teams/[id]/anunciacao/publish
+Ôö£ ãÆ /api/techniques
+Ôö£ ãÆ /api/techniques/[id]
+Ôö£ ãÆ /api/templates
+Ôö£ ãÆ /api/templates/[id]
+Ôö£ ãÆ /api/terms
+Ôö£ ãÆ /api/terms/[id]
+Ôö£ ãÆ /api/todos
+Ôö£ ãÆ /api/todos/[id]
+Ôö£ ãÆ /api/transactions
+Ôö£ ãÆ /api/transactions/[id]
+Ôö£ ãÆ /api/trials
+Ôö£ ãÆ /api/trials/[id]
+Ôö£ ãÆ /api/user-overrides
+Ôö£ ãÆ /api/user/organizations
+Ôö£ ãÆ /api/users
+Ôö£ ãÆ /api/users/[id]
+Ôö£ ãÆ /api/waitlist
+Ôö£ ãÆ /api/waitlist/[id]
+Ôö£ ãÆ /api/webhooks/asaas
+Ôö£ ãÆ /api/webhooks/mercadopago
+Ôö£ ãÆ /api/webhooks/pagarme
+Ôö£ ãÆ /api/webhooks/pagseguro
+Ôö£ ãÆ /api/webhooks/stripe
+Ôö£ ãÆ /api/wiki/articles
+Ôö£ ãÆ /api/wiki/articles/[slug]
+Ôö£ ãÆ /api/wiki/categories
+Ôö£ ãÆ /api/workshops
+Ôö£ ãÆ /api/workshops/[id]
+Ôö£ Ôùï /careers
+Ôö£ ãÆ /careers/[id]
+Ôö£ Ôùï /careers/talent-pool
+Ôö£ ãÆ /courses/[courseId]
+Ôö£ Ôùï /dashboard
+Ôö£ Ôùï /financial
+Ôö£ ãÆ /form/[slug]
+Ôö£ Ôùï /go
+Ôö£ Ôùï /graveyard
+Ôö£ Ôùï /inbox
+Ôö£ ãÆ /inbox/[threadId]
+Ôö£ Ôùï /journal
+Ôö£ Ôùï /kaizen
+Ôö£ ãÆ /kaizen/[id]
+Ôö£ Ôùï /kaizen/new
+Ôö£ Ôùï /lattice/demo
+Ôö£ ãÆ /m/[moduleId]
+Ôö£ ãÆ /m/[moduleId]/l/[lessonId]
+Ôö£ Ôùï /marketing/campaigns
+Ôö£ Ôùï /marketing/lead-form
+Ôö£ Ôùï /marketing/referrals
+Ôö£ Ôùï /marketing/templates
+Ôö£ Ôùï /onboarding
+Ôö£ Ôùï /owner
+Ôö£ Ôùï /owner/accounting
+Ôö£ Ôùï /owner/analytics
+Ôö£ Ôùï /owner/business-settings
+Ôö£ Ôùï /owner/calendar
+Ôö£ Ôùï /owner/cashflow
+Ôö£ Ôùï /owner/crm
+Ôö£ Ôùï /owner/employees
+Ôö£ Ôùï /owner/hiring
+Ôö£ Ôùï /owner/industry-knowledge
+Ôö£ Ôùï /owner/payables
+Ôö£ Ôùï /owner/payroll
+Ôö£ Ôùï /owner/permissions
+Ôö£ Ôùï /owner/projections
+Ôö£ Ôùï /owner/reports
+Ôö£ Ôùï /owner/revenue
+Ôö£ Ôùï /owner/scheduling
+Ôö£ Ôùï /owner/staff
+Ôö£ Ôùï /owner/talent-pool
+Ôö£ Ôùï /owner/unit-economics
+Ôö£ Ôùï /parent
+Ôö£ Ôùï /parent/billing
+Ôö£ ãÆ /parent/child/[childId]
+Ôö£ Ôùï /platform/leads
+Ôö£ Ôùï /platform/onboarding
+Ôö£ Ôùï /playground
+Ôö£ Ôùï /profile
+Ôö£ Ôùï /prompts
+Ôö£ Ôùï /school
+Ôö£ Ôùï /school/classes
+Ôö£ Ôùï /school/courses
+Ôö£ ãÆ /school/courses/[courseId]
+Ôö£ Ôùï /school/discounts
+Ôö£ Ôùï /school/enrollments
+Ôö£ Ôùï /school/lessons
+Ôö£ Ôùï /school/levels
+Ôö£ Ôùï /school/modules
+Ôö£ Ôùï /school/products
+Ôö£ Ôùï /school/rooms
+Ôö£ Ôùï /school/schedule
+Ôö£ Ôùï /school/schedules
+Ôö£ Ôùï /school/students
+Ôö£ Ôùï /school/teachers
+Ôö£ Ôùï /school/terms
+Ôö£ Ôùï /settings
+Ôö£ ãÆ /sign-in/[[...sign-in]]
+Ôö£ ãÆ /sign-up/[[...sign-up]]
+Ôö£ Ôùï /staff
+Ôö£ Ôùï /staff/checkin
+Ôö£ Ôùï /staff/landing-builder
+Ôö£ Ôùï /staff/leads
+Ôö£ ãÆ /staff/leads/[id]
+Ôö£ Ôùï /staff/marketing
+Ôö£ Ôùï /staff/marketing/calendar
+Ôö£ Ôùï /staff/marketing/copy-generator
+Ôö£ Ôùï /staff/marketing/landing-builder
+Ôö£ Ôùï /staff/marketing/utm-builder
+Ôö£ Ôùï /staff/payments
+Ôö£ Ôùï /staff/payments/settings
+Ôö£ Ôùï /staff/pipeline
+Ôö£ Ôùï /staff/presales
+Ôö£ Ôùï /staff/sales
+Ôö£ Ôùï /staff/sales-manager
+Ôö£ Ôùï /staff/scrm
+Ôö£ ãÆ /staff/scrm/[id]
+Ôö£ Ôùï /staff/scrm/insights
+Ôö£ Ôùï /staff/trials
+Ôö£ Ôùï /student/capstone
+Ôö£ Ôùï /student/challenges
+Ôö£ Ôùï /student/constellation
+Ôö£ Ôùï /student/graveyard
+Ôö£ Ôùï /student/journal
+Ôö£ Ôùï /student/problems
+Ôö£ Ôùï /student/prompts
+Ôö£ Ôùï /student/review
+Ôö£ Ôùï /student/techniques
+Ôö£ Ôùï /student/todo
+Ôö£ Ôùï /student/workshop
+Ôö£ Ôùï /talent
+Ôö£ Ôùï /teacher
+Ôö£ Ôùï /teacher/attendance
+Ôö£ ãÆ /teacher/classes/[classId]
+Ôö£ Ôùï /teacher/grades
+Ôö£ Ôùï /teacher/schedule
+Ôö£ ãÆ /teacher/student/[id]
+Ôö£ Ôùï /teams
+Ôö£ ãÆ /teams/[id]
+Ôö£ ãÆ /teams/[id]/anunciacao
+Ôö£ Ôùï /teams/capacity
+Ôö£ Ôùï /teams/permissions
+Ôö£ Ôùï /teams/reporting
+Ôö£ Ôùï /wiki
+Ôö£ Ôùï /wiki/articles
+Ôö£ ãÆ /wiki/articles/[slug]
+Ôö£ ãÆ /wiki/articles/[slug]/edit
+Ôö£ ãÆ /wiki/categories/[category]
+Ôöö Ôùï /wiki/new
+
+
+ãÆ Proxy (Middleware)
+
+Ôùï  (Static)   prerendered as static content
+ãÆ  (Dynamic)  server-rendered on demand
+

@@ -99,44 +99,7 @@ const TEMPLATES: LandingTemplate[] = [
     },
 ];
 
-const MOCK_PAGES: LandingPage[] = [
-    {
-        id: '1',
-        name: 'Promoção Carnaval 2026',
-        slug: 'promo-carnaval-2026',
-        status: 'published',
-        template: 'promo-urgency',
-        primaryColor: '#9333ea',
-        visits: 1245,
-        conversions: 89,
-        createdAt: '2026-01-25',
-        updatedAt: '2026-02-01',
-    },
-    {
-        id: '2',
-        name: 'Aula Experimental Gratuita',
-        slug: 'aula-gratis',
-        status: 'published',
-        template: 'trial-class',
-        primaryColor: '#3b82f6',
-        visits: 3420,
-        conversions: 215,
-        createdAt: '2026-01-15',
-        updatedAt: '2026-01-28',
-    },
-    {
-        id: '3',
-        name: 'Webinar: Fluência em 12 Meses',
-        slug: 'webinar-fluencia',
-        status: 'draft',
-        template: 'event-webinar',
-        primaryColor: '#10b981',
-        visits: 0,
-        conversions: 0,
-        createdAt: '2026-02-03',
-        updatedAt: '2026-02-03',
-    },
-];
+const MOCK_PAGES: LandingPage[] = [];
 
 const BLOCK_OPTIONS = [
     { value: 'hero', label: '🎯 Hero Section', description: 'Título, subtítulo e CTA principal' },

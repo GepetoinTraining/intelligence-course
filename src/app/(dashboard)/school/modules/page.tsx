@@ -40,56 +40,9 @@ interface Course {
 // MOCK DATA
 // ============================================================================
 
-const MOCK_COURSES: Course[] = [
-    { id: '1', name: 'Fundamentos de IA para Jovens' },
-    { id: '2', name: 'AI Mastery para Profissionais' },
-    { id: '3', name: 'IA para Educadores' },
-];
+const MOCK_COURSES: Course[] = [];
 
-const MOCK_MODULES: Module[] = [
-    {
-        id: '1', courseId: '1', courseName: 'Fundamentos de IA para Jovens',
-        name: 'O que é Inteligência Artificial?',
-        description: 'Introdução aos conceitos básicos de IA e machine learning',
-        objectives: ['Entender o que é IA', 'Conhecer aplicações do dia-a-dia', 'Diferenciar IA de magia'],
-        order: 1, lessonCount: 4, duration: 120, status: 'published'
-    },
-    {
-        id: '2', courseId: '1', courseName: 'Fundamentos de IA para Jovens',
-        name: 'Conversando com a Máquina',
-        description: 'Primeiros passos em prompting e comunicação com IA',
-        objectives: ['Escrever prompts claros', 'Entender contexto', 'Praticar iteração'],
-        order: 2, lessonCount: 5, duration: 150, status: 'published'
-    },
-    {
-        id: '3', courseId: '1', courseName: 'Fundamentos de IA para Jovens',
-        name: 'Criando com IA',
-        description: 'Projetos criativos usando inteligência artificial',
-        objectives: ['Criar histórias com IA', 'Gerar ideias criativas', 'Trabalhar em equipe com IA'],
-        order: 3, lessonCount: 4, duration: 180, status: 'published'
-    },
-    {
-        id: '4', courseId: '1', courseName: 'Fundamentos de IA para Jovens',
-        name: 'Ética e Responsabilidade',
-        description: 'Uso responsável e ético da inteligência artificial',
-        objectives: ['Identificar fake news', 'Entender privacidade', 'Usar IA com responsabilidade'],
-        order: 4, lessonCount: 3, duration: 90, status: 'draft'
-    },
-    {
-        id: '5', courseId: '2', courseName: 'AI Mastery para Profissionais',
-        name: 'Fundamentos de LLMs',
-        description: 'Entendendo como funcionam os Large Language Models',
-        objectives: ['Compreender tokenização', 'Entender limites de contexto', 'Conhecer diferentes modelos'],
-        order: 1, lessonCount: 6, duration: 240, status: 'published'
-    },
-    {
-        id: '6', courseId: '2', courseName: 'AI Mastery para Profissionais',
-        name: 'Técnicas Avançadas de Prompting',
-        description: 'Chain of thought, few-shot, e outras técnicas profissionais',
-        objectives: ['Dominar CoT', 'Aplicar few-shot', 'Criar templates reusáveis'],
-        order: 2, lessonCount: 8, duration: 320, status: 'published'
-    },
-];
+const MOCK_MODULES: Module[] = [];
 
 // ============================================================================
 // COMPONENT

@@ -31,61 +31,7 @@ interface StudentPrompt {
 }
 
 // Mock data
-const MOCK_PROMPTS: StudentPrompt[] = [
-    {
-        id: 'p1',
-        title: 'Grumpy Blacksmith v3',
-        systemPrompt: 'You are a medieval blacksmith who has been working iron for 40 years...',
-        userMessage: 'What do you think about WiFi routers?',
-        tags: ['orbit', 'identity', 'module1'],
-        isPublic: false,
-        isFavorite: true,
-        runCount: 12,
-        heldRate: 83,
-        moduleId: 'module-1',
-        createdAt: '2026-01-30T10:00:00Z',
-        updatedAt: '2026-02-01T14:30:00Z',
-    },
-    {
-        id: 'p2',
-        title: 'Haiku Coder',
-        systemPrompt: 'You are a programmer who can only explain code in haiku format...',
-        tags: ['black_hole', 'compression', 'module3'],
-        isPublic: true,
-        isFavorite: false,
-        forkedFrom: { id: 'original-123', author: 'Maria' },
-        runCount: 5,
-        heldRate: 100,
-        createdAt: '2026-01-31T16:00:00Z',
-        updatedAt: '2026-01-31T16:00:00Z',
-    },
-    {
-        id: 'p3',
-        title: 'Alien Tourist Guide',
-        systemPrompt: 'You are an extraterrestrial visiting Earth for the first time...',
-        userMessage: 'Explain a coffee shop to me',
-        tags: ['orbit', 'spatial', 'module1'],
-        isPublic: false,
-        isFavorite: false,
-        runCount: 8,
-        heldRate: 62,
-        moduleId: 'module-1',
-        createdAt: '2026-01-28T09:00:00Z',
-        updatedAt: '2026-01-29T11:00:00Z',
-    },
-    {
-        id: 'p4',
-        title: 'Noir Detective',
-        systemPrompt: 'You are a 1940s film noir detective investigating a case...',
-        tags: ['orbit', 'temporal', 'identity', 'module1'],
-        isPublic: true,
-        isFavorite: true,
-        runCount: 15,
-        heldRate: 73,
-        createdAt: '2026-01-25T14:00:00Z',
-        updatedAt: '2026-02-01T09:00:00Z',
-    },
-];
+const MOCK_PROMPTS: StudentPrompt[] = [];
 
 const TECHNIQUE_TAGS = [
     { value: 'orbit', label: '🌍 Orbit', color: 'violet' },

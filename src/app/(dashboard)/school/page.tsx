@@ -15,36 +15,17 @@ import {
 import { PaymentCalendar } from '@/components/calendar/PaymentCalendar';
 import { formatCurrency } from '@/lib/financial/config';
 import Link from 'next/link';
+import type { SchoolCashflow, Payment, CourseSummary } from '@/types/domain';
 
-// Mock cashflow data
-const MOCK_CASHFLOW = {
-    currentMonth: {
-        expected: 15420.00,
-        received: 8940.00,
-        pending: 4485.00,
-        overdue: 1995.00,
-    },
-    lastMonth: {
-        expected: 14850.00,
-        received: 14100.00,
-        pending: 450.00,
-        overdue: 300.00,
-    },
-    students: {
-        total: 54,
-        active: 48,
-        defaulting: 6,
-    },
+// Empty data — will be populated from API
+const MOCK_CASHFLOW: SchoolCashflow = {
+    currentMonth: { expected: 0, received: 0, pending: 0, overdue: 0 },
+    lastMonth: { expected: 0, received: 0, pending: 0, overdue: 0 },
+    students: { total: 0, active: 0, defaulting: 0 },
+    revenue: { current: 0, previous: 0 },
 };
 
-const MOCK_PAYMENTS = [
-    { id: '1', student: 'Ana Silva', parent: 'João Silva', amount: 149.70, dueDate: '2026-02-10', status: 'paid', paidDate: '2026-02-05' },
-    { id: '2', student: 'Bruno Santos', parent: 'Maria Santos', amount: 149.70, dueDate: '2026-02-10', status: 'paid', paidDate: '2026-02-08' },
-    { id: '3', student: 'Carla Oliveira', parent: 'Pedro Oliveira', amount: 149.70, dueDate: '2026-02-10', status: 'pending', paidDate: null },
-    { id: '4', student: 'Daniel Costa', parent: 'Ana Costa', amount: 149.70, dueDate: '2026-02-10', status: 'overdue', paidDate: null },
-    { id: '5', student: 'Elena Ferreira', parent: 'Carlos Ferreira', amount: 149.70, dueDate: '2026-02-10', status: 'paid', paidDate: '2026-02-09' },
-    { id: '6', student: 'Felipe Lima', parent: 'Rosa Lima', amount: 149.70, dueDate: '2026-02-10', status: 'pending', paidDate: null },
-];
+const MOCK_PAYMENTS: Payment[] = [];
 
 const MONTHLY_REVENUE = [
     { month: 'Set/25', expected: 12000, received: 11500 },
@@ -55,11 +36,7 @@ const MONTHLY_REVENUE = [
     { month: 'Fev/26', expected: 15420, received: 8940 },
 ];
 
-const MOCK_COURSES = [
-    { id: 'intelligence-course', title: 'Intelligence: The Architect Protocol', teacher: 'Curso da Escola', model: 'school_course', students: 54, price: 1497.00 },
-    { id: 'python-basics', title: 'Python para Iniciantes', teacher: 'Prof. Maria Santos', model: 'hired_teacher', students: 24, price: 897.00 },
-    { id: 'robotics-101', title: 'Robótica Educacional', teacher: 'Prof. Ana Costa (Externo)', model: 'external_teacher', students: 12, price: 1200.00 },
-];
+const MOCK_COURSES: CourseSummary[] = [];
 
 // Analytics Data
 const REVENUE_BY_COURSE = [

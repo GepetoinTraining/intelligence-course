@@ -63,13 +63,7 @@ const contractTypeConfig: Record<string, string> = {
     volunteer: 'Voluntário',
 };
 
-const MOCK_STAFF: Staff[] = [
-    { id: '1', name: 'Ana Carolina Santos', email: 'ana@escola.com', phone: '(11) 99999-1111', avatarUrl: null, jobTitle: 'Recepcionista', department: 'reception', contractType: 'clt', accessLevel: 'standard', weeklyHours: 44, status: 'active', startsAt: Date.now() - 365 * 24 * 60 * 60 * 1000 },
-    { id: '2', name: 'Pedro Henrique Lima', email: 'pedro@escola.com', phone: '(11) 99999-2222', avatarUrl: null, jobTitle: 'Assistente Financeiro', department: 'finance', contractType: 'clt', accessLevel: 'admin', weeklyHours: 44, status: 'active', startsAt: Date.now() - 180 * 24 * 60 * 60 * 1000 },
-    { id: '3', name: 'Mariana Costa', email: 'mariana@escola.com', phone: '(11) 99999-3333', avatarUrl: null, jobTitle: 'Coordenadora de Marketing', department: 'marketing', contractType: 'pj', accessLevel: 'admin', weeklyHours: 40, status: 'active', startsAt: Date.now() - 90 * 24 * 60 * 60 * 1000 },
-    { id: '4', name: 'Carlos Eduardo Rocha', email: 'carlos@escola.com', phone: '(11) 99999-4444', avatarUrl: null, jobTitle: 'Auxiliar de Limpeza', department: 'maintenance', contractType: 'clt', accessLevel: 'basic', weeklyHours: 44, status: 'active', startsAt: Date.now() - 500 * 24 * 60 * 60 * 1000 },
-    { id: '5', name: 'Fernanda Oliveira', email: 'fernanda@escola.com', phone: '(11) 99999-5555', avatarUrl: null, jobTitle: 'Gerente Operacional', department: 'management', contractType: 'clt', accessLevel: 'super_admin', weeklyHours: 44, status: 'active', startsAt: Date.now() - 730 * 24 * 60 * 60 * 1000 },
-];
+const MOCK_STAFF: Staff[] = [];
 
 const weekDays = [
     { key: 'mon', label: 'Seg' },

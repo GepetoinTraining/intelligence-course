@@ -65,56 +65,7 @@ const AUDIENCE_OPTIONS = [
 ];
 
 // Mock pre-generated copies for demo
-const MOCK_GENERATED_COPIES: GeneratedCopy[] = [
-    {
-        id: '1',
-        type: 'instagram_caption',
-        prompt: 'Promoção de matrícula de carnaval',
-        content: `🎭 CARNAVAL DE OPORTUNIDADES! 🎭
-
-Enquanto todo mundo pula, a gente te ajuda a dar um salto no seu inglês! 🚀
-
-✨ 40% OFF na matrícula
-✨ Material didático GRÁTIS
-✨ Primeira aula experimental inclusa
-
-Só até sexta-feira de carnaval! 💃
-
-📲 Toque no link da bio e garanta sua vaga!
-
-#InglêsFluente #PromoçãoCarnaval #AprenderInglês #CursoDeIngles`,
-        tone: 'playful',
-        createdAt: '2026-02-04',
-        saved: true,
-    },
-    {
-        id: '2',
-        type: 'email_subject',
-        prompt: 'Email de reengajamento para leads inativos',
-        content: 'Sentimos sua falta! 🙁 Volte e ganhe 20% na sua primeira aula',
-        tone: 'friendly',
-        createdAt: '2026-02-03',
-        saved: true,
-    },
-    {
-        id: '3',
-        type: 'whatsapp',
-        prompt: 'Follow-up após aula experimental',
-        content: `Oi! 👋
-
-Tudo bem? Sou da [Escola] e vi que você fez uma aula experimental conosco essa semana.
-
-Gostou da experiência? 😊
-
-Temos uma condição especial para você se matricular até sexta: 
-🎁 Material gratuito + 15% off na mensalidade
-
-Posso te passar mais detalhes?`,
-        tone: 'friendly',
-        createdAt: '2026-02-02',
-        saved: false,
-    },
-];
+const MOCK_GENERATED_COPIES: GeneratedCopy[] = [];
 
 // ============================================================================
 // AI COPY GENERATOR (Simulated)

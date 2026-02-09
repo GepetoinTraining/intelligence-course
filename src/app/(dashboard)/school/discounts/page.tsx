@@ -27,11 +27,7 @@ interface Discount {
     status: 'active' | 'expired' | 'exhausted' | 'scheduled';
 }
 
-const MOCK_DISCOUNTS: Discount[] = [
-    { id: '1', name: 'Volta às Aulas', code: 'VOLTA2026', type: 'percentage', value: 15, maxUses: 50, currentUses: 23, startDate: '2026-01-15', endDate: '2026-02-28', status: 'active' },
-    { id: '2', name: 'Indicação de Amigo', code: 'AMIGO10', type: 'percentage', value: 10, maxUses: 0, currentUses: 45, startDate: '2025-01-01', endDate: '2026-12-31', status: 'active' },
-    { id: '3', name: 'Black Friday', code: 'BLACK50', type: 'fixed', value: 200, maxUses: 30, currentUses: 30, startDate: '2025-11-25', endDate: '2025-11-30', status: 'expired' },
-];
+const MOCK_DISCOUNTS: Discount[] = [];
 
 export default function DiscountManagementPage() {
     const [discounts, setDiscounts] = useState<Discount[]>(MOCK_DISCOUNTS);

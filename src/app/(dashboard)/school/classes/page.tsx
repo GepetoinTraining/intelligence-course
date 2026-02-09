@@ -12,6 +12,7 @@ import {
     IconClock, IconUser, IconBook, IconDoor, IconCalendar
 } from '@tabler/icons-react';
 import Link from 'next/link';
+import type { SelectOption } from '@/types/domain';
 
 // ============================================================================
 // TYPES
@@ -36,37 +37,15 @@ interface ClassItem {
 // MOCK DATA
 // ============================================================================
 
-const MOCK_COURSE_TYPES = [
-    { value: 'ai_literacy', label: 'Alfabetização em IA' },
-    { value: 'kids', label: 'Kids' },
-    { value: 'teens', label: 'Teens' },
-    { value: 'adults', label: 'Adultos' },
-];
+const MOCK_COURSE_TYPES: SelectOption[] = [];
 
-const MOCK_LEVELS = [
-    { value: 'beginner', label: 'Iniciante' },
-    { value: 'intermediate', label: 'Intermediário' },
-    { value: 'advanced', label: 'Avançado' },
-];
+const MOCK_LEVELS: SelectOption[] = [];
 
-const MOCK_TEACHERS = [
-    { value: 't1', label: 'Prof. Maria Silva' },
-    { value: 't2', label: 'Prof. João Santos' },
-    { value: 't3', label: 'Prof. Ana Costa' },
-];
+const MOCK_TEACHERS: SelectOption[] = [];
 
-const MOCK_ROOMS = [
-    { value: 'r1', label: 'Sala A1' },
-    { value: 'r2', label: 'Lab de Informática' },
-    { value: 'r3', label: 'Sala de Reuniões' },
-];
+const MOCK_ROOMS: SelectOption[] = [];
 
-const MOCK_CLASSES: ClassItem[] = [
-    { id: '1', name: 'Turma A - Manhã', courseType: 'ai_literacy', level: 'beginner', teacherId: 't1', teacherName: 'Prof. Maria Silva', roomId: 'r1', roomName: 'Sala A1', schedule: 'Seg/Qua 09:00-10:30', capacity: 15, enrolled: 12, status: 'active' },
-    { id: '2', name: 'Turma B - Tarde', courseType: 'ai_literacy', level: 'beginner', teacherId: 't2', teacherName: 'Prof. João Santos', roomId: 'r1', roomName: 'Sala A1', schedule: 'Ter/Qui 14:00-15:30', capacity: 15, enrolled: 15, status: 'full' },
-    { id: '3', name: 'Turma C - Noite', courseType: 'ai_literacy', level: 'intermediate', teacherId: 't1', teacherName: 'Prof. Maria Silva', roomId: 'r2', roomName: 'Lab de Informática', schedule: 'Seg/Qua 19:00-20:30', capacity: 12, enrolled: 8, status: 'active' },
-    { id: '4', name: 'Kids Sábado', courseType: 'kids', level: 'beginner', teacherId: 't3', teacherName: 'Prof. Ana Costa', roomId: 'r1', roomName: 'Sala A1', schedule: 'Sáb 10:00-11:30', capacity: 10, enrolled: 6, status: 'active' },
-];
+const MOCK_CLASSES: ClassItem[] = [];
 
 // ============================================================================
 // COMPONENT

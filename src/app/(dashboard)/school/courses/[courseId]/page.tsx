@@ -13,6 +13,7 @@ import {
 } from '@tabler/icons-react';
 import Link from 'next/link';
 
+
 type PaymentModel = 'school_course' | 'hired_teacher' | 'external_teacher';
 
 interface CourseSetup {
@@ -31,20 +32,11 @@ interface CourseSetup {
     additionalServices: string[];
 }
 
-// Mock teachers
-const MOCK_TEACHERS = [
-    { value: 'teacher-1', label: 'Prof. Maria Santos', model: 'hired_teacher' as const },
-    { value: 'teacher-2', label: 'Prof. João Lima', model: 'hired_teacher' as const },
-    { value: 'teacher-3', label: 'Prof. Ana Costa (Externo)', model: 'external_teacher' as const },
-];
+interface TeacherOption { value: string; label: string; model?: string; }
+const MOCK_TEACHERS: TeacherOption[] = [];
 
-// Mock services
-const MOCK_SERVICES = [
-    { id: 'svc-1', name: 'Sala Premium', price: 500, category: 'room_rental' },
-    { id: 'svc-2', name: 'Equipamento Audiovisual', price: 200, category: 'equipment' },
-    { id: 'svc-3', name: 'Marketing Digital', price: 300, category: 'marketing' },
-    { id: 'svc-4', name: 'Suporte Administrativo', price: 150, category: 'admin' },
-];
+interface ServiceItem { id: string; name: string; price: number; }
+const MOCK_SERVICES: ServiceItem[] = [];
 
 interface Props {
     params: Promise<{ courseId: string }>;

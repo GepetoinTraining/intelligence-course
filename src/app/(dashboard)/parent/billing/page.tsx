@@ -31,44 +31,7 @@ interface Invoice {
 }
 
 // Mock data
-const MOCK_INVOICES: Invoice[] = [
-    {
-        id: 'inv-001',
-        description: 'Mensalidade Fevereiro 2026',
-        studentName: 'Lucas Silva',
-        dueDate: '2026-02-10',
-        grossAmount: 550,
-        discountAmount: 50,
-        netAmount: 500,
-        status: 'pending',
-        installment: { current: 2, total: 12 },
-    },
-    {
-        id: 'inv-002',
-        description: 'Mensalidade Janeiro 2026',
-        studentName: 'Lucas Silva',
-        dueDate: '2026-01-10',
-        grossAmount: 550,
-        discountAmount: 50,
-        netAmount: 500,
-        status: 'paid',
-        paidDate: '2026-01-08',
-        paymentMethod: 'PIX',
-        installment: { current: 1, total: 12 },
-    },
-    {
-        id: 'inv-003',
-        description: 'Material Didático 2026',
-        studentName: 'Lucas Silva',
-        dueDate: '2026-01-15',
-        grossAmount: 150,
-        discountAmount: 0,
-        netAmount: 150,
-        status: 'paid',
-        paidDate: '2026-01-14',
-        paymentMethod: 'Cartão de Crédito',
-    },
-];
+const MOCK_INVOICES: Invoice[] = [];
 
 const statusColors = {
     pending: 'yellow',

@@ -22,55 +22,7 @@ import {
 } from '@/lib/financial/config';
 
 // Mock invoice data
-const MOCK_INVOICES: Invoice[] = [
-    {
-        id: 'inv-001',
-        studentId: 'student-1',
-        studentName: 'Lucas Silva',
-        parentId: 'parent-1',
-        parentName: 'Carlos Silva',
-        courseId: 'intelligence-course-v1',
-        description: 'Intelligence Course - Parcela 1/10',
-        amount: 149.70,
-        discount: 14.97,
-        finalAmount: 134.73,
-        dueDate: '2026-02-10',
-        paidDate: '2026-02-05',
-        status: 'paid',
-        installment: { current: 1, total: 10 },
-        paymentMethod: 'PIX',
-    },
-    {
-        id: 'inv-002',
-        studentId: 'student-1',
-        studentName: 'Lucas Silva',
-        parentId: 'parent-1',
-        parentName: 'Carlos Silva',
-        courseId: 'intelligence-course-v1',
-        description: 'Intelligence Course - Parcela 2/10',
-        amount: 149.70,
-        discount: 0,
-        finalAmount: 149.70,
-        dueDate: '2026-03-10',
-        status: 'pending',
-        installment: { current: 2, total: 10 },
-    },
-    {
-        id: 'inv-003',
-        studentId: 'student-1',
-        studentName: 'Lucas Silva',
-        parentId: 'parent-1',
-        parentName: 'Carlos Silva',
-        courseId: 'intelligence-course-v1',
-        description: 'Intelligence Course - Parcela 3/10',
-        amount: 149.70,
-        discount: 0,
-        finalAmount: 149.70,
-        dueDate: '2026-04-10',
-        status: 'pending',
-        installment: { current: 3, total: 10 },
-    },
-];
+const MOCK_INVOICES: Invoice[] = [];
 
 const getStatusBadge = (status: PaymentStatus) => {
     const configs: Record<PaymentStatus, { color: string; label: string }> = {

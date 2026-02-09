@@ -78,38 +78,7 @@ const ALL_STAGES = [
 ];
 
 // Mock automation rules
-const MOCK_RULES: FunnelRule[] = [
-    {
-        id: '1',
-        name: 'Auto-Qualificação',
-        description: 'Move leads para Qualificando quando tem 3+ interações',
-        triggerStage: 'interested',
-        condition: 'interactions >= 3',
-        action: 'move_to:qualifying',
-        isActive: true,
-        createdAt: '2026-01-15',
-    },
-    {
-        id: '2',
-        name: 'Alerta de Estagnação',
-        description: 'Notifica se lead está no mesmo estágio há 7+ dias',
-        triggerStage: 'any',
-        condition: 'days_in_stage >= 7',
-        action: 'notify:assigned_user',
-        isActive: true,
-        createdAt: '2026-01-20',
-    },
-    {
-        id: '3',
-        name: 'Hot Lead',
-        description: 'Marca como prioridade se sentimento = entusiasmado',
-        triggerStage: 'any',
-        condition: 'sentiment == enthusiastic',
-        action: 'tag:hot_lead',
-        isActive: false,
-        createdAt: '2026-01-22',
-    },
-];
+const MOCK_RULES: FunnelRule[] = [];
 
 // ============================================================================
 // MAIN COMPONENT

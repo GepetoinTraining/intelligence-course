@@ -45,64 +45,7 @@ interface Session {
 }
 
 // Mock data for dev mode
-const MOCK_SESSIONS: Session[] = [
-    {
-        id: 'session-1',
-        classId: 'class-1',
-        className: 'Turma A - Manhã',
-        date: new Date().toISOString().split('T')[0],
-        time: '08:00 - 09:30',
-        room: 'Sala 1',
-        status: 'completed',
-        students: [
-            { id: 's1', name: 'Ana Silva', email: 'ana@email.com' },
-            { id: 's2', name: 'Bruno Costa', email: 'bruno@email.com' },
-            { id: 's3', name: 'Carla Dias', email: 'carla@email.com' },
-            { id: 's4', name: 'Diego Lima', email: 'diego@email.com' },
-        ],
-        attendanceRecords: {
-            's1': { studentId: 's1', status: 'present' },
-            's2': { studentId: 's2', status: 'late', lateMinutes: 15 },
-            's3': { studentId: 's3', status: 'absent' },
-            's4': { studentId: 's4', status: 'present' },
-        }
-    },
-    {
-        id: 'session-2',
-        classId: 'class-2',
-        className: 'Turma B - Tarde',
-        date: new Date().toISOString().split('T')[0],
-        time: '14:00 - 15:30',
-        room: 'Sala 2',
-        status: 'in_progress',
-        students: [
-            { id: 's5', name: 'Elena Rocha', email: 'elena@email.com' },
-            { id: 's6', name: 'Felipe Santos', email: 'felipe@email.com' },
-            { id: 's7', name: 'Gabriela Reis', email: 'gabriela@email.com' },
-            { id: 's8', name: 'Henrique Alves', email: 'henrique@email.com' },
-            { id: 's9', name: 'Isabela Moura', email: 'isabela@email.com' },
-        ],
-        attendanceRecords: {
-            's5': { studentId: 's5', status: 'present' },
-            's6': { studentId: 's6', status: 'present' },
-        }
-    },
-    {
-        id: 'session-3',
-        classId: 'class-3',
-        className: 'Turma C - Noite',
-        date: new Date().toISOString().split('T')[0],
-        time: '19:00 - 20:30',
-        room: 'Sala 1',
-        status: 'upcoming',
-        students: [
-            { id: 's10', name: 'João Pedro', email: 'joao@email.com' },
-            { id: 's11', name: 'Laura Mendes', email: 'laura@email.com' },
-            { id: 's12', name: 'Marcos Oliveira', email: 'marcos@email.com' },
-        ],
-        attendanceRecords: {}
-    },
-];
+const MOCK_SESSIONS: Session[] = [];
 
 const statusColors = {
     present: 'green',

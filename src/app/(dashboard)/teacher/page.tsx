@@ -1,194 +1,241 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Title, Text, Stack, Group, Card, Badge, Button, SimpleGrid,
     Progress, Avatar, ThemeIcon, Paper, ActionIcon, Menu, Divider,
-    Table, Checkbox, Tooltip, RingProgress, Modal, Select, Textarea
+    Table, Checkbox, Tooltip, RingProgress, Modal, Select, Textarea,
+    Loader, Center, Skeleton, Alert
 } from '@mantine/core';
 import {
     IconPlus, IconUsers, IconChartBar, IconDots,
     IconEdit, IconTrash, IconCopy, IconRocket, IconClock,
     IconCheck, IconCalendarEvent, IconChevronRight, IconClipboardCheck,
-    IconMail, IconMessageCircle, IconSend
+    IconMail, IconMessageCircle, IconSend, IconAlertCircle,
+    IconBook, IconTarget, IconListCheck, IconRefresh
 } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useDisclosure } from '@mantine/hooks';
+
+// ============================================================================
+// TYPES
+// ============================================================================
 
 interface ClassInfo {
     id: string;
     name: string;
     code: string;
+    courseTypeId: string;
+    levelId: string;
     studentCount: number;
-    moduleProgress: number;
-    createdAt: string;
+    maxStudents: number;
+    status: string;
+    startsAt: number | null;
+    endsAt: number | null;
+    createdAt: number;
 }
 
-interface TodaySession {
+interface ScheduleEntry {
     id: string;
     classId: string;
-    className: string;
-    time: string;
-    room: string;
-    students: { id: string; name: string; checkedIn: boolean }[];
-    status: 'upcoming' | 'in_progress' | 'completed';
+    className?: string;
+    roomId: string | null;
+    dayOfWeek: number;
+    startTime: string;
+    endTime: string;
 }
 
-// Mock data for dev mode
-const MOCK_CLASSES: ClassInfo[] = [
-    { id: 'class-1', name: 'Turma A - Manhã', code: 'ORBIT-A1', studentCount: 24, moduleProgress: 42, createdAt: '2026-01-15' },
-    { id: 'class-2', name: 'Turma B - Tarde', code: 'ORBIT-B2', studentCount: 18, moduleProgress: 28, createdAt: '2026-01-20' },
-    { id: 'class-3', name: 'Turma C - Noite', code: 'ORBIT-C3', studentCount: 12, moduleProgress: 65, createdAt: '2026-01-22' },
-];
-
-const MOCK_TODAY_SESSIONS: TodaySession[] = [
-    {
-        id: 'session-1',
-        classId: 'class-1',
-        className: 'Turma A - Manhã',
-        time: '08:00 - 09:30',
-        room: 'Sala 1',
-        status: 'completed',
-        students: [
-            { id: 's1', name: 'Ana Silva', checkedIn: true },
-            { id: 's2', name: 'Bruno Costa', checkedIn: true },
-            { id: 's3', name: 'Carla Dias', checkedIn: false },
-        ]
-    },
-    {
-        id: 'session-2',
-        classId: 'class-2',
-        className: 'Turma B - Tarde',
-        time: '14:00 - 15:30',
-        room: 'Sala 2',
-        status: 'in_progress',
-        students: [
-            { id: 's4', name: 'Diego Lima', checkedIn: true },
-            { id: 's5', name: 'Elena Rocha', checkedIn: true },
-            { id: 's6', name: 'Felipe Santos', checkedIn: false },
-            { id: 's7', name: 'Gabriela Reis', checkedIn: false },
-        ]
-    },
-    {
-        id: 'session-3',
-        classId: 'class-3',
-        className: 'Turma C - Noite',
-        time: '19:00 - 20:30',
-        room: 'Sala 1',
-        status: 'upcoming',
-        students: [
-            { id: 's8', name: 'Henrique Alves', checkedIn: false },
-            { id: 's9', name: 'Isabela Moura', checkedIn: false },
-        ]
-    },
-];
-
-const statusColors = {
-    upcoming: 'blue',
-    in_progress: 'green',
-    completed: 'gray',
-};
-
-const statusLabels = {
-    upcoming: 'Próxima',
-    in_progress: 'Em Andamento',
-    completed: 'Concluída',
-};
-
-// Student progress for heatmap
-interface StudentProgress {
+interface EnrolledStudent {
     id: string;
     name: string;
+    email: string;
     classId: string;
-    lessons: { lessonId: string; completed: boolean; score?: number }[];
+    className: string;
+    enrollmentStatus: string;
 }
 
-const MOCK_STUDENT_PROGRESS: StudentProgress[] = [
-    {
-        id: 's1', name: 'Ana Silva', classId: 'class-1', lessons: [
-            { lessonId: 'L1', completed: true, score: 95 },
-            { lessonId: 'L2', completed: true, score: 88 },
-            { lessonId: 'L3', completed: true, score: 92 },
-            { lessonId: 'L4', completed: false },
-            { lessonId: 'L5', completed: false },
-            { lessonId: 'L6', completed: false },
-        ]
-    },
-    {
-        id: 's2', name: 'Bruno Costa', classId: 'class-1', lessons: [
-            { lessonId: 'L1', completed: true, score: 78 },
-            { lessonId: 'L2', completed: true, score: 82 },
-            { lessonId: 'L3', completed: false },
-            { lessonId: 'L4', completed: false },
-            { lessonId: 'L5', completed: false },
-            { lessonId: 'L6', completed: false },
-        ]
-    },
-    {
-        id: 's3', name: 'Carla Dias', classId: 'class-1', lessons: [
-            { lessonId: 'L1', completed: true, score: 100 },
-            { lessonId: 'L2', completed: true, score: 95 },
-            { lessonId: 'L3', completed: true, score: 88 },
-            { lessonId: 'L4', completed: true, score: 91 },
-            { lessonId: 'L5', completed: false },
-            { lessonId: 'L6', completed: false },
-        ]
-    },
-    {
-        id: 's4', name: 'Diego Lima', classId: 'class-1', lessons: [
-            { lessonId: 'L1', completed: true, score: 70 },
-            { lessonId: 'L2', completed: false },
-            { lessonId: 'L3', completed: false },
-            { lessonId: 'L4', completed: false },
-            { lessonId: 'L5', completed: false },
-            { lessonId: 'L6', completed: false },
-        ]
-    },
-    {
-        id: 's5', name: 'Elena Rocha', classId: 'class-1', lessons: [
-            { lessonId: 'L1', completed: true, score: 85 },
-            { lessonId: 'L2', completed: true, score: 90 },
-            { lessonId: 'L3', completed: true, score: 87 },
-            { lessonId: 'L4', completed: true, score: 92 },
-            { lessonId: 'L5', completed: true, score: 88 },
-            { lessonId: 'L6', completed: false },
-        ]
-    },
-];
+interface LessonInfo {
+    id: string;
+    moduleId: string;
+    title: string;
+    orderIndex: number;
+    lessonType: string;
+}
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+
+const DAY_NAMES = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+
+function getTodayDayOfWeek(): number {
+    return new Date().getDay(); // 0=Sun, 1=Mon...
+}
+
+function formatTime(time: string): string {
+    // Handle HH:MM or HH:MM:SS
+    return time?.slice(0, 5) || '';
+}
+
+// ============================================================================
+// COMPONENT
+// ============================================================================
 
 export default function TeacherDashboard() {
-    const [classes] = useState<ClassInfo[]>(MOCK_CLASSES);
-    const [sessions, setSessions] = useState<TodaySession[]>(MOCK_TODAY_SESSIONS);
-    const [studentProgress] = useState<StudentProgress[]>(MOCK_STUDENT_PROGRESS);
+    // Data state
+    const [classes, setClasses] = useState<ClassInfo[]>([]);
+    const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
+    const [students, setStudents] = useState<EnrolledStudent[]>([]);
+    const [lessons, setLessons] = useState<LessonInfo[]>([]);
+
+    // UI state
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [messageModal, { open: openMessage, close: closeMessage }] = useDisclosure(false);
     const [messageRecipient, setMessageRecipient] = useState<string | null>(null);
     const [messageText, setMessageText] = useState('');
 
-    const totalStudents = classes.reduce((acc, c) => acc + c.studentCount, 0);
-    const avgProgress = Math.round(classes.reduce((acc, c) => acc + c.moduleProgress, 0) / classes.length);
+    // ====================================================================
+    // DATA FETCHING
+    // ====================================================================
 
-    // Today's stats
-    const todaySessions = sessions.length;
-    const currentSession = sessions.find(s => s.status === 'in_progress');
+    const fetchDashboardData = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            // Fetch teacher's classes (filtered by current user's teacherId on the server)
+            const classRes = await fetch('/api/classes?status=active');
+            const classData = await classRes.json();
+            const myClasses: ClassInfo[] = (classData.data || []).map((c: any) => ({
+                id: c.id,
+                name: c.name || 'Turma',
+                code: c.id.slice(0, 8).toUpperCase(),
+                courseTypeId: c.courseTypeId || '',
+                levelId: c.levelId || '',
+                studentCount: c.currentStudents || 0,
+                maxStudents: c.maxStudents || 15,
+                status: c.status || 'active',
+                startsAt: c.startsAt,
+                endsAt: c.endsAt,
+                createdAt: c.createdAt,
+            }));
+            setClasses(myClasses);
 
-    const handleQuickCheckIn = (sessionId: string, studentId: string) => {
-        setSessions(prev => prev.map(session => {
-            if (session.id === sessionId) {
-                return {
-                    ...session,
-                    students: session.students.map(student =>
-                        student.id === studentId
-                            ? { ...student, checkedIn: !student.checkedIn }
-                            : student
-                    )
-                };
+            // Fetch schedules for all classes
+            if (myClasses.length > 0) {
+                const schedRes = await fetch('/api/schedules');
+                const schedData = await schedRes.json();
+                const classIds = new Set(myClasses.map(c => c.id));
+                const relevantSchedules = (schedData.data || [])
+                    .filter((s: any) => classIds.has(s.classId))
+                    .map((s: any) => ({
+                        ...s,
+                        className: myClasses.find(c => c.id === s.classId)?.name || 'Turma',
+                    }));
+                setSchedules(relevantSchedules);
             }
-            return session;
-        }));
-    };
+
+            // Fetch enrolled students
+            const studentRes = await fetch('/api/enrollments?status=active');
+            const studentData = await studentRes.json();
+            if (studentData.data) {
+                const enrolledStudents: EnrolledStudent[] = studentData.data.map((e: any) => ({
+                    id: e.personId || e.id,
+                    name: e.studentName || e.personName || 'Aluno',
+                    email: e.email || '',
+                    classId: e.classId || '',
+                    className: myClasses.find(c => c.id === e.classId)?.name || '',
+                    enrollmentStatus: e.status || 'active',
+                }));
+                setStudents(enrolledStudents);
+            }
+
+            // Fetch lessons
+            const lessonRes = await fetch('/api/lessons');
+            const lessonData = await lessonRes.json();
+            if (lessonData.data) {
+                setLessons(lessonData.data.map((l: any) => ({
+                    id: l.id,
+                    moduleId: l.moduleId || '',
+                    title: typeof l.title === 'string' ? l.title : JSON.stringify(l.title),
+                    orderIndex: l.orderIndex || 0,
+                    lessonType: l.lessonType || 'standard',
+                })));
+            }
+
+        } catch (err) {
+            console.error('Failed to fetch teacher dashboard data:', err);
+            setError('Falha ao carregar dados. Tente novamente.');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchDashboardData();
+    }, [fetchDashboardData]);
+
+    // ====================================================================
+    // COMPUTED
+    // ====================================================================
+
+    const totalStudents = classes.reduce((acc, c) => acc + c.studentCount, 0);
+    const todaySchedules = schedules.filter(s => s.dayOfWeek === getTodayDayOfWeek());
+    const todaySessionCount = todaySchedules.length;
+
+    // Progress approximation: what percent of lessons each class has covered
+    // (real implementation would track per-student; here we give a class-level summary)
+    const totalLessons = lessons.length;
+
+    // Students per class for quick lookup
+    const studentsByClass = classes.reduce((acc, cls) => {
+        acc[cls.id] = students.filter(s => s.classId === cls.id);
+        return acc;
+    }, {} as Record<string, EnrolledStudent[]>);
+
+    // ====================================================================
+    // RENDER
+    // ====================================================================
+
+    if (loading) {
+        return (
+            <Stack gap="xl">
+                <Group justify="space-between" align="flex-start">
+                    <div>
+                        <Skeleton height={30} width={300} mb="xs" />
+                        <Skeleton height={16} width={400} />
+                    </div>
+                </Group>
+                <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                        <Skeleton key={i} height={90} radius="md" />
+                    ))}
+                </SimpleGrid>
+                <Skeleton height={200} radius="md" />
+                <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                        <Skeleton key={i} height={250} radius="md" />
+                    ))}
+                </SimpleGrid>
+            </Stack>
+        );
+    }
 
     return (
         <Stack gap="xl">
+            {/* Error alert */}
+            {error && (
+                <Alert
+                    icon={<IconAlertCircle size={16} />}
+                    title="Erro"
+                    color="red"
+                    withCloseButton
+                    onClose={() => setError(null)}
+                >
+                    {error}
+                </Alert>
+            )}
+
             {/* Header */}
             <Group justify="space-between" align="flex-start">
                 <div>
@@ -196,6 +243,13 @@ export default function TeacherDashboard() {
                     <Text c="dimmed">Gerencie suas turmas e acompanhe o progresso dos alunos</Text>
                 </div>
                 <Group>
+                    <Button
+                        variant="subtle"
+                        leftSection={<IconRefresh size={16} />}
+                        onClick={fetchDashboardData}
+                    >
+                        Atualizar
+                    </Button>
                     <Button
                         variant="subtle"
                         leftSection={<IconMessageCircle size={16} />}
@@ -208,9 +262,6 @@ export default function TeacherDashboard() {
                             Chamada
                         </Button>
                     </Link>
-                    <Button leftSection={<IconPlus size={16} />}>
-                        Nova Turma
-                    </Button>
                 </Group>
             </Group>
 
@@ -246,7 +297,7 @@ export default function TeacherDashboard() {
                             <IconCalendarEvent size={24} />
                         </ThemeIcon>
                         <div>
-                            <Text size="xl" fw={700}>{todaySessions}</Text>
+                            <Text size="xl" fw={700}>{todaySessionCount}</Text>
                             <Text size="sm" c="dimmed">Aulas Hoje</Text>
                         </div>
                     </Group>
@@ -255,11 +306,11 @@ export default function TeacherDashboard() {
                 <Paper shadow="xs" radius="md" p="lg" withBorder>
                     <Group>
                         <ThemeIcon size={48} radius="md" variant="light" color="green">
-                            <IconChartBar size={24} />
+                            <IconBook size={24} />
                         </ThemeIcon>
                         <div>
-                            <Text size="xl" fw={700}>{avgProgress}%</Text>
-                            <Text size="sm" c="dimmed">Progresso Médio</Text>
+                            <Text size="xl" fw={700}>{totalLessons}</Text>
+                            <Text size="sm" c="dimmed">Lições Cadastradas</Text>
                         </div>
                     </Group>
                 </Paper>
@@ -278,105 +329,82 @@ export default function TeacherDashboard() {
                                 <Text size="sm" c="dimmed">{new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
                             </div>
                         </Group>
-                        <Link href="/teacher/attendance" passHref legacyBehavior>
+                        <Link href="/teacher/schedule" passHref legacyBehavior>
                             <Button component="a" variant="subtle" rightSection={<IconChevronRight size={14} />}>
-                                Ver Todas
+                                Ver Semana
                             </Button>
                         </Link>
                     </Group>
 
                     <Divider />
 
-                    <Stack gap="sm">
-                        {sessions.map(session => {
-                            const checkedInCount = session.students.filter(s => s.checkedIn).length;
-                            const attendancePercentage = Math.round((checkedInCount / session.students.length) * 100);
+                    {todaySchedules.length === 0 ? (
+                        <Paper p="xl" bg="gray.0" radius="md" ta="center">
+                            <ThemeIcon size={48} radius="xl" variant="light" color="gray" mx="auto" mb="sm">
+                                <IconCalendarEvent size={24} />
+                            </ThemeIcon>
+                            <Text fw={500}>Nenhuma aula agendada para hoje</Text>
+                            <Text size="sm" c="dimmed">Aproveite para planejar as próximas lições</Text>
+                        </Paper>
+                    ) : (
+                        <Stack gap="sm">
+                            {todaySchedules.map(schedule => {
+                                const classInfo = classes.find(c => c.id === schedule.classId);
+                                const classStudents = studentsByClass[schedule.classId] || [];
 
-                            return (
-                                <Paper
-                                    key={session.id}
-                                    p="md"
-                                    withBorder
-                                    radius="md"
-                                    style={{
-                                        borderLeft: session.status === 'in_progress' ? '4px solid var(--mantine-color-green-6)' : undefined,
-                                    }}
-                                >
-                                    <Group justify="space-between">
-                                        <Group>
-                                            <RingProgress
-                                                size={50}
-                                                thickness={5}
-                                                roundCaps
-                                                sections={[{ value: attendancePercentage, color: 'green' }]}
-                                                label={
-                                                    <Text size="xs" ta="center" fw={700}>
-                                                        {checkedInCount}/{session.students.length}
-                                                    </Text>
-                                                }
-                                            />
-                                            <div>
-                                                <Group gap="xs">
-                                                    <Text fw={600}>{session.className}</Text>
-                                                    <Badge size="sm" color={statusColors[session.status]} variant="light">
-                                                        {statusLabels[session.status]}
-                                                    </Badge>
-                                                </Group>
-                                                <Group gap="xs" mt={4}>
-                                                    <Text size="sm" c="dimmed">{session.time}</Text>
-                                                    <Text size="sm" c="dimmed">•</Text>
-                                                    <Text size="sm" c="dimmed">{session.room}</Text>
-                                                </Group>
-                                            </div>
-                                        </Group>
-
-                                        <Group>
-                                            {session.status === 'in_progress' && (
-                                                <Link href={`/teacher/attendance?session=${session.id}`} passHref legacyBehavior>
-                                                    <Button component="a" size="xs" color="green" leftSection={<IconCheck size={14} />}>
-                                                        Fazer Chamada
-                                                    </Button>
-                                                </Link>
-                                            )}
-                                            {session.status === 'upcoming' && (
-                                                <Button size="xs" variant="light" disabled>
-                                                    Aguardando
-                                                </Button>
-                                            )}
-                                            {session.status === 'completed' && (
-                                                <Badge size="lg" color="gray" variant="light">
-                                                    {checkedInCount}/{session.students.length} presentes
-                                                </Badge>
-                                            )}
-                                        </Group>
-                                    </Group>
-
-                                    {/* Quick attendance for current session */}
-                                    {session.status === 'in_progress' && (
-                                        <>
-                                            <Divider my="sm" />
-                                            <Group gap="xs" wrap="wrap">
-                                                {session.students.map(student => (
-                                                    <Tooltip key={student.id} label={student.checkedIn ? 'Presente' : 'Ausente'}>
-                                                        <Badge
-                                                            size="lg"
-                                                            variant={student.checkedIn ? 'filled' : 'outline'}
-                                                            color={student.checkedIn ? 'green' : 'gray'}
-                                                            style={{ cursor: 'pointer' }}
-                                                            onClick={() => handleQuickCheckIn(session.id, student.id)}
-                                                            leftSection={student.checkedIn ? <IconCheck size={12} /> : null}
-                                                        >
-                                                            {student.name.split(' ')[0]}
+                                return (
+                                    <Paper
+                                        key={schedule.id}
+                                        p="md"
+                                        withBorder
+                                        radius="md"
+                                    >
+                                        <Group justify="space-between">
+                                            <Group>
+                                                <RingProgress
+                                                    size={50}
+                                                    thickness={5}
+                                                    roundCaps
+                                                    sections={[{
+                                                        value: classInfo ? Math.round((classInfo.studentCount / classInfo.maxStudents) * 100) : 0,
+                                                        color: 'green'
+                                                    }]}
+                                                    label={
+                                                        <Text size="xs" ta="center" fw={700}>
+                                                            {classInfo?.studentCount || 0}
+                                                        </Text>
+                                                    }
+                                                />
+                                                <div>
+                                                    <Group gap="xs">
+                                                        <Text fw={600}>{schedule.className || 'Turma'}</Text>
+                                                        <Badge size="sm" color="blue" variant="light">
+                                                            {DAY_NAMES[schedule.dayOfWeek]}
                                                         </Badge>
-                                                    </Tooltip>
-                                                ))}
+                                                    </Group>
+                                                    <Group gap="xs" mt={4}>
+                                                        <Text size="sm" c="dimmed">{formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}</Text>
+                                                        {schedule.roomId && (
+                                                            <>
+                                                                <Text size="sm" c="dimmed">•</Text>
+                                                                <Text size="sm" c="dimmed">{schedule.roomId}</Text>
+                                                            </>
+                                                        )}
+                                                    </Group>
+                                                </div>
                                             </Group>
-                                        </>
-                                    )}
-                                </Paper>
-                            );
-                        })}
-                    </Stack>
+
+                                            <Link href={`/teacher/attendance`} passHref legacyBehavior>
+                                                <Button component="a" size="xs" color="green" leftSection={<IconCheck size={14} />}>
+                                                    Fazer Chamada
+                                                </Button>
+                                            </Link>
+                                        </Group>
+                                    </Paper>
+                                );
+                            })}
+                        </Stack>
+                    )}
                 </Stack>
             </Card>
 
@@ -384,229 +412,213 @@ export default function TeacherDashboard() {
             <Stack gap="md">
                 <Group justify="space-between">
                     <Title order={3}>Suas Turmas</Title>
-                    <Link href="/teacher/classes" passHref legacyBehavior>
-                        <Button component="a" variant="subtle" rightSection={<IconChevronRight size={14} />}>
-                            Ver Todas
-                        </Button>
-                    </Link>
+                    <Text size="sm" c="dimmed">{classes.length} turma{classes.length !== 1 ? 's' : ''} ativa{classes.length !== 1 ? 's' : ''}</Text>
                 </Group>
 
-                <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
-                    {classes.map((cls) => (
-                        <Card key={cls.id} shadow="sm" radius="md" p="lg" withBorder>
-                            <Stack gap="md">
-                                <Group justify="space-between">
-                                    <Badge variant="light" color="violet" size="lg">
-                                        {cls.code}
-                                    </Badge>
-                                    <Menu shadow="md" width={200}>
-                                        <Menu.Target>
-                                            <ActionIcon variant="subtle" color="gray">
-                                                <IconDots size={16} />
-                                            </ActionIcon>
-                                        </Menu.Target>
-                                        <Menu.Dropdown>
-                                            <Menu.Item leftSection={<IconEdit size={14} />}>
-                                                Editar Turma
-                                            </Menu.Item>
-                                            <Menu.Item leftSection={<IconCopy size={14} />}>
-                                                Copiar Código
-                                            </Menu.Item>
-                                            <Menu.Divider />
-                                            <Menu.Item color="red" leftSection={<IconTrash size={14} />}>
-                                                Arquivar Turma
-                                            </Menu.Item>
-                                        </Menu.Dropdown>
-                                    </Menu>
-                                </Group>
-
-                                <div>
-                                    <Text fw={600} size="lg">{cls.name}</Text>
-                                    <Text size="sm" c="dimmed">{cls.studentCount} alunos</Text>
-                                </div>
-
-                                <div>
-                                    <Group justify="space-between" mb={4}>
-                                        <Text size="xs" c="dimmed">Módulo 1 Progress</Text>
-                                        <Text size="xs" fw={500}>{cls.moduleProgress}%</Text>
-                                    </Group>
-                                    <Progress value={cls.moduleProgress} size="sm" color="cyan" radius="xl" />
-                                </div>
-
-                                <Link href={`/teacher/classes/${cls.id}`} passHref legacyBehavior>
-                                    <Button component="a" variant="light" fullWidth>
-                                        Ver Turma
-                                    </Button>
-                                </Link>
-                            </Stack>
-                        </Card>
-                    ))}
-
-                    {/* Add Class Card */}
-                    <Card
-                        shadow="sm"
-                        radius="md"
-                        p="lg"
-                        withBorder
-                        style={{
-                            borderStyle: 'dashed',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            minHeight: 200,
-                            cursor: 'pointer',
-                        }}
-                    >
-                        <Stack align="center" gap="sm">
-                            <ThemeIcon size={48} radius="xl" variant="light" color="gray">
-                                <IconPlus size={24} />
-                            </ThemeIcon>
-                            <Text c="dimmed">Criar Nova Turma</Text>
-                        </Stack>
+                {classes.length === 0 ? (
+                    <Card withBorder p="xl" ta="center">
+                        <ThemeIcon size={60} radius="xl" variant="light" color="gray" mx="auto" mb="md">
+                            <IconUsers size={30} />
+                        </ThemeIcon>
+                        <Title order={3} mb="xs">Nenhuma turma atribuída</Title>
+                        <Text c="dimmed">Entre em contato com a coordenação para ser vinculado a turmas</Text>
                     </Card>
+                ) : (
+                    <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
+                        {classes.map((cls) => {
+                            const classStudents = studentsByClass[cls.id] || [];
+                            const occupancy = cls.maxStudents > 0
+                                ? Math.round((cls.studentCount / cls.maxStudents) * 100)
+                                : 0;
+
+                            return (
+                                <Card key={cls.id} shadow="sm" radius="md" p="lg" withBorder>
+                                    <Stack gap="md">
+                                        <Group justify="space-between">
+                                            <Badge variant="light" color="violet" size="lg">
+                                                {cls.code}
+                                            </Badge>
+                                            <Badge size="sm" color={cls.status === 'active' ? 'green' : 'gray'} variant="light">
+                                                {cls.status === 'active' ? 'Ativa' : cls.status}
+                                            </Badge>
+                                        </Group>
+
+                                        <div>
+                                            <Text fw={600} size="lg">{cls.name}</Text>
+                                            <Text size="sm" c="dimmed">{cls.studentCount}/{cls.maxStudents} alunos</Text>
+                                        </div>
+
+                                        <div>
+                                            <Group justify="space-between" mb={4}>
+                                                <Text size="xs" c="dimmed">Ocupação</Text>
+                                                <Text size="xs" fw={500}>{occupancy}%</Text>
+                                            </Group>
+                                            <Progress value={occupancy} size="sm" color={occupancy > 90 ? 'red' : occupancy > 70 ? 'orange' : 'cyan'} radius="xl" />
+                                        </div>
+
+                                        {/* Student avatars preview */}
+                                        {classStudents.length > 0 && (
+                                            <Group gap={4}>
+                                                {classStudents.slice(0, 6).map(s => (
+                                                    <Tooltip key={s.id} label={s.name}>
+                                                        <Avatar size="sm" radius="xl" color="violet">
+                                                            {s.name.charAt(0)}
+                                                        </Avatar>
+                                                    </Tooltip>
+                                                ))}
+                                                {classStudents.length > 6 && (
+                                                    <Avatar size="sm" radius="xl" color="gray">
+                                                        +{classStudents.length - 6}
+                                                    </Avatar>
+                                                )}
+                                            </Group>
+                                        )}
+
+                                        <Link href={`/teacher/classes/${cls.id}`} passHref legacyBehavior>
+                                            <Button component="a" variant="light" fullWidth>
+                                                Ver Turma
+                                            </Button>
+                                        </Link>
+                                    </Stack>
+                                </Card>
+                            );
+                        })}
+                    </SimpleGrid>
+                )}
+            </Stack>
+
+            {/* Quick-access Toolbox */}
+            <Stack gap="md">
+                <Title order={3}>Caixa de Ferramentas</Title>
+                <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md">
+                    <Link href="/teacher/attendance" passHref legacyBehavior>
+                        <Paper component="a" shadow="xs" radius="md" p="lg" withBorder style={{ cursor: 'pointer', textDecoration: 'none' }}>
+                            <Stack align="center" gap="sm">
+                                <ThemeIcon size={48} radius="xl" variant="light" color="green">
+                                    <IconClipboardCheck size={24} />
+                                </ThemeIcon>
+                                <Text fw={500} ta="center">Controle de Presença</Text>
+                                <Text size="xs" c="dimmed" ta="center">Fazer chamada</Text>
+                            </Stack>
+                        </Paper>
+                    </Link>
+
+                    <Link href="/teacher/grades" passHref legacyBehavior>
+                        <Paper component="a" shadow="xs" radius="md" p="lg" withBorder style={{ cursor: 'pointer', textDecoration: 'none' }}>
+                            <Stack align="center" gap="sm">
+                                <ThemeIcon size={48} radius="xl" variant="light" color="violet">
+                                    <IconChartBar size={24} />
+                                </ThemeIcon>
+                                <Text fw={500} ta="center">Notas e Avaliações</Text>
+                                <Text size="xs" c="dimmed" ta="center">Progresso por aluno</Text>
+                            </Stack>
+                        </Paper>
+                    </Link>
+
+                    <Link href="/teacher/schedule" passHref legacyBehavior>
+                        <Paper component="a" shadow="xs" radius="md" p="lg" withBorder style={{ cursor: 'pointer', textDecoration: 'none' }}>
+                            <Stack align="center" gap="sm">
+                                <ThemeIcon size={48} radius="xl" variant="light" color="blue">
+                                    <IconCalendarEvent size={24} />
+                                </ThemeIcon>
+                                <Text fw={500} ta="center">Minha Agenda</Text>
+                                <Text size="xs" c="dimmed" ta="center">Horários e salas</Text>
+                            </Stack>
+                        </Paper>
+                    </Link>
+
+                    <Paper shadow="xs" radius="md" p="lg" withBorder style={{ cursor: 'pointer' }} onClick={openMessage}>
+                        <Stack align="center" gap="sm">
+                            <ThemeIcon size={48} radius="xl" variant="light" color="orange">
+                                <IconMessageCircle size={24} />
+                            </ThemeIcon>
+                            <Text fw={500} ta="center">Mensagens</Text>
+                            <Text size="xs" c="dimmed" ta="center">Alunos e pais</Text>
+                        </Stack>
+                    </Paper>
                 </SimpleGrid>
             </Stack>
 
-            {/* Progress Heatmap */}
-            <Card shadow="sm" radius="md" p="lg" withBorder>
-                <Stack gap="md">
-                    <Group justify="space-between">
-                        <Group>
-                            <ThemeIcon size="lg" variant="light" color="teal">
-                                <IconChartBar size={20} />
-                            </ThemeIcon>
-                            <div>
-                                <Text fw={600}>Mapa de Progresso - Turma A</Text>
-                                <Text size="sm" c="dimmed">Visualize o progresso por aluno e lição</Text>
-                            </div>
+            {/* Student Roster (all classes) */}
+            {students.length > 0 && (
+                <Card shadow="sm" radius="md" p="lg" withBorder>
+                    <Stack gap="md">
+                        <Group justify="space-between">
+                            <Group>
+                                <ThemeIcon size="lg" variant="light" color="teal">
+                                    <IconUsers size={20} />
+                                </ThemeIcon>
+                                <div>
+                                    <Text fw={600}>Seus Alunos</Text>
+                                    <Text size="sm" c="dimmed">{students.length} aluno{students.length !== 1 ? 's' : ''} matriculado{students.length !== 1 ? 's' : ''}</Text>
+                                </div>
+                            </Group>
                         </Group>
-                        <Select
-                            placeholder="Selecionar Turma"
-                            data={classes.map(c => ({ value: c.id, label: c.name }))}
-                            defaultValue="class-1"
-                            w={200}
-                        />
-                    </Group>
 
-                    <Divider />
+                        <Divider />
 
-                    {/* Heatmap Legend */}
-                    <Group gap="lg">
-                        <Group gap="xs">
-                            <Paper w={16} h={16} bg="gray.2" radius="sm" />
-                            <Text size="xs" c="dimmed">Não iniciado</Text>
-                        </Group>
-                        <Group gap="xs">
-                            <Paper w={16} h={16} bg="red.3" radius="sm" />
-                            <Text size="xs" c="dimmed">&lt;70%</Text>
-                        </Group>
-                        <Group gap="xs">
-                            <Paper w={16} h={16} bg="yellow.4" radius="sm" />
-                            <Text size="xs" c="dimmed">70-84%</Text>
-                        </Group>
-                        <Group gap="xs">
-                            <Paper w={16} h={16} bg="green.4" radius="sm" />
-                            <Text size="xs" c="dimmed">85-94%</Text>
-                        </Group>
-                        <Group gap="xs">
-                            <Paper w={16} h={16} bg="teal.5" radius="sm" />
-                            <Text size="xs" c="dimmed">95-100%</Text>
-                        </Group>
-                    </Group>
-
-                    {/* Heatmap Grid */}
-                    <Table>
-                        <Table.Thead>
-                            <Table.Tr>
-                                <Table.Th>Aluno</Table.Th>
-                                {['L1', 'L2', 'L3', 'L4', 'L5', 'L6'].map(l => (
-                                    <Table.Th key={l} ta="center" w={60}>{l}</Table.Th>
-                                ))}
-                                <Table.Th ta="center">Média</Table.Th>
-                                <Table.Th ta="center">Ação</Table.Th>
-                            </Table.Tr>
-                        </Table.Thead>
-                        <Table.Tbody>
-                            {studentProgress.map(student => {
-                                const completedLessons = student.lessons.filter(l => l.completed);
-                                const avgScore = completedLessons.length > 0
-                                    ? Math.round(completedLessons.reduce((acc, l) => acc + (l.score || 0), 0) / completedLessons.length)
-                                    : 0;
-
-                                const getScoreColor = (score?: number) => {
-                                    if (score === undefined) return 'gray.2';
-                                    if (score >= 95) return 'teal.5';
-                                    if (score >= 85) return 'green.4';
-                                    if (score >= 70) return 'yellow.4';
-                                    return 'red.3';
-                                };
-
-                                return (
+                        <Table striped highlightOnHover>
+                            <Table.Thead>
+                                <Table.Tr>
+                                    <Table.Th>Aluno</Table.Th>
+                                    <Table.Th>Turma</Table.Th>
+                                    <Table.Th>Status</Table.Th>
+                                    <Table.Th></Table.Th>
+                                </Table.Tr>
+                            </Table.Thead>
+                            <Table.Tbody>
+                                {students.slice(0, 20).map(student => (
                                     <Table.Tr key={student.id}>
                                         <Table.Td>
-                                            <Group gap="xs">
+                                            <Group gap="sm">
                                                 <Avatar size="sm" radius="xl" color="violet">
-                                                    {student.name.split(' ').map(n => n[0]).join('')}
+                                                    {student.name.charAt(0)}
                                                 </Avatar>
-                                                <Text size="sm">{student.name}</Text>
+                                                <div>
+                                                    <Text size="sm" fw={500}>{student.name}</Text>
+                                                    {student.email && <Text size="xs" c="dimmed">{student.email}</Text>}
+                                                </div>
                                             </Group>
                                         </Table.Td>
-                                        {student.lessons.map((lesson, idx) => (
-                                            <Table.Td key={idx} ta="center">
-                                                <Tooltip
-                                                    label={lesson.completed ? `${lesson.score}%` : 'Não completado'}
-                                                    withArrow
-                                                >
-                                                    <Paper
-                                                        w={36}
-                                                        h={36}
-                                                        radius="sm"
-                                                        bg={lesson.completed ? getScoreColor(lesson.score) : 'gray.2'}
-                                                        style={{
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            justifyContent: 'center',
-                                                            margin: '0 auto'
-                                                        }}
-                                                    >
-                                                        {lesson.completed && (
-                                                            <Text size="xs" fw={600} c={lesson.score && lesson.score >= 70 ? 'white' : 'dark'}>
-                                                                {lesson.score}
-                                                            </Text>
-                                                        )}
-                                                    </Paper>
-                                                </Tooltip>
-                                            </Table.Td>
-                                        ))}
-                                        <Table.Td ta="center">
+                                        <Table.Td>
+                                            <Badge variant="light" size="sm">{student.className || 'Sem turma'}</Badge>
+                                        </Table.Td>
+                                        <Table.Td>
                                             <Badge
-                                                size="lg"
-                                                color={avgScore >= 85 ? 'green' : avgScore >= 70 ? 'yellow' : 'red'}
+                                                color={student.enrollmentStatus === 'active' ? 'green' : 'gray'}
+                                                size="sm"
                                             >
-                                                {avgScore > 0 ? `${avgScore}%` : '-'}
+                                                {student.enrollmentStatus === 'active' ? 'Ativo' : student.enrollmentStatus}
                                             </Badge>
                                         </Table.Td>
-                                        <Table.Td ta="center">
+                                        <Table.Td>
                                             <Tooltip label="Enviar mensagem">
                                                 <ActionIcon
                                                     variant="light"
                                                     color="blue"
+                                                    size="sm"
                                                     onClick={() => {
                                                         setMessageRecipient(student.name);
                                                         openMessage();
                                                     }}
                                                 >
-                                                    <IconMail size={16} />
+                                                    <IconMail size={14} />
                                                 </ActionIcon>
                                             </Tooltip>
                                         </Table.Td>
                                     </Table.Tr>
-                                );
-                            })}
-                        </Table.Tbody>
-                    </Table>
-                </Stack>
-            </Card>
+                                ))}
+                            </Table.Tbody>
+                        </Table>
+
+                        {students.length > 20 && (
+                            <Text size="sm" c="dimmed" ta="center">
+                                Mostrando 20 de {students.length} alunos
+                            </Text>
+                        )}
+                    </Stack>
+                </Card>
+            )}
 
             {/* Message Modal */}
             <Modal
@@ -619,19 +631,18 @@ export default function TeacherDashboard() {
                 <Stack gap="md">
                     <Select
                         label="Destinatário"
-                        placeholder="Selecione aluno ou responsável"
+                        placeholder="Selecione aluno ou turma"
                         value={messageRecipient}
                         onChange={setMessageRecipient}
                         data={[
-                            { group: 'Alunos', items: studentProgress.map(s => ({ value: s.name, label: s.name })) },
                             {
-                                group: 'Responsáveis', items: [
-                                    { value: 'parent-ana', label: 'Pai de Ana Silva' },
-                                    { value: 'parent-bruno', label: 'Mãe de Bruno Costa' },
-                                    { value: 'parent-carla', label: 'Pai de Carla Dias' },
-                                ]
+                                group: 'Alunos',
+                                items: students.map(s => ({ value: s.name, label: s.name }))
                             },
-                            { group: 'Turmas', items: classes.map(c => ({ value: `class-${c.id}`, label: `Toda ${c.name}` })) },
+                            {
+                                group: 'Turmas',
+                                items: classes.map(c => ({ value: `class-${c.id}`, label: `Toda ${c.name}` }))
+                            },
                         ]}
                         searchable
                     />
@@ -648,6 +659,7 @@ export default function TeacherDashboard() {
                             leftSection={<IconSend size={16} />}
                             disabled={!messageRecipient || !messageText.trim()}
                             onClick={() => {
+                                // TODO: POST to /api/communicator/conversations
                                 closeMessage();
                                 setMessageText('');
                                 setMessageRecipient(null);
@@ -661,4 +673,3 @@ export default function TeacherDashboard() {
         </Stack>
     );
 }
-

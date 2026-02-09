@@ -41,18 +41,7 @@ const MODULE_COLORS: Record<string, string> = {
     mastery: '#ec4899',        // pink
 };
 
-const MOCK_NODES: KnowledgeNode[] = [
-    { id: '1', label: 'LLM Basics', description: 'Understanding how large language models work', module: 'foundations', position: [0, 0, 0], connections: ['2', '3'], createdAt: '2026-01-15' },
-    { id: '2', label: 'Tokenização', description: 'Como texto é convertido em tokens', module: 'foundations', position: [2, 1, -1], connections: ['1', '4'], createdAt: '2026-01-16' },
-    { id: '3', label: 'Context Window', description: 'Limites de contexto em LLMs', module: 'foundations', position: [-2, 1, 1], connections: ['1', '5'], createdAt: '2026-01-17' },
-    { id: '4', label: 'Zero-Shot Prompting', description: 'Prompting sem exemplos', module: 'prompting', position: [3, 2, -2], connections: ['2', '6', '7'], createdAt: '2026-01-20' },
-    { id: '5', label: 'Few-Shot Prompting', description: 'Prompting com exemplos', module: 'prompting', position: [-1, 2, 2], connections: ['3', '6'], createdAt: '2026-01-21' },
-    { id: '6', label: 'Chain of Thought', description: 'Raciocínio passo a passo', module: 'reasoning', position: [1, 3, 0], connections: ['4', '5', '8'], createdAt: '2026-01-25' },
-    { id: '7', label: 'Role Playing', description: 'Assumindo personas', module: 'creativity', position: [4, 3, -1], connections: ['4', '9'], createdAt: '2026-01-26' },
-    { id: '8', label: 'Self-Reflection', description: 'Fazendo o modelo avaliar sua resposta', module: 'reasoning', position: [0, 4, 1], connections: ['6', '10'], createdAt: '2026-01-28' },
-    { id: '9', label: 'Creative Writing', description: 'Geração criativa de texto', module: 'creativity', position: [3, 4, -2], connections: ['7', '10'], createdAt: '2026-01-29' },
-    { id: '10', label: 'AI Ethics', description: 'Considerações éticas no uso de IA', module: 'ethics', position: [1, 5, 0], connections: ['8', '9'], createdAt: '2026-02-01' },
-];
+const MOCK_NODES: KnowledgeNode[] = [];
 
 // ============================================================================
 // 3D COMPONENTS (Dynamically Imported)

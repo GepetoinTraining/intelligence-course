@@ -74,103 +74,13 @@ interface ABTest {
 // MOCK DATA
 // ============================================================================
 
-const MOCK_CAMPAIGNS: Campaign[] = [
-    {
-        id: '1',
-        name: 'English Adults - Q1 2026',
-        status: 'active',
-        channel: 'instagram',
-        budget: 5000,
-        spent: 3200,
-        startDate: '2026-01-01',
-        visitors: 4500,
-        leads: 180,
-        enrollments: 25,
-        cac: 128,
-        roas: 2.8,
-    },
-    {
-        id: '2',
-        name: 'Kids English - Férias',
-        status: 'active',
-        channel: 'facebook',
-        budget: 3000,
-        spent: 2100,
-        startDate: '2026-01-15',
-        visitors: 2800,
-        leads: 95,
-        enrollments: 12,
-        cac: 175,
-        roas: 1.9,
-    },
-    {
-        id: '3',
-        name: 'Business English B2B',
-        status: 'paused',
-        channel: 'google',
-        budget: 8000,
-        spent: 4500,
-        startDate: '2025-12-01',
-        visitors: 3200,
-        leads: 65,
-        enrollments: 8,
-        cac: 562,
-        roas: 1.2,
-    },
-    {
-        id: '4',
-        name: 'Newsletter Semanal',
-        status: 'active',
-        channel: 'email',
-        budget: 0,
-        spent: 0,
-        startDate: '2025-01-01',
-        visitors: 1200,
-        leads: 45,
-        enrollments: 15,
-        cac: 0,
-        roas: 0,
-    },
-];
+const MOCK_CAMPAIGNS: Campaign[] = [];
 
-const MOCK_CHANNEL_METRICS: ChannelMetrics[] = [
-    { channel: 'Instagram', visitors: 12500, leads: 420, enrollments: 55, spend: 8500, cac: 154, cvr: 3.36 },
-    { channel: 'Facebook', visitors: 8200, leads: 280, enrollments: 35, spend: 5200, cac: 148, cvr: 3.41 },
-    { channel: 'Google Ads', visitors: 5800, leads: 145, enrollments: 18, spend: 7800, cac: 433, cvr: 2.50 },
-    { channel: 'Email', visitors: 3200, leads: 180, enrollments: 42, spend: 200, cac: 4.76, cvr: 5.63 },
-    { channel: 'Organic', visitors: 15000, leads: 350, enrollments: 68, spend: 0, cac: 0, cvr: 2.33 },
-];
+const MOCK_CHANNEL_METRICS: ChannelMetrics[] = [];
 
-const MOCK_ASSETS: ContentAsset[] = [
-    { id: '1', name: 'Hero Banner - Adults', type: 'image', campaign: 'English Adults - Q1 2026', status: 'live', createdAt: '2026-01-05', performance: 85 },
-    { id: '2', name: 'Testimonial Video - Maria', type: 'video', campaign: 'English Adults - Q1 2026', status: 'live', createdAt: '2026-01-10', performance: 92 },
-    { id: '3', name: 'Kids Landing Page', type: 'landing_page', campaign: 'Kids English - Férias', status: 'live', createdAt: '2026-01-12', performance: 78 },
-    { id: '4', name: 'Email Copy - Urgência', type: 'copy', campaign: 'Newsletter Semanal', status: 'approved', createdAt: '2026-01-20' },
-];
+const MOCK_ASSETS: ContentAsset[] = [];
 
-const MOCK_AB_TESTS: ABTest[] = [
-    {
-        id: '1',
-        name: 'Landing Page - CTA Color',
-        pageA: 'Verde (Matricule-se)',
-        pageB: 'Laranja (Comece Agora)',
-        visitors: { a: 1250, b: 1280 },
-        conversions: { a: 42, b: 58 },
-        winner: 'B',
-        confidence: 94,
-        status: 'concluded',
-    },
-    {
-        id: '2',
-        name: 'Hero Image - Style',
-        pageA: 'Foto com pessoas',
-        pageB: 'Ilustração abstrata',
-        visitors: { a: 850, b: 820 },
-        conversions: { a: 28, b: 25 },
-        confidence: 62,
-        status: 'running',
-    },
-];
+const MOCK_AB_TESTS: ABTest[] = [];
 
 // ============================================================================
 // MAIN COMPONENT
