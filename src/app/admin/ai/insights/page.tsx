@@ -14,6 +14,8 @@ import {
     RingProgress,
     Center,
     Progress,
+    Loader,
+    Alert,
 } from '@mantine/core';
 import {
     IconBrain,
@@ -22,7 +24,9 @@ import {
     IconAlertTriangle,
     IconBulb,
     IconRefresh,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 // Demo insights
 const insights = [
@@ -34,6 +38,14 @@ const insights = [
 ];
 
 export default function InsightsPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/scrm/crm-insights');
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
+
     return (
         <Stack gap="lg">
             {/* Header */}

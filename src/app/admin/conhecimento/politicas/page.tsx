@@ -14,6 +14,9 @@ import {
     ActionIcon,
     Menu,
     TextInput,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconScale,
@@ -24,7 +27,9 @@ import {
     IconSearch,
     IconFileText,
     IconCheck,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface Policy {
     id: string;
@@ -59,6 +64,9 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function PoliticasPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/wiki/articles?category=policy');
+
     const [policies] = useState<Policy[]>(mockPolicies);
     const [search, setSearch] = useState('');
 
@@ -69,6 +77,11 @@ export default function PoliticasPage() {
 
     const activeCount = policies.filter(p => p.status === 'active').length;
     const mandatoryCount = policies.filter(p => p.mandatory).length;
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <div>

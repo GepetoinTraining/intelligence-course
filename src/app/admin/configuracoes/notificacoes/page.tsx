@@ -15,6 +15,9 @@ import {
     Select,
     Switch,
     Divider,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconBell,
@@ -22,9 +25,19 @@ import {
     IconBrandWhatsapp,
     IconDeviceMobile,
     IconCheck,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 export default function NotificacoesConfigPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/notifications');
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
+
     return (
         <Stack gap="lg">
             {/* Header */}

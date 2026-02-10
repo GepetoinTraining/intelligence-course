@@ -13,6 +13,9 @@ import {
     Table,
     Switch,
     ActionIcon,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconShieldCheck,
@@ -20,7 +23,9 @@ import {
     IconPencil,
     IconEye,
     IconTrash,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 // Demo roles data
 const roles = [
@@ -42,6 +47,14 @@ const permissionModules = [
 ];
 
 export default function CargosPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/positions');
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
+
     return (
         <Stack gap="lg">
             {/* Header */}

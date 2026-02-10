@@ -69,6 +69,8 @@ export async function GET(request: NextRequest) {
             organizationId: organizationMemberships.organizationId,
         })
             .from(users)
+            .innerJoin(persons, eq(users.personId, persons.id))
+            .innerJoin(organizationMemberships, eq(persons.id, organizationMemberships.personId))
             .where(eq(users.id, personId))
             .limit(1);
 
@@ -103,6 +105,8 @@ export async function GET(request: NextRequest) {
                 role: organizationMemberships.role,
             })
                 .from(users)
+                .innerJoin(persons, eq(users.personId, persons.id))
+                .innerJoin(organizationMemberships, eq(persons.id, organizationMemberships.personId))
                 .where(and(
                     eq(organizationMemberships.organizationId, orgId),
                     ne(users.id, personId), // Exclude self

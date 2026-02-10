@@ -141,6 +141,7 @@ import {
     IconLock,
     IconBellRinging,
     IconLockAccess,
+    IconHeadset,
 } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useUserContext, type UserRole } from '@/hooks/useUser';
@@ -414,7 +415,18 @@ const BUNDLES: Bundle[] = [
             { id: 'board', label: 'Quadro de Ideias', href: '/admin/kaizen/quadro', icon: <IconLayoutKanban size={18} /> },
         ],
     },
-    // 14. Configurações (bottom position)
+    // 14. Suporte
+    {
+        id: 'suporte',
+        label: 'Suporte',
+        icon: <IconHeadset size={20} />,
+        color: 'red',
+        items: [
+            { id: 'tickets', label: 'Tickets', href: '/admin/suporte/tickets', icon: <IconMessage2 size={18} /> },
+            { id: 'suporte-hub', label: 'Visão Geral', href: '/admin/suporte', icon: <IconLayoutDashboard size={18} /> },
+        ],
+    },
+    // 15. Configurações (bottom position)
     {
         id: 'configuracoes',
         label: 'Configurações',

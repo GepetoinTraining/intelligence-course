@@ -5,18 +5,29 @@ import {
     Container, Title, Text, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Paper, Button, TextInput, Alert,
     Stepper,
+    Loader,
+    Center,
 } from '@mantine/core';
 import {
     IconBrandWhatsapp, IconPlug, IconShieldCheck,
     IconMessageCircle, IconAlertCircle, IconCheck,
     IconSettings,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 export default function WhatsAppPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/communicator/conversations?channel=whatsapp');
+
     const [step, setStep] = useState(0);
     const [phoneNumber, setPhoneNumber] = useState('');
     const [businessId, setBusinessId] = useState('');
     const [token, setToken] = useState('');
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <Container size="xl" py="xl">

@@ -15,6 +15,9 @@ import {
     Menu,
     Progress,
     Select,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconClipboardCheck,
@@ -26,7 +29,9 @@ import {
     IconUsers,
     IconChartBar,
     IconDownload,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface Assessment {
     id: string;
@@ -87,6 +92,9 @@ function formatDate(dateStr: string) {
 }
 
 export default function AvaliacoesPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/challenges');
+
     const [assessments] = useState<Assessment[]>(mockAssessments);
 
     const totalAssessments = assessments.length;
@@ -95,6 +103,11 @@ export default function AvaliacoesPage() {
     const avgScoreAll = assessments
         .filter(a => a.avgScore)
         .reduce((acc, a) => acc + (a.avgScore || 0), 0) / (assessments.filter(a => a.avgScore).length || 1);
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <div>

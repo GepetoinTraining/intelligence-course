@@ -5,11 +5,16 @@ import {
     Container, Title, Text, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Table, Paper, TextInput, Button, CopyButton,
     ActionIcon, Tooltip,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconWebhook, IconPlus, IconTrash, IconCopy, IconCheck,
     IconLink, IconCloudUp, IconBell, IconShieldCheck,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface WebhookEntry {
     id: string;
@@ -31,6 +36,9 @@ const DEMO_EVENTS = [
 ];
 
 export default function WebhooksPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/api-keys');
+
     const [webhooks, setWebhooks] = useState<WebhookEntry[]>([]);
     const [newName, setNewName] = useState('');
     const [newUrl, setNewUrl] = useState('');
@@ -66,6 +74,11 @@ export default function WebhooksPage() {
     const handleToggle = (id: string) => {
         setWebhooks(prev => prev.map(w => w.id === id ? { ...w, isActive: !w.isActive } : w));
     };
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <Container size="xl" py="xl">

@@ -13,6 +13,9 @@ import {
     ActionIcon,
     Menu,
     Avatar,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconCalendar,
@@ -22,7 +25,9 @@ import {
     IconDotsVertical,
     IconUsers,
     IconClock,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface Event {
     id: string;
@@ -58,10 +63,18 @@ const typeLabels: Record<string, string> = {
 };
 
 export default function AgendaTimePage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/schedules?scope=team');
+
     const [events] = useState<Event[]>(mockEvents);
 
     const todayEvents = events.filter(e => e.date === '2026-02-05');
     const upcomingEvents = events.filter(e => e.date > '2026-02-05');
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <div>

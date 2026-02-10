@@ -34,8 +34,25 @@ export async function GET(request: NextRequest) {
         }
 
         const result = await db
-            .select()
+            .select({
+                id: users.id,
+                personId: users.personId,
+                email: persons.primaryEmail,
+                name: persons.firstName,
+                avatarUrl: persons.avatarUrl,
+                role: organizationMemberships.role,
+                organizationId: organizationMemberships.organizationId,
+                onboardingCompleted: users.onboardingCompleted,
+                latticeInterviewPending: users.latticeInterviewPending,
+                preferences: users.preferences,
+                createdAt: users.createdAt,
+                updatedAt: users.updatedAt,
+                lastSeenAt: users.lastSeenAt,
+                archivedAt: users.archivedAt,
+            })
             .from(users)
+            .innerJoin(persons, eq(users.personId, persons.id))
+            .innerJoin(organizationMemberships, eq(persons.id, organizationMemberships.personId))
             .where(conditions.length > 0 ? and(...conditions) : undefined)
             .orderBy(desc(users.createdAt))
             .limit(limit)

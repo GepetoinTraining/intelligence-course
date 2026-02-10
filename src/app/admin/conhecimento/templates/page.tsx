@@ -13,6 +13,9 @@ import {
     ActionIcon,
     Menu,
     TextInput,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconTemplate,
@@ -23,7 +26,9 @@ import {
     IconSearch,
     IconCopy,
     IconDownload,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface Template {
     id: string;
@@ -52,6 +57,9 @@ const formatColors: Record<string, string> = {
 };
 
 export default function TemplatesPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/templates');
+
     const [templates] = useState<Template[]>(mockTemplates);
     const [search, setSearch] = useState('');
 
@@ -62,6 +70,11 @@ export default function TemplatesPage() {
 
     const totalDownloads = templates.reduce((acc, t) => acc + t.downloads, 0);
     const categories = [...new Set(templates.map(t => t.category))];
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <div>

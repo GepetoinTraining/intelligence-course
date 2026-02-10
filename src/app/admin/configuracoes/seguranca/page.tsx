@@ -11,12 +11,16 @@ import {
     ThemeIcon,
     Table,
     Center,
+    Loader,
+    Alert,
 } from '@mantine/core';
 import {
     IconLock,
     IconShieldCheck,
     IconKey,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface SecurityEvent {
     id: string;
@@ -26,6 +30,9 @@ interface SecurityEvent {
 }
 
 export default function SegurancaPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/permissions?scope=security');
+
     // Mock security status
     const securityFeatures = [
         { name: 'Autenticação 2FA', status: 'active', icon: IconShieldCheck },
@@ -37,6 +44,11 @@ export default function SegurancaPage() {
         { id: '1', event: 'Login bem-sucedido', timestamp: new Date(), status: 'success' },
         { id: '2', event: 'Sessão iniciada', timestamp: new Date(), status: 'success' },
     ];
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <Stack gap="lg">

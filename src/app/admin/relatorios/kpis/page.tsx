@@ -13,6 +13,8 @@ import {
     Table,
     RingProgress,
     Center,
+    Loader,
+    Alert,
 } from '@mantine/core';
 import {
     IconChartBar,
@@ -20,7 +22,9 @@ import {
     IconTrendingUp,
     IconUsers,
     IconCash,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 // Demo KPI data
 const kpiData = [
@@ -33,7 +37,15 @@ const kpiData = [
 ];
 
 export default function KPIsPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/reports/financial');
+
     const achieved = kpiData.filter(k => k.current >= k.target).length;
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <Stack gap="lg">

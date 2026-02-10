@@ -12,13 +12,18 @@ import {
     SimpleGrid,
     ThemeIcon,
     Select,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconReportAnalytics,
     IconDownload,
     IconArrowUpRight,
     IconArrowDownRight,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface BalanceLine {
     code: string;
@@ -49,11 +54,19 @@ function formatCurrency(value: number) {
 }
 
 export default function BalancetePage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/journal-entries');
+
     const [lines] = useState<BalanceLine[]>(mockBalanceLines);
 
     const totalAssets = lines.filter(l => l.type === 'asset' && l.level === 0).reduce((acc, l) => acc + l.currentBalance, 0);
     const totalLiabilities = lines.filter(l => l.type === 'liability' && l.level === 0).reduce((acc, l) => acc + l.currentBalance, 0);
     const totalEquity = lines.filter(l => l.type === 'equity' && l.level === 0).reduce((acc, l) => acc + l.currentBalance, 0);
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <div>

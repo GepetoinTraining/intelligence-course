@@ -14,6 +14,9 @@ import {
     ActionIcon,
     Menu,
     TextInput,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconListCheck,
@@ -24,7 +27,9 @@ import {
     IconSearch,
     IconFileText,
     IconUsers,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface Procedure {
     id: string;
@@ -59,6 +64,9 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function ProcedimentosPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/procedures');
+
     const [procedures] = useState<Procedure[]>(mockProcedures);
     const [search, setSearch] = useState('');
 
@@ -70,6 +78,11 @@ export default function ProcedimentosPage() {
     const activeCount = procedures.filter(p => p.status === 'active').length;
     const draftCount = procedures.filter(p => p.status === 'draft').length;
     const totalViews = procedures.reduce((acc, p) => acc + p.viewCount, 0);
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <div>

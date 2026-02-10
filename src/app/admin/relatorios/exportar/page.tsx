@@ -4,11 +4,13 @@ import { useState, useCallback } from 'react';
 import {
     Container, Title, Text, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Button, Loader, Alert, Select, Paper,
+    Center,
 } from '@mantine/core';
 import {
     IconAlertCircle, IconDownload, IconFileSpreadsheet,
     IconFileText, IconReceipt, IconCash, IconChartBar,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface ReportDef {
     id: string;
@@ -55,6 +57,9 @@ const REPORTS: ReportDef[] = [
 ];
 
 export default function ExportarPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/export');
+
     const [downloading, setDownloading] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [year, setYear] = useState(String(new Date().getFullYear()));
@@ -129,6 +134,11 @@ export default function ExportarPage() {
             setDownloading(null);
         }
     }, [year, month]);
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <Container size="xl" py="xl">

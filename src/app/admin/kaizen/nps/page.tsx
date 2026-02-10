@@ -13,6 +13,9 @@ import {
     ActionIcon,
     Menu,
     RingProgress,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconChartDonut,
@@ -22,7 +25,9 @@ import {
     IconMoodSmile,
     IconMoodSad,
     IconMoodNeutral,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface NPSSurvey {
     id: string;
@@ -70,6 +75,9 @@ function getNPSLabel(score: number): string {
 }
 
 export default function NPSPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/reviews?type=nps');
+
     const [surveys] = useState<NPSSurvey[]>(mockSurveys);
 
     const completedSurveys = surveys.filter(s => s.status === 'completed');
@@ -77,6 +85,11 @@ export default function NPSPage() {
         ? Math.round(completedSurveys.reduce((acc, s) => acc + s.score, 0) / completedSurveys.length)
         : 0;
     const totalResponses = surveys.reduce((acc, s) => acc + s.responseCount, 0);
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <div>

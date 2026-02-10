@@ -14,6 +14,9 @@ import {
     ActionIcon,
     Menu,
     TextInput,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconFiles,
@@ -26,7 +29,9 @@ import {
     IconTrash,
     IconFolder,
     IconFile,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface FileItem {
     id: string;
@@ -58,6 +63,9 @@ const formatColors: Record<string, string> = {
 };
 
 export default function ArquivosPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/templates?type=file');
+
     const [files] = useState<FileItem[]>(mockFiles);
     const [search, setSearch] = useState('');
 
@@ -68,6 +76,11 @@ export default function ArquivosPage() {
     const folderCount = files.filter(f => f.type === 'folder').length;
     const fileCount = files.filter(f => f.type === 'file').length;
     const totalSize = '45.6 MB';
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <div>

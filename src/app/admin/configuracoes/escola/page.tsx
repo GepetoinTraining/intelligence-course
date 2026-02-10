@@ -15,6 +15,9 @@ import {
     Avatar,
     ColorSwatch,
     FileInput,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconBuilding,
@@ -26,10 +29,15 @@ import {
     IconBrandFacebook,
     IconBrandInstagram,
     IconDeviceFloppy,
+    IconAlertCircle,
 } from '@tabler/icons-react';
 import { useState } from 'react';
+import { useApi } from '@/hooks/useApi';
 
 export default function EscolaPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/profile');
+
     const [schoolData, setSchoolData] = useState({
         name: 'Node Zero Language School',
         email: 'contato@nodezero.edu.br',
@@ -39,6 +47,11 @@ export default function EscolaPage() {
         facebook: 'nodezeroschool',
         instagram: '@nodezeroschool',
     });
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <Stack gap="lg">

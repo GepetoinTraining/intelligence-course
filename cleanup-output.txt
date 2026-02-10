@@ -1,0 +1,36 @@
+  🗑️  Removed 1 mock block(s) from comercial/desempenho/page.tsx
+✅ CLEANED: comercial/desempenho/page.tsx
+  🗑️  Removed 1 mock block(s) from configuracoes/cargos/page.tsx
+✅ CLEANED: configuracoes/cargos/page.tsx
+⏭️  NO CHANGE: configuracoes/seguranca/page.tsx
+⏭️  NO CHANGE: contabil/contador/page.tsx
+⏭️  NO CHANGE: contabil/dre/page.tsx
+  🗑️  Removed 1 mock block(s) from marketing/indicacoes/page.tsx
+✅ CLEANED: marketing/indicacoes/page.tsx
+  🗑️  Removed 1 mock block(s) from marketing/landing-pages/page.tsx
+✅ CLEANED: marketing/landing-pages/page.tsx
+  🗑️  Removed 1 mock block(s) from pedagogico/grade/page.tsx
+✅ CLEANED: pedagogico/grade/page.tsx
+  🗑️  Removed 1 mock block(s) from relatorios/agendados/page.tsx
+✅ CLEANED: relatorios/agendados/page.tsx
+  🗑️  Removed 1 mock block(s) from relatorios/dashboards/page.tsx
+✅ CLEANED: relatorios/dashboards/page.tsx
+⏭️  NO CHANGE: relatorios/exportar/page.tsx
+  🗑️  Removed 1 mock block(s) from relatorios/personalizado/page.tsx
+✅ CLEANED: relatorios/personalizado/page.tsx
+  🗑️  Removed 1 mock block(s) from conhecimento/politicas/page.tsx
+✅ CLEANED: conhecimento/politicas/page.tsx
+  🗑️  Removed 1 mock block(s) from conhecimento/procedimentos/page.tsx
+✅ CLEANED: conhecimento/procedimentos/page.tsx
+  🗑️  Removed 1 mock block(s) from conhecimento/templates/page.tsx
+✅ CLEANED: conhecimento/templates/page.tsx
+  🗑️  Removed 1 mock block(s) from financeiro/contas/page.tsx
+✅ CLEANED: financeiro/contas/page.tsx
+  🗑️  Removed 1 mock block(s) from financeiro/contas-pagar/page.tsx
+✅ CLEANED: financeiro/contas-pagar/page.tsx
+  🗑️  Removed 1 mock block(s) from marketing/conteudo/page.tsx
+✅ CLEANED: marketing/conteudo/page.tsx
+  🗑️  Removed 1 mock block(s) from comunicacoes/mensagens/page.tsx
+✅ CLEANED: comunicacoes/mensagens/page.tsx
+
+=== Cleaned: 15 | Wired: 6 ===

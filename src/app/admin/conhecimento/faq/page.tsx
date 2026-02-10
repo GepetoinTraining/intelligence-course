@@ -12,6 +12,9 @@ import {
     Button,
     TextInput,
     Accordion,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconQuestionMark,
@@ -20,7 +23,9 @@ import {
     IconBook,
     IconHelpCircle,
     IconChevronRight,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 // Demo FAQ data
 const faqCategories = [
@@ -51,7 +56,15 @@ const faqCategories = [
 ];
 
 export default function FAQPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/wiki/articles?category=faq');
+
     const totalQuestions = faqCategories.reduce((sum, cat) => sum + cat.questions.length, 0);
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <Stack gap="lg">

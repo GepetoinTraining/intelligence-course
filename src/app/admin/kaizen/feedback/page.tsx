@@ -16,6 +16,9 @@ import {
     Avatar,
     Tabs,
     Rating,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconMessage2,
@@ -25,7 +28,9 @@ import {
     IconThumbUp,
     IconThumbDown,
     IconStar,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface Feedback {
     id: string;
@@ -71,6 +76,9 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function FeedbackPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/reviews');
+
     const [feedback] = useState<Feedback[]>(mockFeedback);
     const [activeTab, setActiveTab] = useState<string | null>('all');
 
@@ -81,6 +89,11 @@ export default function FeedbackPage() {
     const positiveCount = feedback.filter(f => f.type === 'positive').length;
     const negativeCount = feedback.filter(f => f.type === 'negative').length;
     const suggestionCount = feedback.filter(f => f.type === 'suggestion').length;
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <div>

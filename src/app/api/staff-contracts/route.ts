@@ -32,19 +32,19 @@ export async function GET(request: NextRequest) {
             conditions.push(eq(staffContracts.department, department as any));
         }
 
-        // Join with users to get name, email, etc.
+        // Join with persons to get name, email, etc.
         const result = await db
             .select({
                 contract: staffContracts,
                 user: {
-                    id: users.id,
+                    id: persons.id,
                     name: persons.firstName,
                     email: persons.primaryEmail,
                     avatarUrl: persons.avatarUrl,
                 }
             })
             .from(staffContracts)
-            .leftJoin(users, eq(staffContracts.personId, users.id))
+            .leftJoin(persons, eq(staffContracts.personId, persons.id))
             .where(conditions.length > 0 ? and(...conditions) : undefined)
             .orderBy(desc(staffContracts.createdAt))
             .limit(limit)
@@ -80,14 +80,14 @@ export async function POST(request: NextRequest) {
 
         if (!staffUserId && body.email) {
             // Check if user exists by email
-            const existingUser = await db
+            const existingPerson = await db
                 .select()
-                .from(users)
+                .from(persons)
                 .where(eq(persons.primaryEmail, body.email))
                 .limit(1);
 
-            if (existingUser.length > 0) {
-                staffUserId = existingUser[0].id;
+            if (existingPerson.length > 0) {
+                staffUserId = existingPerson[0].id;
             } else {
                 // Create new user - need to generate ID since Clerk won't be managing this user
                 const newUserId = `staff_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

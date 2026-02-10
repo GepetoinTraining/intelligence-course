@@ -14,6 +14,9 @@ import {
     ActionIcon,
     Menu,
     Progress,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconBulb,
@@ -24,7 +27,9 @@ import {
     IconCheck,
     IconClock,
     IconTrendingUp,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface Improvement {
     id: string;
@@ -72,12 +77,20 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function MelhoriasPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/action-items?type=improvement');
+
     const [improvements] = useState<Improvement[]>(mockImprovements);
 
     const pendingCount = improvements.filter(i => i.status === 'pending').length;
     const inProgressCount = improvements.filter(i => i.status === 'in_progress').length;
     const completedCount = improvements.filter(i => i.status === 'completed').length;
     const avgImpact = Math.round(improvements.reduce((acc, i) => acc + i.impact, 0) / improvements.length);
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <div>

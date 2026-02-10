@@ -1,0 +1,9 @@
+comercial\page.tsx => API:False Mock:False CS:True
+comercial\clientes\page.tsx => API:True Mock:False CS:False
+comercial\desempenho\page.tsx => API:True Mock:False CS:False
+comercial\followups\page.tsx => API:False Mock:False CS:False
+comercial\metas\page.tsx => API:True Mock:False CS:False
+comercial\negociacoes\page.tsx => API:True Mock:False CS:False
+comercial\oportunidades\page.tsx => API:True Mock:False CS:False
+comercial\pipeline\page.tsx => API:True Mock:False CS:False
+comercial\propostas\page.tsx => API:True Mock:False CS:False

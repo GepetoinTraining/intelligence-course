@@ -14,15 +14,28 @@ import {
     Select,
     Checkbox,
     Divider,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconDatabase,
     IconDownload,
     IconCheck,
     IconCalendar,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 export default function BackupPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/export');
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
+
     return (
         <Stack gap="lg">
             {/* Header */}

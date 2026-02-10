@@ -13,6 +13,9 @@ import {
     ThemeIcon,
     ActionIcon,
     Menu,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconCategory,
@@ -21,7 +24,9 @@ import {
     IconEdit,
     IconDotsVertical,
     IconChartPie,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface CostCenter {
     id: string;
@@ -67,11 +72,19 @@ function getUtilizationColor(percent: number): string {
 }
 
 export default function CentrosCustoPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/cost-centers');
+
     const [costCenters] = useState<CostCenter[]>(mockCostCenters);
 
     const totalBudget = costCenters.filter(c => c.status === 'active').reduce((acc, c) => acc + c.budget, 0);
     const totalActual = costCenters.filter(c => c.status === 'active').reduce((acc, c) => acc + c.actual, 0);
     const activeCount = costCenters.filter(c => c.status === 'active').length;
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <div>

@@ -15,6 +15,9 @@ import {
     Menu,
     Tabs,
     Select,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconReceipt2,
@@ -25,7 +28,9 @@ import {
     IconArrowUpRight,
     IconArrowDownRight,
     IconTrash,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface JournalEntry {
     id: string;
@@ -69,6 +74,9 @@ function formatDate(dateStr: string) {
 }
 
 export default function LancamentosPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/journal-entries');
+
     const [entries] = useState<JournalEntry[]>(mockEntries);
     const [activeTab, setActiveTab] = useState<string | null>('all');
 
@@ -79,6 +87,11 @@ export default function LancamentosPage() {
     const totalDebits = entries.filter(e => e.type === 'debit' && e.status === 'posted').reduce((acc, e) => acc + e.amount, 0);
     const totalCredits = entries.filter(e => e.type === 'credit' && e.status === 'posted').reduce((acc, e) => acc + e.amount, 0);
     const draftCount = entries.filter(e => e.status === 'draft').length;
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <div>

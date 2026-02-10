@@ -17,6 +17,7 @@ import {
     Alert,
     Select,
     Tabs,
+    Center,
 } from '@mantine/core';
 import {
     IconFileInvoice,
@@ -30,6 +31,7 @@ import {
     IconAlertTriangle,
     IconTrash,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface Payable {
     id: string;
@@ -74,6 +76,9 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function ContasPagarPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/payables');
+
     const [payables] = useState<Payable[]>(mockPayables);
     const [activeTab, setActiveTab] = useState<string | null>('pending');
 
@@ -91,6 +96,11 @@ export default function ContasPagarPage() {
         .reduce((acc, p) => acc + p.amount, 0);
     const pendingCount = payables.filter(p => p.status === 'pending').length;
     const overdueCount = payables.filter(p => p.status === 'overdue').length;
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <div>

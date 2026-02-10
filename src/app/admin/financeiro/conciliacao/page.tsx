@@ -15,6 +15,9 @@ import {
     Menu,
     Checkbox,
     Select,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconArrowsLeftRight,
@@ -25,7 +28,9 @@ import {
     IconBuildingBank,
     IconReceipt,
     IconAlertTriangle,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface Transaction {
     id: string;
@@ -61,6 +66,9 @@ function formatDate(dateStr: string) {
 }
 
 export default function ConciliacaoPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/transactions');
+
     const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions);
     const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
 
@@ -78,6 +86,11 @@ export default function ConciliacaoPage() {
             t.id === id ? { ...t, matched: true } : t
         ));
     };
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <div>

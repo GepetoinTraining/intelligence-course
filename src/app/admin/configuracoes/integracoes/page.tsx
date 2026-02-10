@@ -23,6 +23,7 @@ import {
     IconAlertCircle,
 } from '@tabler/icons-react';
 import { useState } from 'react';
+import { useApi } from '@/hooks/useApi';
 
 interface Integration {
     id: string;
@@ -34,6 +35,9 @@ interface Integration {
 }
 
 export default function IntegracoesPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/api-keys');
+
     const [integrations] = useState<Integration[]>([
         {
             id: 'stripe',
@@ -60,6 +64,11 @@ export default function IntegracoesPage() {
             configured: true,
         },
     ]);
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <Stack gap="lg">

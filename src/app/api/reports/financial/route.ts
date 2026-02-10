@@ -8,10 +8,43 @@ import { eq, and, sql, gte, lt, desc, asc } from 'drizzle-orm';
 import { getApiAuthWithOrg } from '@/lib/auth';
 
 // ============================================================================
-// Helper: Parse fiscal period from "YYYY-MM" string
+// Helper: Parse fiscal period from "YYYY-MM" string or keyword like "month"
 // ============================================================================
 function parsePeriod(period: string): { year: number; month: number; startTs: number; endTs: number } {
+    const now = new Date();
+
+    // Handle keyword periods
+    if (period === 'month' || period === 'current') {
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+        const start = new Date(year, month - 1, 1);
+        const end = new Date(year, month, 1);
+        return { year, month, startTs: Math.floor(start.getTime() / 1000), endTs: Math.floor(end.getTime() / 1000) };
+    }
+    if (period === 'quarter') {
+        const year = now.getFullYear();
+        const quarterStart = Math.floor(now.getMonth() / 3) * 3;
+        const start = new Date(year, quarterStart, 1);
+        const end = new Date(year, quarterStart + 3, 1);
+        return { year, month: quarterStart + 1, startTs: Math.floor(start.getTime() / 1000), endTs: Math.floor(end.getTime() / 1000) };
+    }
+    if (period === 'year') {
+        const year = now.getFullYear();
+        const start = new Date(year, 0, 1);
+        const end = new Date(year + 1, 0, 1);
+        return { year, month: 1, startTs: Math.floor(start.getTime() / 1000), endTs: Math.floor(end.getTime() / 1000) };
+    }
+
+    // Standard YYYY-MM format
     const [year, month] = period.split('-').map(Number);
+    if (isNaN(year) || isNaN(month)) {
+        // Fallback to current month if format is invalid
+        const y = now.getFullYear();
+        const m = now.getMonth() + 1;
+        const start = new Date(y, m - 1, 1);
+        const end = new Date(y, m, 1);
+        return { year: y, month: m, startTs: Math.floor(start.getTime() / 1000), endTs: Math.floor(end.getTime() / 1000) };
+    }
     const start = new Date(year, month - 1, 1);
     const end = new Date(year, month, 1); // first day of next month
     return {
@@ -31,7 +64,7 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams;
-    const period = searchParams.get('period') || '2026-02';
+    const period = searchParams.get('period') || 'month';
     const section = searchParams.get('section') || 'all';
 
     const { year, month, startTs, endTs } = parsePeriod(period);

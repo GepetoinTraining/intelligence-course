@@ -13,6 +13,9 @@ import {
     ThemeIcon,
     ActionIcon,
     Menu,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconDoor,
@@ -23,7 +26,9 @@ import {
     IconCheck,
     IconX,
     IconCalendar,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface Room {
     id: string;
@@ -64,10 +69,18 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function SalasPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/rooms');
+
     const [rooms] = useState<Room[]>(mockRooms);
 
     const availableCount = rooms.filter(r => r.status === 'available').length;
     const occupiedCount = rooms.filter(r => r.status === 'occupied').length;
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <div>

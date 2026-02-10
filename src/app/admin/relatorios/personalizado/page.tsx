@@ -4,10 +4,15 @@ import { useState, useCallback } from 'react';
 import {
     Container, Title, Text, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Select, Button, Paper, Table, Checkbox,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconReportAnalytics, IconDownload, IconTable,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface ReportField { id: string; label: string; category: string; selected: boolean; }
 
@@ -34,6 +39,9 @@ const TEMPLATES = [
 ];
 
 export default function PersonalizadoPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/reports/financial');
+
     const [fields, setFields] = useState<ReportField[]>(FIELDS);
     const [source, setSource] = useState<string | null>('enrollments');
     const [generating, setGenerating] = useState(false);
@@ -53,6 +61,11 @@ export default function PersonalizadoPage() {
         setPreview([selected.map(f => f.label), ...Array.from({ length: 3 }, () => selected.map(() => '—'))]);
         setGenerating(false);
     }, [selected]);
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <Container size="xl" py="xl">

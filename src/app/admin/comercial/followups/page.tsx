@@ -16,6 +16,9 @@ import {
     Avatar,
     Tabs,
     Checkbox,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconBellRinging,
@@ -29,7 +32,9 @@ import {
     IconClock,
     IconCalendar,
     IconTrash,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface FollowUp {
     id: string;
@@ -86,6 +91,9 @@ function formatDate(dateStr: string) {
 }
 
 export default function FollowUpsPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/action-items?type=followup');
+
     const [followUps, setFollowUps] = useState<FollowUp[]>(mockFollowUps);
     const [activeTab, setActiveTab] = useState<string | null>('pending');
 
@@ -105,6 +113,11 @@ export default function FollowUpsPage() {
             f.id === id ? { ...f, status: 'completed' as const } : f
         ));
     };
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <div>

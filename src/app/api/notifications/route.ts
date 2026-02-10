@@ -75,35 +75,37 @@ export async function GET(request: NextRequest) {
     const unreadOnly = searchParams.get('unread') === 'true';
     const category = searchParams.get('category');
 
-    let query = `
-        SELECT * FROM ${NOTIFICATION_TABLE}
-        WHERE recipient_id = ? AND organization_id = ? AND is_archived = 0
-    `;
-    const params: any[] = [personId, orgId];
+    try {
+        // Build query using Drizzle sql template for proper param binding
+        let extraConditions = sql``;
+        if (unreadOnly) {
+            extraConditions = sql`${extraConditions} AND is_read = 0`;
+        }
+        if (category) {
+            extraConditions = sql`${extraConditions} AND category = ${category}`;
+        }
 
-    if (unreadOnly) {
-        query += ` AND is_read = 0`;
+        const notifications = await db.all(sql`
+            SELECT * FROM ${sql.raw(NOTIFICATION_TABLE)}
+            WHERE recipient_id = ${personId} AND organization_id = ${orgId} AND is_archived = 0
+            ${extraConditions}
+            ORDER BY created_at DESC LIMIT ${limit}
+        `);
+
+        // Get unread count
+        const unreadResult = await db.get(sql`
+            SELECT COUNT(*) as count FROM ${sql.raw(NOTIFICATION_TABLE)}
+            WHERE recipient_id = ${personId} AND organization_id = ${orgId} AND is_read = 0 AND is_archived = 0
+        `) as any;
+
+        return NextResponse.json({
+            data: notifications,
+            unreadCount: unreadResult?.count || 0,
+        });
+    } catch (error) {
+        console.error('Error fetching notifications:', error);
+        return NextResponse.json({ data: [], unreadCount: 0 });
     }
-    if (category) {
-        query += ` AND category = ?`;
-        params.push(category);
-    }
-
-    query += ` ORDER BY created_at DESC LIMIT ?`;
-    params.push(limit);
-
-    const notifications = await db.all(sql.raw(query));
-
-    // Get unread count
-    const unreadResult = await db.get(sql`
-        SELECT COUNT(*) as count FROM ${sql.raw(NOTIFICATION_TABLE)}
-        WHERE recipient_id = ${personId} AND organization_id = ${orgId} AND is_read = 0 AND is_archived = 0
-    `) as any;
-
-    return NextResponse.json({
-        data: notifications,
-        unreadCount: unreadResult?.count || 0,
-    });
 }
 
 // ============================================================================

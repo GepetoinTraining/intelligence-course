@@ -15,6 +15,9 @@ import {
     Menu,
     Tabs,
     Select,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconChalkboard,
@@ -28,7 +31,9 @@ import {
     IconCheck,
     IconX,
     IconPlayerPlay,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface Lesson {
     id: string;
@@ -76,6 +81,9 @@ function formatDate(dateStr: string) {
 }
 
 export default function AulasPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/lessons');
+
     const [lessons] = useState<Lesson[]>(mockLessons);
     const [activeTab, setActiveTab] = useState<string | null>('today');
 
@@ -90,6 +98,11 @@ export default function AulasPage() {
         : activeTab === 'upcoming'
             ? upcomingLessons
             : lessons;
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <div>

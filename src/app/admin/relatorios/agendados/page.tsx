@@ -5,11 +5,16 @@ import {
     Container, Title, Text, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Table, Paper, Button, Select,
     TextInput, Switch,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconCalendarEvent, IconPlus, IconTrash, IconClock,
     IconMail, IconFileSpreadsheet,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface ScheduledReport {
     id: string;
@@ -35,6 +40,9 @@ const REPORT_TYPES = [
 ];
 
 export default function AgendadosPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/schedules?type=report');
+
     const [reports, setReports] = useState<ScheduledReport[]>([]);
     const [name, setName] = useState('');
     const [type, setType] = useState<string | null>(null);
@@ -64,6 +72,11 @@ export default function AgendadosPage() {
 
     const handleDelete = (id: string) => setReports(p => p.filter(r => r.id !== id));
     const handleToggle = (id: string) => setReports(p => p.map(r => r.id === id ? { ...r, isActive: !r.isActive } : r));
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <Container size="xl" py="xl">

@@ -57,14 +57,14 @@ export async function GET(request: NextRequest) {
                     contractType: staffContracts.contractType,
                 },
                 user: {
-                    id: users.id,
+                    id: persons.id,
                     name: persons.firstName,
                     email: persons.primaryEmail,
                 }
             })
             .from(staffPayroll)
             .leftJoin(staffContracts, eq(staffPayroll.contractId, staffContracts.id))
-            .leftJoin(users, eq(staffPayroll.personId, users.id))
+            .leftJoin(persons, eq(staffPayroll.personId, persons.id))
             .where(conditions.length > 0 ? and(...conditions) : undefined)
             .orderBy(desc(staffPayroll.periodStart))
             .limit(limit)

@@ -14,6 +14,9 @@ import {
     ActionIcon,
     Menu,
     Tabs,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconArticle,
@@ -29,7 +32,9 @@ import {
     IconBrandInstagram,
     IconBrandFacebook,
     IconMail,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface Content {
     id: string;
@@ -93,6 +98,9 @@ function formatDate(dateStr: string) {
 }
 
 export default function ConteudoPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/templates?type=content');
+
     const [content] = useState<Content[]>(mockContent);
     const [activeTab, setActiveTab] = useState<string | null>('all');
 
@@ -104,6 +112,11 @@ export default function ConteudoPage() {
     const scheduledCount = content.filter(c => c.status === 'scheduled').length;
     const draftCount = content.filter(c => c.status === 'draft').length;
     const totalEngagement = content.reduce((acc, c) => acc + c.engagement, 0);
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <div>

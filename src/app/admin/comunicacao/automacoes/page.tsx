@@ -13,6 +13,9 @@ import {
     Table,
     Avatar,
     Switch,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconBell,
@@ -20,7 +23,9 @@ import {
     IconMail,
     IconBrandWhatsapp,
     IconDeviceMobile,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 // Demo automations
 const automations = [
@@ -33,8 +38,16 @@ const automations = [
 ];
 
 export default function AutomacoesPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/templates?type=automation');
+
     const active = automations.filter(a => a.enabled).length;
     const totalSent = automations.reduce((sum, a) => sum + a.sentToday, 0);
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <Stack gap="lg">

@@ -12,6 +12,9 @@ import {
     Button,
     Table,
     ActionIcon,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconClipboardList,
@@ -20,7 +23,9 @@ import {
     IconCheck,
     IconClock,
     IconX,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 // Demo Kaizen history
 const kaizenHistory = [
@@ -32,8 +37,16 @@ const kaizenHistory = [
 ];
 
 export default function HistoricoKaizenPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/kaizen/suggestions?status=resolved');
+
     const implemented = kaizenHistory.filter(k => k.status === 'implemented').length;
     const highImpact = kaizenHistory.filter(k => k.impact === 'high' && k.status === 'implemented').length;
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <Stack gap="lg">

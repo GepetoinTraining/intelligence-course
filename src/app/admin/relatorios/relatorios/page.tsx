@@ -13,6 +13,9 @@ import {
     Table,
     ActionIcon,
     Select,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconFileAnalytics,
@@ -21,7 +24,9 @@ import {
     IconEye,
     IconCalendar,
     IconClock,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 // Demo reports
 const reports = [
@@ -34,6 +39,14 @@ const reports = [
 ];
 
 export default function RelatoriosListPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/reports/financial');
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
+
     return (
         <Stack gap="lg">
             {/* Header */}

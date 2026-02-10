@@ -13,6 +13,9 @@ import {
     ThemeIcon,
     ActionIcon,
     Menu,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconBuildingBank,
@@ -24,7 +27,9 @@ import {
     IconCreditCard,
     IconArrowUpRight,
     IconArrowDownRight,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface BankAccount {
     id: string;
@@ -69,6 +74,9 @@ const bankColors: Record<string, string> = {
 };
 
 export default function ContasBancariasPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/payment-methods');
+
     const [accounts] = useState<BankAccount[]>(mockAccounts);
 
     const totalBalance = accounts
@@ -81,6 +89,11 @@ export default function ContasBancariasPage() {
     const savingsTotal = accounts
         .filter(a => a.type === 'savings' && a.isActive)
         .reduce((acc, a) => acc + a.balance, 0);
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <div>

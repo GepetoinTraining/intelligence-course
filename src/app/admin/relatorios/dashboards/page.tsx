@@ -13,6 +13,8 @@ import {
     Center,
     Paper,
     Progress,
+    Loader,
+    Alert,
 } from '@mantine/core';
 import {
     IconLayoutDashboard,
@@ -23,7 +25,9 @@ import {
     IconTarget,
     IconBook,
     IconBriefcase,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 // Demo KPI data
 const kpis = [
@@ -43,6 +47,14 @@ const departmentMetrics = [
 ];
 
 export default function DashboardsPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/reports/financial');
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
+
     return (
         <Stack gap="lg">
             {/* Header */}

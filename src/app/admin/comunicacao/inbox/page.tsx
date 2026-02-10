@@ -14,6 +14,9 @@ import {
     TextInput,
     ActionIcon,
     Avatar,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconInbox,
@@ -25,8 +28,10 @@ import {
     IconMail,
     IconMailOpened,
     IconPaperclip,
+    IconAlertCircle,
 } from '@tabler/icons-react';
 import { useState } from 'react';
+import { useApi } from '@/hooks/useApi';
 
 // Demo messages
 const messages = [
@@ -38,8 +43,16 @@ const messages = [
 ];
 
 export default function InboxPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/communicator/conversations');
+
     const [search, setSearch] = useState('');
     const unreadCount = messages.filter(m => m.unread).length;
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <Stack gap="lg">

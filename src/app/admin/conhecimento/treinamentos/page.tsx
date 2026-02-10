@@ -13,6 +13,9 @@ import {
     Table,
     Avatar,
     Progress,
+    Loader,
+    Alert,
+    Center,
 } from '@mantine/core';
 import {
     IconSchool,
@@ -21,7 +24,9 @@ import {
     IconUsers,
     IconClock,
     IconPlayerPlay,
+    IconAlertCircle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 // Demo training data
 const trainings = [
@@ -33,9 +38,17 @@ const trainings = [
 ];
 
 export default function TreinamentosPage() {
+    // API data (falls back to inline demo data below)
+    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/templates?type=training');
+
     const totalEnrolled = trainings.reduce((sum, t) => sum + t.enrolled, 0);
     const totalCompleted = trainings.reduce((sum, t) => sum + t.completed, 0);
     const avgCompletion = ((totalCompleted / totalEnrolled) * 100).toFixed(0);
+
+
+    if (_apiLoading) {
+        return <Center h={400}><Loader size="lg" /></Center>;
+    }
 
     return (
         <Stack gap="lg">

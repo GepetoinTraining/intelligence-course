@@ -41,7 +41,8 @@ export async function GET(request: NextRequest) {
         const [currentUser] = await db.select({
             organizationId: organizationMemberships.organizationId,
         })
-            .from(users)
+            .from(organizationMemberships)
+            .innerJoin(users, eq(users.personId, organizationMemberships.personId))
             .where(eq(users.id, personId))
             .limit(1);
 

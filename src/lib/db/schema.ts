@@ -14002,6 +14002,108 @@ export const genesisEmbeddings = sqliteTable('genesis_embeddings', {
 });
 
 // ============================================================================
+// SUPPORT & TICKETING
+// ============================================================================
+
+/**
+ * Support Tickets - Multi-tenant helpdesk
+ * 
+ * Schools create tickets for internal support (student/parent requests)
+ * Platform uses tickets for school-to-NodeZero support
+ */
+export const supportTickets = sqliteTable('support_tickets', {
+    id: text('id').primaryKey().default(uuid()),
+    organizationId: text('organization_id').notNull().references(() => organizations.id),
+
+    // Ticket identity
+    number: text('number').notNull(),  // TKT-2026-001
+    subject: text('subject').notNull(),
+    description: text('description'),
+
+    // Classification
+    category: text('category', {
+        enum: ['technical', 'academic', 'financial', 'administrative', 'billing', 'bug', 'feature_request', 'other']
+    }).default('other'),
+    priority: text('priority', {
+        enum: ['low', 'medium', 'high', 'urgent']
+    }).default('medium'),
+    status: text('status', {
+        enum: ['open', 'in_progress', 'waiting_customer', 'waiting_internal', 'resolved', 'closed']
+    }).default('open'),
+
+    // People
+    requesterId: text('requester_id').references(() => persons.id),
+    requesterName: text('requester_name'),  // Fallback if no person record
+    requesterEmail: text('requester_email'),
+    assignedToId: text('assigned_to_id').references(() => persons.id),
+    assignedToName: text('assigned_to_name'),
+
+    // SLA & Timing
+    createdAt: integer('created_at').default(timestamp()),
+    updatedAt: integer('updated_at').default(timestamp()),
+    firstResponseAt: integer('first_response_at'),
+    resolvedAt: integer('resolved_at'),
+    closedAt: integer('closed_at'),
+    slaDeadline: integer('sla_deadline'),  // Based on priority
+
+    // Metadata
+    channel: text('channel', {
+        enum: ['web', 'email', 'whatsapp', 'phone', 'internal']
+    }).default('web'),
+    tags: text('tags'),  // JSON array
+    messageCount: integer('message_count').default(0),
+    isInternal: integer('is_internal').default(0),  // Internal vs customer-facing
+    satisfaction: integer('satisfaction'),  // 1-5 CSAT rating after resolution
+}, (table) => [
+    index('idx_tickets_org').on(table.organizationId),
+    index('idx_tickets_status').on(table.status),
+    index('idx_tickets_priority').on(table.priority),
+    index('idx_tickets_assignee').on(table.assignedToId),
+    index('idx_tickets_requester').on(table.requesterId),
+    index('idx_tickets_created').on(table.createdAt),
+]);
+
+/**
+ * Ticket Messages - Conversation thread within a ticket
+ * 
+ * Supports both public replies and internal notes
+ */
+export const ticketMessages = sqliteTable('ticket_messages', {
+    id: text('id').primaryKey().default(uuid()),
+    ticketId: text('ticket_id').notNull().references(() => supportTickets.id, { onDelete: 'cascade' }),
+
+    // Author
+    authorId: text('author_id').references(() => persons.id),
+    authorName: text('author_name').notNull(),
+    authorRole: text('author_role', {
+        enum: ['requester', 'agent', 'system']
+    }).default('agent'),
+
+    // Content
+    content: text('content').notNull(),
+    contentType: text('content_type', {
+        enum: ['text', 'html', 'markdown']
+    }).default('text'),
+
+    // Visibility
+    isInternal: integer('is_internal').default(0),  // Internal note (not visible to requester)
+
+    // Attachments
+    attachments: text('attachments'),  // JSON array of { name, url, size }
+
+    createdAt: integer('created_at').default(timestamp()),
+}, (table) => [
+    index('idx_ticket_messages_ticket').on(table.ticketId),
+    index('idx_ticket_messages_created').on(table.createdAt),
+]);
+
+// Type exports for support
+export type SupportTicket = typeof supportTickets.$inferSelect;
+export type SupportTicketInsert = typeof supportTickets.$inferInsert;
+export type TicketMessage = typeof ticketMessages.$inferSelect;
+export type TicketMessageInsert = typeof ticketMessages.$inferInsert;
+
+// ============================================================================
 // TYPE EXPORTS - Team & Role Management
 // ============================================================================
 
