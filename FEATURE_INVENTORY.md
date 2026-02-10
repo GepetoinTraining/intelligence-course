@@ -1,8 +1,60 @@
 # Feature Inventory — Full Codebase Audit
 
 **Generated:** 2026-02-10
+**Last Updated:** 2026-02-10 (Pass 2 — post master push `1001cf4`)
 **Codebase:** intelligence-course (Next.js + Drizzle ORM + SQLite/Turso)
-**Scope:** 319 schema tables, 251 API routes, ~260 pages, 15 domain modules, 10 external integrations
+**Scope:** 319 schema tables, 257+ API routes, ~260 pages, 15 domain modules, 12 external integrations
+
+---
+
+## Changelog
+
+### Pass 2 — `1001cf4` (Identity Rebuild + Admin Wiring + Reports)
+
+Key commits scored: `77ccb1e` (Phase C: Wire all admin pages), `cae7aa8` (98-file mock-to-API migration), `3c50be6` (reports financial API), `ab5962d` (Identity System Nuke & Rebuild)
+
+**What moved:**
+
+| Change | Before | After |
+|--------|--------|-------|
+| Admin pages API-connected | ~60% | **96%** (141/147) |
+| Mock constants in admin | 57 | **0** |
+| "Em Construção" stubs | 35 | **0** |
+| Report pages | ALL SKELETON | ~~SKELETON~~ → LIVE/MIXED |
+| Identity model | userId-based | **personId-canonical** (236 API files migrated) |
+| API routes (total) | 251 | **257+** (6 new enrollment-flow + notifications + esign webhook) |
+| New integrations | — | **+E-Signature (ZapSign/D4Sign)**, **+Notification system** |
+| Frontend LIVE pages | ~170 | **~230** |
+| Frontend SKELETON pages | ~40 | **~10** |
+
+**Specific items struck:**
+- ~~All 11 report pages SKELETON~~ → 7 LIVE, 2 MIXED (kpis, dashboards retain some hardcoded), 2 still building
+- ~~Relatórios bundle SKELETON~~ → financeiro LIVE, pedagogico LIVE, kpis MIXED, dashboards MIXED
+- ~~Contábil balanco SKELETON~~ → LIVE (fetches /api/reports/financial?section=accounting)
+- ~~Contábil documentos SKELETON~~ → LIVE
+- ~~Contábil contador SKELETON~~ → LIVE
+- ~~AI uso SKELETON~~ → LIVE (fetches /api/chat/sessions)
+- ~~AI analises SKELETON~~ → LIVE
+- ~~AI geradores SKELETON~~ → LIVE
+- ~~Agenda salas MOCK~~ → LIVE (useApi)
+- ~~Agenda recursos SKELETON~~ → LIVE
+- ~~Kaizen retrospectivas SKELETON~~ → LIVE
+- ~~Kaizen quadro SKELETON~~ → LIVE
+- ~~RH organograma SCAFFOLD~~ → LIVE
+- ~~Configurações webhooks MIXED~~ → LIVE (still has DEMO_EVENTS fallback)
+- ~~Comunicação whatsapp SCAFFOLD~~ → LIVE (useApi conversions?channel=whatsapp)
+- ~~/api/reports/financial uncalled~~ → Now called by /admin/relatorios/financeiro + contabil pages
+- ~~Enrollment flow PARTIAL~~ → upgraded with 6 complete routes + e-sign + notifications
+- ~~Notifications SCAFFOLD~~ → PARTIAL (lib/notifications.ts + used in enrollment-flow)
+- ~~Cash flow SCAFFOLD~~ → LIVE (/admin/financeiro/fluxo-caixa wired)
+
+**Still unchanged:**
+- AI chat page (`/admin/ai/chat`) — still hardcoded mock messages
+- Main dashboard (`/dashboard`) — still fully mock (USER, MODULES, BADGES, etc.)
+- All 15 modules — still TYPES-ONLY
+- All 5 payment gateways — still mocked (no SDKs)
+- ~192 schema-only tables — unchanged
+- ~60 uncalled API routes — mostly unchanged (minus /api/reports/financial)
 
 ---
 
@@ -11,16 +63,16 @@
 | Metric | Count | Notes |
 |--------|-------|-------|
 | Schema tables | 319 | Only ~75 have any API usage |
-| API routes | 251 | ~65 have no frontend caller |
-| Frontend pages | ~260 | ~170 LIVE, ~40 MIXED, ~30 MOCK, ~40 SKELETON |
+| API routes | 257+ | ~60 have no frontend caller |
+| Frontend pages | ~260 | **~230 LIVE**, ~15 MIXED, ~5 MOCK, ~10 SKELETON |
 | Domain modules | 15 | **ALL 15 are types-only** — zero runtime logic |
-| External integrations | 10 | 5 production, 4 partial/scaffold, 1 dead |
+| External integrations | 12 | 5 production, 2 partial (new), 4 partial/scaffold, 1 dead |
 | Broken nav links | 0 | Navigation is clean |
 | Orphaned pages | ~12 | Minor issue |
 
 ### The Big Picture
 
-This is an ambitious education/school management ERP with ~319 database tables designed across every business domain imaginable. However, the **implementation pyramid is inverted**: massive schema, moderate API layer, and selective frontend coverage. Roughly **75% of all tables are schema-only** — defined but never touched by any code.
+This is an ambitious education/school management ERP with ~319 database tables designed across every business domain imaginable. ~~However, the implementation pyramid is inverted: massive schema, moderate API layer, and selective frontend coverage.~~ **UPDATE**: The frontend layer has been massively wired — 96% of admin pages now connect to real APIs. The remaining gap is the **schema layer**: roughly **60% of all tables are still schema-only** — defined but never touched by any code. Identity has been rebuilt around a person-canonical model (personId replaces userId across 236 files).
 
 ---
 
@@ -207,14 +259,26 @@ accountantApiKeys, accountantApiLogs, accountantDeliveryConfig, accountantDelive
 
 ---
 
-## 2. API ROUTES AUDIT (251 routes)
+## 2. API ROUTES AUDIT (257+ routes)
 
 ### Classification Summary
 
 | Status | Count | % |
 |--------|-------|---|
-| Called by frontend | ~186 | 74% |
-| **No frontend caller** | **~65** | **26%** |
+| Called by frontend | **~197** | **77%** *(was ~186)* |
+| **No frontend caller** | **~60** | **23%** *(was ~65)* |
+
+**New routes added since initial audit:**
+- `/api/enrollment-flow/calculate` — Price calculation
+- `/api/enrollment-flow/classes` — Available classes
+- `/api/enrollment-flow/complete` — Atomic enrollment cascade (uses e-sign + notifications)
+- `/api/enrollment-flow/courses` — Available courses
+- `/api/enrollment-flow/persons` — Person lookup/create
+- `/api/enrollment-flow/seed-template` — Contract template seeding
+- `/api/notifications` — Universal notification dispatcher
+- `/api/webhooks/esign` — E-signature webhook (ZapSign/D4Sign)
+- `/api/teams/my-memberships` — Current user's team memberships
+- `/api/procedures/seed-pipelines` — Procedure pipeline seeding
 
 ### API Routes With No Frontend Caller (~65 routes)
 
@@ -287,7 +351,7 @@ accountantApiKeys, accountantApiLogs, accountantDeliveryConfig, accountantDelive
 - `/api/platform/genesis/process`
 - `/api/platform/mcp/genesis`
 - `/api/qr/generate`, `/api/qr/scan/[code]`
-- `/api/reports/financial`
+- ~~`/api/reports/financial`~~ ✅ **NOW CALLED** by /admin/relatorios/financeiro, contabil pages, owner/reports
 - `/api/runs`
 - `/api/scrm/persona/generate`
 - `/api/scrm/sentiment/analyze`
@@ -302,10 +366,10 @@ accountantApiKeys, accountantApiLogs, accountantDeliveryConfig, accountantDelive
 
 | Status | Count | % | Description |
 |--------|-------|---|-------------|
-| **LIVE** | ~170 | 61% | Fetches real data from API |
-| **MIXED** | ~40 | 14% | Real data + hardcoded fallbacks |
-| **MOCK** | ~30 | 11% | All hardcoded/demo data |
-| **SKELETON** | ~40 | 14% | Empty placeholder shells |
+| **LIVE** | **~230** | **85%** | Fetches real data from API *(was ~170)* |
+| **MIXED** | ~15 | 6% | Real data + hardcoded fallbacks *(was ~40)* |
+| **MOCK** | ~5 | 2% | All hardcoded/demo data *(was ~30)* |
+| **SKELETON** | ~10 | 4% | Empty placeholder shells *(was ~40)* |
 
 ### By Section
 
@@ -314,21 +378,21 @@ The admin panel is the most comprehensive section, organized into 15 "bundles" (
 
 | Bundle | Pages | Status | Notes |
 |--------|-------|--------|-------|
-| Marketing | 9 | Mostly LIVE | Analytics, campaigns, leads all wired |
-| Comercial | 8 | LIVE/MIXED | Pipeline, clients live; some mock fallbacks |
-| Operacional | 9 | LIVE | Enrollments, students, contracts all wired |
+| Marketing | 9 | LIVE | Analytics, campaigns, leads all wired |
+| Comercial | 8 | LIVE | Pipeline, clients, followups all wired via useApi |
+| Operacional | 9 | LIVE | Enrollments, students, contracts + new enrollment form |
 | Pedagógico | 9 | LIVE | Courses, classes, grades wired |
-| Financeiro | 9 | Mostly LIVE | Cash flow, billing live; bank accounts MOCK |
-| RH & Pessoas | 10 | LIVE | Staff, payroll, contracts all wired |
-| Comunicação | 8 | LIVE | Inbox, templates, WhatsApp all wired |
-| Agenda | 9 | MIXED | Personal agenda LIVE; rooms MOCK; some skeleton |
-| Relatórios | 11 | **SKELETON** | All 11 report pages are empty shells |
-| Contábil | 11 | MIXED | Chart of accounts LIVE; many mock financial reports |
-| Conhecimento | 7 | MIXED | Wiki LIVE; policies/procedures have mock fallbacks |
-| Assistente IA | 6 | MOCK/SKELETON | Chat has mock messages; others are shells |
-| Kaizen | 8 | MIXED | Suggestions LIVE; NPS/retrospectives have mock data |
+| Financeiro | 9 | LIVE | ~~bank accounts MOCK~~ All wired via useApi |
+| RH & Pessoas | 10 | LIVE | ~~organograma SCAFFOLD~~ All wired including org chart |
+| Comunicação | 8 | LIVE | ~~WhatsApp SCAFFOLD~~ All wired including WhatsApp channel |
+| Agenda | 9 | LIVE | ~~rooms MOCK; some skeleton~~ All wired via useApi |
+| Relatórios | 11 | **LIVE/MIXED** | ~~ALL SKELETON~~ financeiro+pedagogico LIVE; kpis+dashboards MIXED |
+| Contábil | 11 | **LIVE** | ~~many mock~~ balanco, documentos, contador all wired to /api/reports/financial |
+| Conhecimento | 7 | LIVE/MIXED | Wiki LIVE; some pages have mock fallbacks |
+| Assistente IA | 6 | **MIXED** | ~~MOCK/SKELETON~~ uso+analises+geradores LIVE; **chat still MOCK** |
+| Kaizen | 8 | **LIVE** | ~~retrospectivas SKELETON~~ All wired including retrospectivas, quadro |
 | Suporte | 3 | MIXED | Tickets partially wired |
-| Configurações | 13 | LIVE | All settings pages wired to APIs |
+| Configurações | 13 | LIVE | All settings + webhooks + api-keys + auditoria wired |
 
 #### Dashboard — Owner (18 pages)
 Almost entirely LIVE — analytics, cashflow, employees, payroll, revenue, projections all fetch real data.
@@ -355,29 +419,47 @@ All LIVE — team directory, announcements, capacity, permissions, reporting.
 All LIVE — articles, categories, editing, creation.
 
 #### Organization Setup (7 pages)
-All SKELETON — blueprint, financial, products, rules, team setup wizards.
+All SKELETON — blueprint, financial, products, rules, team setup wizards. *(unchanged)*
 
 #### Main Dashboard Page
-**MOCK** — The main /dashboard page uses hardcoded demo data (mock user, mock modules, mock activity).
+**MOCK** — The main /dashboard page still uses hardcoded demo data (USER, MODULES, BADGES, WEEKLY_ACTIVITY). *(unchanged)*
 
 ---
 
-## 4. EXTERNAL INTEGRATIONS AUDIT (10 services)
+## 4. EXTERNAL INTEGRATIONS AUDIT (12 services)
 
 ### Integration Status
 
 | Integration | Status | SDK Installed | Actual API Calls | Error Handling |
 |-------------|--------|---------------|-----------------|----------------|
-| **Clerk** (auth) | PRODUCTION | Yes | Yes | Yes — dev mode fallback |
+| **Clerk** (auth) | PRODUCTION | Yes | Yes | Yes — dev mode fallback, **personId-canonical** |
 | **Anthropic/Claude** (AI) | PRODUCTION | Yes (@anthropic-ai/sdk@0.72.1) | Yes | Yes — APIError handling |
 | **Google AI** (embeddings) | PRODUCTION | Yes (@google/generative-ai@0.24.1) | Yes | Yes — rate limiting, caching |
 | **Resend** (email) | PRODUCTION | Yes (resend@6.9.1) | Yes | Yes — fallback to mock |
 | **Turso/LibSQL** (database) | PRODUCTION | Yes (@libsql/client@0.17.0) | Yes | Yes — connection management |
+| **ZapSign** (e-signature) | **PARTIAL** *(NEW)* | No (API calls via fetch) | Yes — API endpoint defined | Yes — webhook handler |
+| **D4Sign** (e-signature backup) | **SCAFFOLD** *(NEW)* | No | Webhook handler only | Partial |
 | **Stripe** (payments) | SCAFFOLD | **No** — not in package.json | Mock responses only | Partial |
 | **Asaas** (BR payments) | PARTIAL | No | Mock responses only | Partial structure |
 | **MercadoPago** | PARTIAL | No | Mock responses only | Partial structure |
 | **PagarMe** | PARTIAL | No | Mock responses only | Partial structure |
 | **PagSeguro** | PARTIAL | No | Mock responses only | Partial structure |
+
+### E-Signature Detail *(NEW)*
+
+New library at `src/lib/esign.ts`:
+- **Primary**: ZapSign (Brazilian e-signature provider, API at `api.zapsign.com.br`)
+- **Backup**: D4Sign (webhook handler ready)
+- **Also supports**: in-person signing, Gov.br (planned)
+- **Used by**: `/api/enrollment-flow/complete` (signs contracts during enrollment)
+- **Webhook**: `/api/webhooks/esign` handles signature completion callbacks
+
+### Notification System *(NEW)*
+
+New library at `src/lib/notifications.ts`:
+- Universal dispatcher with categories: enrollment, contract, payment, academic, etc.
+- Rich metadata: priority, source tracking, action URLs, expiration
+- **Used by**: `/api/enrollment-flow/complete` (sends enrollment confirmations)
 
 ### Payment Gateway Detail
 
@@ -525,7 +607,7 @@ Two separate navigation systems:
 | Chart of accounts | chartOfAccounts | /api/chart-of-accounts | /admin/contabil/plano-contas | Real | COMPLETE |
 | Cost centers | costCenters | /api/cost-centers | — | Real | PARTIAL (no UI) |
 | Fiscal documents (NFe) | fiscalDocuments | /api/fiscal-documents | — | Real | PARTIAL (no UI) |
-| Cash flow | — | — | /admin/financeiro/fluxo-caixa | Mock/Mixed | SCAFFOLD |
+| Cash flow | — | — | /admin/financeiro/fluxo-caixa | Real | ~~SCAFFOLD~~ **LIVE** |
 | Commission payouts | commissionPayouts | — | — | — | PLANNED |
 | Money flows | moneyFlows | — | — | — | PLANNED |
 | Financial goals | financialGoals | — | — | — | PLANNED |
@@ -581,7 +663,7 @@ Two separate navigation systems:
 | Careers/Jobs | — | /api/careers | /careers | Real | COMPLETE |
 | Talent pool | talentProfiles | /api/talent/* | /owner/talent-pool | Real | PARTIAL |
 | Time clock | timeClockEntries, timeSheets | — | — | — | PLANNED |
-| Org chart | orgChartPositions | — | /admin/rh/organograma | — | SCAFFOLD |
+| Org chart | orgChartPositions | — | /admin/rh/organograma | Real | ~~SCAFFOLD~~ **LIVE** (wired via fetch) |
 | Benefits | employeeBenefits | — | — | — | PLANNED |
 | Termination plans | terminationPlans | — | — | — | PLANNED |
 | Work schedule templates | workScheduleTemplates | — | — | — | PLANNED |
@@ -612,9 +694,9 @@ Two separate navigation systems:
 | Inbox/Messaging | messages, conversations | /api/communicator/* | /inbox | Real | COMPLETE |
 | Meeting management | meetings | /api/meetings | /owner/calendar | Real | COMPLETE |
 | Meeting transcripts | meetingTranscripts | /api/communicator/meetings/*/transcripts | — | Real | PARTIAL (no UI) |
-| Notifications | notificationQueue | /api/notifications | — | — | SCAFFOLD |
+| Notifications | notificationQueue | /api/notifications | — | Real | ~~SCAFFOLD~~ **PARTIAL** (lib + API + used in enrollment flow, no UI) |
 | Email sending (Resend) | — | lib/email | — | Real | COMPLETE (library) |
-| WhatsApp | — | — | /admin/comunicacao/whatsapp | — | SCAFFOLD |
+| WhatsApp | — | /api/communicator/conversations?channel=whatsapp | /admin/comunicacao/whatsapp | Real | ~~SCAFFOLD~~ **LIVE** (wired via useApi) |
 | Announcements | anunciacoes | /api/teams/*/anunciacao | /teams/*/anunciacao | Real | COMPLETE |
 
 ### Operations
@@ -622,10 +704,10 @@ Two separate navigation systems:
 | Feature | Schema | API | Frontend | Data | Status |
 |---------|--------|-----|----------|------|--------|
 | Enrollments | enrollments | /api/enrollments | /school/enrollments | Real | COMPLETE |
-| Enrollment flow | — | /api/enrollment-flow/* | — | Real | PARTIAL |
-| Family links | familyLinks | /api/family-links | — | Real | PARTIAL (no UI) |
-| Contracts | contracts, contractTemplates | — | /admin/operacional/contratos | — | SCAFFOLD |
-| Reception/Check-in | receptionVisits | — | /staff/checkin | — | SCAFFOLD |
+| Enrollment flow | enrollments, contracts, familyLinks | /api/enrollment-flow/* (6 routes) | /admin/operacional/matriculas/nova | Real | ~~PARTIAL~~ **COMPLETE** — atomic cascade with e-sign + notifications |
+| Family links | familyLinks | /api/family-links | /api/enrollment-flow/complete | Real | ~~PARTIAL~~ **COMPLETE** (created during enrollment) |
+| Contracts | contracts, contractTemplates | /api/enrollment-flow/complete | /admin/operacional/contratos | Real | ~~SCAFFOLD~~ **PARTIAL** (created via enrollment, no standalone CRUD UI) |
+| Reception/Check-in | receptionVisits | — | /staff/checkin | Real | ~~SCAFFOLD~~ **LIVE** (wired via useApi) |
 | Waitlist | waitlist | /api/waitlist | — | Real | PARTIAL (no UI) |
 | Makeup classes | makeupClasses | — | — | — | PLANNED |
 
@@ -634,9 +716,9 @@ Two separate navigation systems:
 | Feature | Schema | API | Frontend | Data | Status |
 |---------|--------|-----|----------|------|--------|
 | Suggestions | kaizenSuggestions, kaizenVotes | /api/kaizen/suggestions | /kaizen | Real | COMPLETE |
-| Feedback | — | — | /admin/kaizen/feedback | Mock | SCAFFOLD |
-| NPS | — | — | /admin/kaizen/nps | Mock | SCAFFOLD |
-| Retrospectives | — | — | /admin/kaizen/retrospectivas | — | SKELETON |
+| Feedback | — | — | /admin/kaizen/feedback | Real | ~~SCAFFOLD~~ **LIVE** (wired via useApi) |
+| NPS | — | — | /admin/kaizen/nps | Real | ~~SCAFFOLD~~ **LIVE** (wired via useApi) |
+| Retrospectives | — | — | /admin/kaizen/retrospectivas | Real | ~~SKELETON~~ **LIVE** (wired via fetch) |
 | Metrics | kaizenMetrics | — | — | — | PLANNED |
 
 ### Knowledge Base
@@ -658,9 +740,12 @@ Two separate navigation systems:
 
 | Feature | Schema | API | Frontend | Data | Status |
 |---------|--------|-----|----------|------|--------|
-| Financial reports | — | /api/reports/financial | /admin/relatorios/financeiro | — | SKELETON |
-| All other reports | — | — | /admin/relatorios/* (11 pages) | — | SKELETON |
-| Data export | — | /api/export | /admin/relatorios/exportar | — | SCAFFOLD |
+| Financial reports | invoices, journalEntries, chartOfAccounts, persons | /api/reports/financial | /admin/relatorios/financeiro | Real | ~~SKELETON~~ **COMPLETE** — revenue by course, payment methods, defaulters, teacher analysis |
+| Accounting reports | journalEntryLines, chartOfAccounts | /api/reports/financial?section=accounting | /admin/contabil/balancete, dre, balanco | Real | ~~SKELETON~~ **COMPLETE** — balancete, DRE, balanço patrimonial |
+| Pedagogical reports | classes, enrollments | fetched directly | /admin/relatorios/pedagogico | Real | ~~SKELETON~~ **LIVE** |
+| KPI dashboards | — | /api/reports/financial | /admin/relatorios/kpis, /admin/relatorios/dashboards | Mixed | ~~SKELETON~~ **MIXED** (API + hardcoded kpiData fallback) |
+| Other reports | — | — | /admin/relatorios/comercial, rh, personalizado, agendados | Real | ~~SKELETON~~ **LIVE** (wired via useApi) |
+| Data export | — | /api/export | /admin/relatorios/exportar | Real | ~~SCAFFOLD~~ **LIVE** (wired) |
 
 ### GDPR/Compliance
 
@@ -695,26 +780,28 @@ Two separate navigation systems:
 
 | Status | Feature Count | Description |
 |--------|--------------|-------------|
-| **COMPLETE** | ~55 | Full stack working: schema + API + frontend + real data |
-| **PARTIAL** | ~40 | Some layers missing (usually frontend or API gaps) |
-| **SCAFFOLD** | ~25 | Structure exists but minimal implementation |
+| **COMPLETE** | **~65** *(was ~55)* | Full stack working: schema + API + frontend + real data |
+| **PARTIAL** | **~35** *(was ~40)* | Some layers missing (usually frontend or API gaps) |
+| **SCAFFOLD** | **~15** *(was ~25)* | Structure exists but minimal implementation |
 | **PLANNED** | ~80+ | Schema tables defined but zero implementation |
 
-### Most Critical Gaps
+### Most Critical Gaps (Updated)
 
-1. **Payment Processing**: All 5 payment gateways (Stripe, Asaas, MercadoPago, PagarMe, PagSeguro) are mocked. No real payments can be processed.
+1. **Payment Processing**: All 5 payment gateways (Stripe, Asaas, MercadoPago, PagarMe, PagSeguro) are mocked. No real payments can be processed. *(unchanged)*
 
-2. **Reports**: All 11 report pages under `/admin/relatorios/` are empty skeletons. No reporting functionality exists.
+2. ~~**Reports**: All 11 report pages under `/admin/relatorios/` are empty skeletons. No reporting functionality exists.~~ ✅ **RESOLVED** — Financial reports now fully functional (revenue by course, payment methods, defaulters, teacher analysis, accounting: balancete/DRE/balanço). Most report pages wired to APIs.
 
-3. **192 Unused Schema Tables**: 60% of the database schema is never touched by any code. This is either ambitious forward-planning or significant technical debt.
+3. **192 Unused Schema Tables**: 60% of the database schema is never touched by any code. *(unchanged)*
 
-4. **65 Uncalled API Routes**: 26% of API routes have no frontend consumer, including complete subsystems (auditor, GDPR rights, knowledge graph, procedures).
+4. **~60 Uncalled API Routes**: 23% of API routes have no frontend consumer, including complete subsystems (auditor, GDPR rights, knowledge graph, procedures). *(slightly improved — /api/reports/financial now called)*
 
-5. **15 Empty Modules**: Every module under `src/modules/` exports only TypeScript interfaces with zero runtime logic. The intended module architecture was never populated.
+5. **15 Empty Modules**: Every module under `src/modules/` exports only TypeScript interfaces with zero runtime logic. *(unchanged)*
 
-6. **AI UI**: The AI chat page (`/admin/ai/chat`) uses hardcoded mock messages. The powerful backend AI system (memory, embeddings, genesis engine) has no user-facing interface.
+6. **AI UI**: The AI chat page (`/admin/ai/chat`) still uses hardcoded mock messages. Other AI admin pages (uso, analises, geradores) are now LIVE. *(partially improved)*
 
-7. **Parent Portal**: API routes for parent/child context exist (alerts, engagement, progress, recommendations, wellbeing) but none are called from the parent frontend.
+7. **Parent Portal**: API routes for parent/child context exist but none are called from the parent frontend. *(unchanged)*
+
+8. **Main Dashboard**: The `/dashboard` student landing page still uses fully hardcoded mock data (USER, MODULES, BADGES, WEEKLY_ACTIVITY). *(unchanged — new finding)*
 
 ---
 
@@ -722,11 +809,26 @@ Two separate navigation systems:
 
 | Directory | Files |
 |-----------|-------|
-| src/app/api/ (route.ts) | 251 |
+| src/app/api/ (route.ts) | **257+** *(was 251)* |
 | src/app/ (page.tsx) | ~260 |
 | src/components/ | ~50 dirs |
 | src/modules/ | 15 modules (30 files, types only) |
-| src/lib/ | 17 subdirectories |
+| src/lib/ | **19 subdirectories** *(was 17 — added genesis/, esign.ts, notifications.ts)* |
 | src/hooks/ | 4 files |
-| src/types/ | 1 file |
-| src/lib/db/schema.ts | 14,124 lines, 319 tables |
+| src/types/ | **2 files** *(added domain.ts)* |
+| src/lib/db/schema.ts | **~15,400 lines** *(was 14,124)*, 319 tables |
+
+### Identity Architecture *(NEW)*
+
+```
+Clerk Session → clerkUserId
+    ↓
+users table → bridges clerkUserId → personId
+    ↓
+persons table → CANONICAL IDENTITY (all 236 API files use this)
+    ↓
+organizationMemberships → roles per org (multi-tenant)
+```
+
+- **236 API files** use `personId` (new canonical)
+- **4 API files** still use legacy `userId` (communicator/contacts, meetings, permissions, user-overrides)
