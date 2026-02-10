@@ -100,6 +100,7 @@ export async function POST(request: NextRequest) {
             })
                 .from(messages)
                 .leftJoin(users, eq(messages.senderId, users.id))
+            .leftJoin(persons, eq(users.personId, persons.id))
                 .where(and(
                     eq(messages.conversationId, sourceId),
                     eq(messages.isDeleted, false)

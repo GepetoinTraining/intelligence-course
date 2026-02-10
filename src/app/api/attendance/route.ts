@@ -58,7 +58,20 @@ export async function GET(request: NextRequest) {
             });
         }
 
-        return NextResponse.json({ error: 'sessionId or personId required' }, { status: 400 });
+        // Default - return recent attendance records
+        const result = await db
+            .select({
+                attendance: attendance,
+            })
+            .from(attendance)
+            .orderBy(desc(attendance.markedAt))
+            .limit(100);
+
+        return NextResponse.json({
+            data: result.map(r => ({
+                ...r.attendance,
+            }))
+        });
     } catch (error) {
         console.error('Error fetching attendance:', error);
         return NextResponse.json({ error: 'Failed to fetch attendance' }, { status: 500 });

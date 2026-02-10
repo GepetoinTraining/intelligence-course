@@ -54,6 +54,7 @@ export async function GET(request: NextRequest) {
             })
             .from(staffLeave)
             .leftJoin(users, eq(staffLeave.personId, users.id))
+            .leftJoin(persons, eq(users.personId, persons.id))
             .where(conditions.length > 0 ? and(...conditions) : undefined)
             .orderBy(desc(staffLeave.startDate))
             .limit(limit)

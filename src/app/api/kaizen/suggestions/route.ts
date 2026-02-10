@@ -148,6 +148,7 @@ export async function GET(request: NextRequest) {
                 name: persons.firstName,
             })
                 .from(users)
+            .leftJoin(persons, eq(users.personId, persons.id))
                 .where(inArray(users.id, submitterIds));
 
             submitterNames = Object.fromEntries(submitters.map(u => [u.id, u.name || 'Unknown']));

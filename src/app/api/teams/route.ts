@@ -78,6 +78,7 @@ export async function GET(request: NextRequest) {
                         })
                         .from(teamMembers)
                         .leftJoin(users, eq(teamMembers.personId, users.id))
+            .leftJoin(persons, eq(users.personId, persons.id))
                         .leftJoin(teamPositions, eq(teamMembers.positionId, teamPositions.id))
                         .where(
                             and(

@@ -166,9 +166,9 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Parse query params
-        const startDate = parseInt(request.nextUrl.searchParams.get('startDate') || '0');
-        const endDate = parseInt(request.nextUrl.searchParams.get('endDate') || '0');
+        // Parse query params (accept both 'from'/'to' and 'startDate'/'endDate' aliases)
+        const startDate = parseInt(request.nextUrl.searchParams.get('startDate') || request.nextUrl.searchParams.get('from') || '0');
+        const endDate = parseInt(request.nextUrl.searchParams.get('endDate') || request.nextUrl.searchParams.get('to') || '0');
         const viewUserId = request.nextUrl.searchParams.get('personId') || personId;
         const includeTeam = request.nextUrl.searchParams.get('includeTeam') === 'true';
         const meetingTypesParam = request.nextUrl.searchParams.get('meetingTypes');

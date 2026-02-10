@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Get current user
-        const [currentUser] = await db.select().from(users).where(eq(users.id, clerkUserId)).limit(1);
+        const [currentUser] = await db.select({ organizationId: users.organizationId }).from(users).where(eq(users.id, clerkUserId)).limit(1);
         if (!currentUser?.organizationId) {
             return NextResponse.json({ error: 'No organization' }, { status: 400 });
         }
@@ -54,7 +54,8 @@ export async function GET(request: NextRequest) {
                 id: users.id,
                 name: persons.firstName,
                 avatarUrl: persons.avatarUrl,
-            }).from(users).where(sql`${users.id} IN (${sql.join(assignedUserIds.map(id => sql`${id}`), sql`, `)})`)
+            }).from(users)
+                .leftJoin(persons, eq(users.personId, persons.id)).where(sql`${users.id} IN (${sql.join(assignedUserIds.map(id => sql`${id}`), sql`, `)})`)
             : [];
 
         const userMap = new Map(assignedUsers.map(u => [u.id, u]));
@@ -82,7 +83,8 @@ export async function GET(request: NextRequest) {
                 name: persons.firstName,
                 email: persons.primaryEmail,
                 avatarUrl: persons.avatarUrl,
-            }).from(users).where(sql`${users.id} IN (${sql.join(enrolledUserIds.map(id => sql`${id}`), sql`, `)})`)
+            }).from(users)
+                .leftJoin(persons, eq(users.personId, persons.id)).where(sql`${users.id} IN (${sql.join(enrolledUserIds.map(id => sql`${id}`), sql`, `)})`)
             : [];
 
         const enrolledUserMap = new Map(enrolledUsers.map(u => [u.id, u]));

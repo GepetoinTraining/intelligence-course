@@ -94,6 +94,7 @@ export async function GET(request: NextRequest) {
                     })
                     .from(userGroupAssignments)
                     .leftJoin(users, eq(userGroupAssignments.personId, users.id))
+            .leftJoin(persons, eq(users.personId, persons.id))
                     .where(eq(userGroupAssignments.groupId, groupId));
             }
 

@@ -95,6 +95,7 @@ export async function GET(request: NextRequest) {
             })
             .from(userPermissionOverrides)
             .leftJoin(users, eq(userPermissionOverrides.personId, users.id))
+            .leftJoin(persons, eq(users.personId, persons.id))
             .where(and(
                 eq(userPermissionOverrides.grantedBy, personId),
                 eq(userPermissionOverrides.isGranted, true),

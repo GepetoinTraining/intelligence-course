@@ -151,6 +151,7 @@ export async function GET(request: NextRequest) {
                 })
                     .from(conversationParticipants)
                     .innerJoin(users, eq(conversationParticipants.personId, users.id))
+                    .innerJoin(persons, eq(users.personId, persons.id))
                     .where(and(
                         eq(conversationParticipants.conversationId, conv.id),
                         eq(conversationParticipants.isActive, true)
@@ -167,6 +168,7 @@ export async function GET(request: NextRequest) {
                 })
                     .from(messages)
                     .leftJoin(users, eq(messages.senderId, users.id))
+                    .leftJoin(persons, eq(users.personId, persons.id))
                     .where(and(
                         eq(messages.conversationId, conv.id),
                         eq(messages.isDeleted, false)

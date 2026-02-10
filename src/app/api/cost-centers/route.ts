@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
             })
             .from(costCenters)
             .leftJoin(users, eq(costCenters.managerId, users.id))
+            .leftJoin(persons, eq(users.personId, persons.id))
             .where(and(...conditions))
             .orderBy(asc(costCenters.code));
 

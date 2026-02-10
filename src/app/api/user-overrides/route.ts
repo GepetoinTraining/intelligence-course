@@ -93,6 +93,7 @@ export async function GET(request: NextRequest) {
                 .from(userPermissionOverrides)
                 .leftJoin(actionTypes, eq(userPermissionOverrides.actionTypeId, actionTypes.id))
                 .leftJoin(users, eq(userPermissionOverrides.personId, users.id))
+            .leftJoin(persons, eq(users.personId, persons.id))
                 .where(isNull(userPermissionOverrides.revokedAt));
         }
 

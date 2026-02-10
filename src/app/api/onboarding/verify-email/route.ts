@@ -20,8 +20,12 @@ export async function POST(request: NextRequest) {
 
         // For now, simulate verification by updating preferences
         const user = await db
-            .select()
+            .select({
+                id: users.id,
+                preferences: users.preferences,
+            })
             .from(users)
+            .leftJoin(persons, eq(users.personId, persons.id))
             .where(eq(persons.primaryEmail, email))
             .limit(1);
 
@@ -39,21 +43,14 @@ export async function POST(request: NextRequest) {
                 preferences: JSON.stringify(preferences),
                 updatedAt: Math.floor(Date.now() / 1000),
             })
-            .where(eq(persons.primaryEmail, email));
+            .where(eq(users.id, user[0].id));
 
         return NextResponse.json({
-            data: {
-                verified: true,
-                email,
-                nextStep: 'complete_profile',
-                message: 'Email verified successfully',
-            }
+            success: true,
+            message: 'Email verified successfully',
         });
     } catch (error) {
         console.error('Error verifying email:', error);
         return NextResponse.json({ error: 'Failed to verify email' }, { status: 500 });
     }
 }
-
-
-
