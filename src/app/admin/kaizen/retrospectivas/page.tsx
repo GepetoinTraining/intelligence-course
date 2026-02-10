@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Container, Title, Text, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Loader, Alert, Paper, Textarea,
@@ -10,6 +10,7 @@ import {
     IconAlertCircle, IconBulb, IconUsers, IconMessageCircle,
     IconPlus, IconCheck, IconTarget,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface Suggestion {
     id: string;
@@ -33,28 +34,12 @@ const TYPE_COLORS: Record<string, string> = { went_well: 'green', improve: 'oran
 const TYPE_LABELS: Record<string, string> = { went_well: '✅ O que foi bem', improve: '🔧 Melhorar', action: '🎯 Ação' };
 
 export default function RetrospectivasPage() {
-    const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { data: suggestionsData, isLoading: loading } = useApi<Suggestion[]>('/api/kaizen/suggestions?limit=20&sort=recent');
+    const suggestions = suggestionsData || [];
+    const error: string | null = null;
     const [retroItems, setRetroItems] = useState<RetroItem[]>([]);
     const [newText, setNewText] = useState('');
     const [newType, setNewType] = useState<string | null>('went_well');
-
-    useEffect(() => {
-        (async () => {
-            try {
-                const res = await fetch('/api/kaizen/suggestions?limit=20&sort=recent');
-                if (res.ok) {
-                    const data = await res.json();
-                    setSuggestions(data.data || []);
-                }
-            } catch (err) {
-                setError('Falha ao carregar dados');
-            } finally {
-                setLoading(false);
-            }
-        })();
-    }, []);
 
     const handleAdd = () => {
         if (!newText.trim() || !newType) return;

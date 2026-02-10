@@ -2,17 +2,13 @@
 
 import { useState, useMemo } from 'react';
 import {
-    Container, Title, Text, Group, ThemeIcon, Stack, Badge,
-    Card, SimpleGrid, Table, Paper, TextInput, Button, CopyButton,
-    ActionIcon, Tooltip,
-    Loader,
-    Alert,
-    Center,
+    Title, Text, Group, Stack, Badge, Card, SimpleGrid, Table, TextInput,
+    Button, ActionIcon, Tooltip, CopyButton, Loader, Alert, Center, Modal,
+    MultiSelect, Switch,
 } from '@mantine/core';
 import {
-    IconWebhook, IconPlus, IconTrash, IconCopy, IconCheck,
-    IconLink, IconCloudUp, IconBell, IconShieldCheck,
-    IconAlertCircle,
+    IconWebhook, IconPlus, IconTrash, IconCopy, IconCheck, IconLink,
+    IconCloudUp, IconBell, IconShieldCheck, IconAlertCircle,
 } from '@tabler/icons-react';
 import { useApi } from '@/hooks/useApi';
 
@@ -28,238 +24,206 @@ interface WebhookEntry {
     failureCount: number;
 }
 
-// Local state only — this page manages webhooks config that would later be persisted via an API
-const DEMO_EVENTS = [
+const ALL_EVENTS = [
     'enrollment.created', 'enrollment.completed', 'payment.received',
     'contract.signed', 'lead.created', 'student.enrolled',
     'invoice.paid', 'class.started', 'grade.posted',
 ];
 
 export default function WebhooksPage() {
-    // API data (falls back to inline demo data below)
-    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/api-keys');
+    const { data: apiData, isLoading, error, refetch } = useApi<any[]>('/api/webhooks');
+    const [modalOpen, setModalOpen] = useState(false);
+    const [form, setForm] = useState({ name: '', url: '', events: [] as string[] });
+    const [saving, setSaving] = useState(false);
 
-    const [webhooks, setWebhooks] = useState<WebhookEntry[]>([]);
-    const [newName, setNewName] = useState('');
-    const [newUrl, setNewUrl] = useState('');
+    const webhooks = useMemo<WebhookEntry[]>(() => {
+        if (apiData && Array.isArray(apiData) && apiData.length > 0) {
+            return apiData.map((w: any) => ({
+                id: w.id,
+                name: w.name || 'Webhook',
+                url: w.url || w.endpoint || '',
+                events: Array.isArray(w.events) ? w.events : (typeof w.events === 'string' ? JSON.parse(w.events) : []),
+                isActive: w.isActive ?? w.active ?? true,
+                createdAt: w.createdAt ? new Date(w.createdAt * 1000).toLocaleDateString('pt-BR') : '—',
+                lastTriggered: w.lastTriggered ? new Date(w.lastTriggered * 1000).toLocaleDateString('pt-BR') : undefined,
+                successCount: w.successCount ?? 0,
+                failureCount: w.failureCount ?? 0,
+            }));
+        }
+        return [];
+    }, [apiData]);
 
-    const stats = useMemo(() => ({
-        total: webhooks.length,
-        active: webhooks.filter(w => w.isActive).length,
-        totalEvents: DEMO_EVENTS.length,
-        totalDeliveries: webhooks.reduce((sum, w) => sum + w.successCount + w.failureCount, 0),
-    }), [webhooks]);
-
-    const handleAdd = () => {
-        if (!newName.trim() || !newUrl.trim()) return;
-        const entry: WebhookEntry = {
-            id: crypto.randomUUID(),
-            name: newName.trim(),
-            url: newUrl.trim(),
-            events: ['*'],
-            isActive: true,
-            createdAt: new Date().toLocaleDateString('pt-BR'),
-            successCount: 0,
-            failureCount: 0,
-        };
-        setWebhooks(prev => [...prev, entry]);
-        setNewName('');
-        setNewUrl('');
+    const handleAdd = async () => {
+        if (!form.name || !form.url) return;
+        setSaving(true);
+        try {
+            await fetch('/api/webhooks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(form),
+            });
+            refetch();
+            setModalOpen(false);
+            setForm({ name: '', url: '', events: [] });
+        } catch (e) { console.error(e); }
+        finally { setSaving(false); }
     };
 
-    const handleDelete = (id: string) => {
-        setWebhooks(prev => prev.filter(w => w.id !== id));
+    const handleDelete = async (id: string) => {
+        if (!confirm('Excluir este webhook?')) return;
+        await fetch('/api/webhooks', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id }),
+        });
+        refetch();
     };
 
-    const handleToggle = (id: string) => {
-        setWebhooks(prev => prev.map(w => w.id === id ? { ...w, isActive: !w.isActive } : w));
+    const handleToggle = async (id: string, isActive: boolean) => {
+        await fetch('/api/webhooks', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, isActive }),
+        });
+        refetch();
     };
 
-
-    if (_apiLoading) {
-        return <Center h={400}><Loader size="lg" /></Center>;
-    }
+    if (isLoading) return <Center h={400}><Loader size="lg" /></Center>;
+    if (error) return <Alert icon={<IconAlertCircle />} color="red" title="Erro">{String(error)}</Alert>;
 
     return (
-        <Container size="xl" py="xl">
-            <Stack gap="lg">
-                {/* Header */}
+        <Stack gap="lg">
+            <Group justify="space-between" align="flex-end">
                 <div>
-                    <Group gap="xs" mb={4}>
-                        <Text size="sm" c="dimmed">Configurações</Text>
-                        <Text size="sm" c="dimmed">/</Text>
-                        <Text size="sm" fw={500}>Webhooks</Text>
-                    </Group>
-                    <Title order={1}>Webhooks</Title>
-                    <Text c="dimmed" mt="xs">Configure endpoints para receber notificações automáticas de eventos do sistema.</Text>
+                    <Text size="sm" c="dimmed">Configurações</Text>
+                    <Title order={2}>Webhooks</Title>
                 </div>
+                <Button leftSection={<IconPlus size={16} />} onClick={() => setModalOpen(true)}>
+                    Novo Webhook
+                </Button>
+            </Group>
 
-                {/* KPI Cards */}
-                <SimpleGrid cols={{ base: 2, md: 4 }}>
-                    <Card withBorder padding="lg" radius="md">
-                        <Group justify="space-between">
-                            <div>
-                                <Text size="xs" c="dimmed" tt="uppercase" fw={700}>Total Webhooks</Text>
-                                <Text size="xl" fw={700}>{stats.total}</Text>
-                            </div>
-                            <ThemeIcon size={48} radius="md" variant="light" color="blue">
-                                <IconWebhook size={24} />
-                            </ThemeIcon>
-                        </Group>
-                    </Card>
-                    <Card withBorder padding="lg" radius="md">
-                        <Group justify="space-between">
-                            <div>
-                                <Text size="xs" c="dimmed" tt="uppercase" fw={700}>Ativos</Text>
-                                <Text size="xl" fw={700} c="green">{stats.active}</Text>
-                            </div>
-                            <ThemeIcon size={48} radius="md" variant="light" color="green">
-                                <IconCloudUp size={24} />
-                            </ThemeIcon>
-                        </Group>
-                    </Card>
-                    <Card withBorder padding="lg" radius="md">
-                        <Group justify="space-between">
-                            <div>
-                                <Text size="xs" c="dimmed" tt="uppercase" fw={700}>Eventos Disponíveis</Text>
-                                <Text size="xl" fw={700}>{stats.totalEvents}</Text>
-                            </div>
-                            <ThemeIcon size={48} radius="md" variant="light" color="violet">
-                                <IconBell size={24} />
-                            </ThemeIcon>
-                        </Group>
-                    </Card>
-                    <Card withBorder padding="lg" radius="md">
-                        <Group justify="space-between">
-                            <div>
-                                <Text size="xs" c="dimmed" tt="uppercase" fw={700}>Entregas</Text>
-                                <Text size="xl" fw={700}>{stats.totalDeliveries}</Text>
-                            </div>
-                            <ThemeIcon size={48} radius="md" variant="light" color="orange">
-                                <IconShieldCheck size={24} />
-                            </ThemeIcon>
-                        </Group>
-                    </Card>
-                </SimpleGrid>
-
-                {/* Add Webhook Form */}
-                <Card withBorder padding="lg" radius="md">
-                    <Text fw={600} mb="md">Adicionar Webhook</Text>
-                    <Group align="end">
-                        <TextInput
-                            label="Nome"
-                            placeholder="Ex: Notificação CRM"
-                            value={newName}
-                            onChange={(e) => setNewName(e.currentTarget.value)}
-                            style={{ flex: 1 }}
-                        />
-                        <TextInput
-                            label="URL"
-                            placeholder="https://seu-servidor.com/webhook"
-                            value={newUrl}
-                            onChange={(e) => setNewUrl(e.currentTarget.value)}
-                            style={{ flex: 2 }}
-                        />
-                        <Button
-                            leftSection={<IconPlus size={16} />}
-                            onClick={handleAdd}
-                            disabled={!newName.trim() || !newUrl.trim()}
-                        >
-                            Adicionar
-                        </Button>
+            <SimpleGrid cols={{ base: 2, sm: 4 }}>
+                <Card withBorder p="md">
+                    <Group>
+                        <IconWebhook size={20} color="var(--mantine-color-blue-6)" />
+                        <div>
+                            <Text size="xs" c="dimmed">Total</Text>
+                            <Text fw={700} size="lg">{webhooks.length}</Text>
+                        </div>
                     </Group>
                 </Card>
-
-                {/* Available Events */}
-                <Card withBorder padding="lg" radius="md">
-                    <Text fw={600} mb="md">Eventos Disponíveis</Text>
-                    <Group gap="sm">
-                        {DEMO_EVENTS.map(e => (
-                            <Badge key={e} variant="light" size="lg">{e}</Badge>
-                        ))}
+                <Card withBorder p="md">
+                    <Group>
+                        <IconCheck size={20} color="var(--mantine-color-green-6)" />
+                        <div>
+                            <Text size="xs" c="dimmed">Ativos</Text>
+                            <Text fw={700} size="lg">{webhooks.filter(w => w.isActive).length}</Text>
+                        </div>
                     </Group>
-                    <Text size="xs" c="dimmed" mt="md">Use `*` para escutar todos os eventos ou selecione eventos específicos ao configurar.</Text>
                 </Card>
-
-                {/* Webhooks Table */}
-                <Card withBorder padding="lg" radius="md">
-                    <Group justify="space-between" mb="md">
-                        <Text fw={600}>Webhooks Configurados</Text>
-                        <Badge variant="light">{webhooks.length} endpoints</Badge>
+                <Card withBorder p="md">
+                    <Group>
+                        <IconCloudUp size={20} color="var(--mantine-color-teal-6)" />
+                        <div>
+                            <Text size="xs" c="dimmed">Envios OK</Text>
+                            <Text fw={700} size="lg">{webhooks.reduce((s, w) => s + w.successCount, 0)}</Text>
+                        </div>
                     </Group>
-                    {webhooks.length === 0 ? (
-                        <Paper withBorder p="xl" radius="md" style={{ textAlign: 'center' }}>
-                            <ThemeIcon size={64} radius="xl" variant="light" color="gray" mx="auto" mb="md">
-                                <IconWebhook size={32} />
-                            </ThemeIcon>
-                            <Title order={3} mb="xs">Nenhum webhook</Title>
-                            <Text c="dimmed">Adicione um webhook acima para receber notificações automáticas.</Text>
-                        </Paper>
-                    ) : (
-                        <Table striped highlightOnHover>
-                            <Table.Thead>
-                                <Table.Tr>
-                                    <Table.Th>Nome</Table.Th>
-                                    <Table.Th>URL</Table.Th>
-                                    <Table.Th>Eventos</Table.Th>
-                                    <Table.Th ta="center">Status</Table.Th>
-                                    <Table.Th ta="center">Ações</Table.Th>
+                </Card>
+                <Card withBorder p="md">
+                    <Group>
+                        <IconAlertCircle size={20} color="var(--mantine-color-red-6)" />
+                        <div>
+                            <Text size="xs" c="dimmed">Falhas</Text>
+                            <Text fw={700} size="lg">{webhooks.reduce((s, w) => s + w.failureCount, 0)}</Text>
+                        </div>
+                    </Group>
+                </Card>
+            </SimpleGrid>
+
+            {webhooks.length === 0 ? (
+                <Card withBorder p="xl">
+                    <Center>
+                        <Stack align="center" gap="sm">
+                            <IconWebhook size={40} color="gray" />
+                            <Text c="dimmed">Nenhum webhook configurado</Text>
+                            <Button variant="light" onClick={() => setModalOpen(true)}>Criar primeiro webhook</Button>
+                        </Stack>
+                    </Center>
+                </Card>
+            ) : (
+                <Card withBorder p="md">
+                    <Table>
+                        <Table.Thead>
+                            <Table.Tr>
+                                <Table.Th>Nome</Table.Th>
+                                <Table.Th>URL</Table.Th>
+                                <Table.Th>Eventos</Table.Th>
+                                <Table.Th>Último Disparo</Table.Th>
+                                <Table.Th>Status</Table.Th>
+                                <Table.Th>Ações</Table.Th>
+                            </Table.Tr>
+                        </Table.Thead>
+                        <Table.Tbody>
+                            {webhooks.map((wh) => (
+                                <Table.Tr key={wh.id}>
+                                    <Table.Td><Text fw={500}>{wh.name}</Text></Table.Td>
+                                    <Table.Td>
+                                        <Group gap={4}>
+                                            <Text size="xs" c="dimmed" style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                {wh.url}
+                                            </Text>
+                                            <CopyButton value={wh.url}>
+                                                {({ copied, copy }) => (
+                                                    <Tooltip label={copied ? 'Copiado!' : 'Copiar URL'}>
+                                                        <ActionIcon size="xs" variant="subtle" onClick={copy}>
+                                                            {copied ? <IconCheck size={12} /> : <IconCopy size={12} />}
+                                                        </ActionIcon>
+                                                    </Tooltip>
+                                                )}
+                                            </CopyButton>
+                                        </Group>
+                                    </Table.Td>
+                                    <Table.Td>
+                                        <Group gap={4}>
+                                            {wh.events.slice(0, 2).map((e, i) => (
+                                                <Badge key={i} size="xs" variant="light">{e}</Badge>
+                                            ))}
+                                            {wh.events.length > 2 && <Badge size="xs" variant="outline">+{wh.events.length - 2}</Badge>}
+                                        </Group>
+                                    </Table.Td>
+                                    <Table.Td><Text size="sm">{wh.lastTriggered || '—'}</Text></Table.Td>
+                                    <Table.Td>
+                                        <Switch checked={wh.isActive} onChange={e => handleToggle(wh.id, e.currentTarget.checked)} size="sm" />
+                                    </Table.Td>
+                                    <Table.Td>
+                                        <ActionIcon variant="subtle" color="red" onClick={() => handleDelete(wh.id)}>
+                                            <IconTrash size={16} />
+                                        </ActionIcon>
+                                    </Table.Td>
                                 </Table.Tr>
-                            </Table.Thead>
-                            <Table.Tbody>
-                                {webhooks.map(w => (
-                                    <Table.Tr key={w.id} style={{ opacity: w.isActive ? 1 : 0.6 }}>
-                                        <Table.Td>
-                                            <Text size="sm" fw={500}>{w.name}</Text>
-                                            <Text size="xs" c="dimmed">Criado: {w.createdAt}</Text>
-                                        </Table.Td>
-                                        <Table.Td>
-                                            <Group gap={4}>
-                                                <IconLink size={14} color="gray" />
-                                                <Text size="sm" c="dimmed" style={{ fontFamily: 'monospace' }}>{w.url.slice(0, 40)}{w.url.length > 40 ? '...' : ''}</Text>
-                                            </Group>
-                                        </Table.Td>
-                                        <Table.Td>
-                                            <Badge size="sm" variant="light">
-                                                {w.events.includes('*') ? 'Todos' : `${w.events.length} evento(s)`}
-                                            </Badge>
-                                        </Table.Td>
-                                        <Table.Td ta="center">
-                                            <Badge
-                                                size="sm"
-                                                variant="light"
-                                                color={w.isActive ? 'green' : 'red'}
-                                                style={{ cursor: 'pointer' }}
-                                                onClick={() => handleToggle(w.id)}
-                                            >
-                                                {w.isActive ? 'Ativo' : 'Inativo'}
-                                            </Badge>
-                                        </Table.Td>
-                                        <Table.Td ta="center">
-                                            <Group gap={4} justify="center">
-                                                <CopyButton value={w.url}>
-                                                    {({ copied, copy }) => (
-                                                        <Tooltip label={copied ? 'Copiado!' : 'Copiar URL'}>
-                                                            <ActionIcon size="sm" variant="light" color={copied ? 'green' : 'gray'} onClick={copy}>
-                                                                {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
-                                                            </ActionIcon>
-                                                        </Tooltip>
-                                                    )}
-                                                </CopyButton>
-                                                <Tooltip label="Remover">
-                                                    <ActionIcon size="sm" variant="light" color="red" onClick={() => handleDelete(w.id)}>
-                                                        <IconTrash size={14} />
-                                                    </ActionIcon>
-                                                </Tooltip>
-                                            </Group>
-                                        </Table.Td>
-                                    </Table.Tr>
-                                ))}
-                            </Table.Tbody>
-                        </Table>
-                    )}
+                            ))}
+                        </Table.Tbody>
+                    </Table>
                 </Card>
-            </Stack>
-        </Container>
+            )}
+
+            {/* Create Modal */}
+            <Modal opened={modalOpen} onClose={() => setModalOpen(false)} title="Novo Webhook" size="md">
+                <Stack gap="md">
+                    <TextInput label="Nome" placeholder="Meu webhook" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required />
+                    <TextInput label="URL" placeholder="https://..." leftSection={<IconLink size={16} />} value={form.url} onChange={e => setForm(p => ({ ...p, url: e.target.value }))} required />
+                    <MultiSelect
+                        label="Eventos"
+                        data={ALL_EVENTS}
+                        value={form.events}
+                        onChange={v => setForm(p => ({ ...p, events: v }))}
+                        placeholder="Selecione os eventos"
+                    />
+                    <Button onClick={handleAdd} loading={saving} fullWidth>Criar Webhook</Button>
+                </Stack>
+            </Modal>
+        </Stack>
     );
 }

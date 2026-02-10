@@ -1,68 +1,84 @@
 'use client';
 
 import {
-    Title,
-    Text,
-    Stack,
-    SimpleGrid,
-    Card,
-    Group,
-    ThemeIcon,
-    Button,
-    TextInput,
-    Switch,
-    Divider,
-    Avatar,
-    ColorSwatch,
-    FileInput,
-    Loader,
-    Alert,
-    Center,
+    Title, Text, Stack, Card, Group, ThemeIcon, Button, TextInput, Switch,
+    Divider, Avatar, Loader, Alert, Center, Textarea,
 } from '@mantine/core';
 import {
-    IconBuilding,
-    IconPhoto,
-    IconMail,
-    IconPhone,
-    IconMapPin,
-    IconWorld,
-    IconBrandFacebook,
-    IconBrandInstagram,
-    IconDeviceFloppy,
-    IconAlertCircle,
+    IconBuilding, IconPhoto, IconMail, IconPhone, IconMapPin, IconWorld,
+    IconBrandFacebook, IconBrandInstagram, IconDeviceFloppy, IconAlertCircle,
 } from '@tabler/icons-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApi } from '@/hooks/useApi';
 
 export default function EscolaPage() {
-    // API data (falls back to inline demo data below)
-    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/profile');
+    const { data: apiData, isLoading, error, refetch } = useApi<any>('/api/profile');
 
-    const [schoolData, setSchoolData] = useState({
-        name: 'Node Zero Language School',
-        email: 'contato@nodezero.edu.br',
-        phone: '(11) 99999-9999',
-        address: 'Rua das Linguagens, 100 - São Paulo, SP',
-        website: 'www.nodezero.edu.br',
-        facebook: 'nodezeroschool',
-        instagram: '@nodezeroschool',
+    const [form, setForm] = useState({
+        name: '', email: '', phone: '', address: '', website: '',
+        facebook: '', instagram: '', description: '',
+        maintenanceMode: false, emailNotifications: true, autoBackup: true,
     });
+    const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
 
+    useEffect(() => {
+        if (apiData) {
+            const d = Array.isArray(apiData) ? apiData[0] : apiData;
+            if (d) {
+                setForm(prev => ({
+                    ...prev,
+                    name: d.name || d.schoolName || prev.name,
+                    email: d.email || prev.email,
+                    phone: d.phone || prev.phone,
+                    address: d.address || prev.address,
+                    website: d.website || prev.website,
+                    facebook: d.facebook || prev.facebook,
+                    instagram: d.instagram || prev.instagram,
+                    description: d.description || prev.description,
+                }));
+            }
+        }
+    }, [apiData]);
 
-    if (_apiLoading) {
-        return <Center h={400}><Loader size="lg" /></Center>;
-    }
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            await fetch('/api/profile', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(form),
+            });
+            refetch();
+            setSaved(true);
+            setTimeout(() => setSaved(false), 3000);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const u = (key: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+        setForm(prev => ({ ...prev, [key]: e.target.value }));
+
+    if (isLoading) return <Center h={400}><Loader size="lg" /></Center>;
+    if (error) return <Alert icon={<IconAlertCircle />} color="red" title="Erro">{String(error)}</Alert>;
 
     return (
         <Stack gap="lg">
-            {/* Header */}
             <Group justify="space-between" align="flex-end">
                 <div>
                     <Text size="sm" c="dimmed">Configurações</Text>
                     <Title order={2}>Dados da Escola</Title>
                 </div>
-                <Button leftSection={<IconDeviceFloppy size={16} />}>
-                    Salvar Alterações
+                <Button
+                    leftSection={<IconDeviceFloppy size={16} />}
+                    onClick={handleSave}
+                    loading={saving}
+                    color={saved ? 'green' : undefined}
+                >
+                    {saved ? 'Salvo!' : 'Salvar Alterações'}
                 </Button>
             </Group>
 
@@ -79,24 +95,11 @@ export default function EscolaPage() {
                         </Button>
                     </Stack>
                     <Stack style={{ flex: 1 }} gap="md">
-                        <TextInput
-                            label="Nome da Escola"
-                            value={schoolData.name}
-                            onChange={(e) => setSchoolData({ ...schoolData, name: e.target.value })}
-                        />
+                        <TextInput label="Nome da Escola" value={form.name} onChange={u('name')} />
+                        <Textarea label="Descrição" value={form.description} onChange={u('description')} autosize minRows={2} />
                         <Group grow>
-                            <TextInput
-                                label="E-mail"
-                                leftSection={<IconMail size={16} />}
-                                value={schoolData.email}
-                                onChange={(e) => setSchoolData({ ...schoolData, email: e.target.value })}
-                            />
-                            <TextInput
-                                label="Telefone"
-                                leftSection={<IconPhone size={16} />}
-                                value={schoolData.phone}
-                                onChange={(e) => setSchoolData({ ...schoolData, phone: e.target.value })}
-                            />
+                            <TextInput label="E-mail" leftSection={<IconMail size={16} />} value={form.email} onChange={u('email')} />
+                            <TextInput label="Telefone" leftSection={<IconPhone size={16} />} value={form.phone} onChange={u('phone')} />
                         </Group>
                     </Stack>
                 </Group>
@@ -106,15 +109,8 @@ export default function EscolaPage() {
             <Card withBorder p="lg">
                 <Text fw={500} mb="md">Localização</Text>
                 <Stack gap="md">
-                    <TextInput
-                        label="Endereço Completo"
-                        leftSection={<IconMapPin size={16} />}
-                        value={schoolData.address}
-                        onChange={(e) => setSchoolData({ ...schoolData, address: e.target.value })}
-                    />
-                    <Text size="xs" c="dimmed">
-                        O endereço será exibido nas faturas e documentos oficiais.
-                    </Text>
+                    <TextInput label="Endereço Completo" leftSection={<IconMapPin size={16} />} value={form.address} onChange={u('address')} />
+                    <Text size="xs" c="dimmed">O endereço será exibido nas faturas e documentos oficiais.</Text>
                 </Stack>
             </Card>
 
@@ -122,25 +118,10 @@ export default function EscolaPage() {
             <Card withBorder p="lg">
                 <Text fw={500} mb="md">Presença Online</Text>
                 <Stack gap="md">
-                    <TextInput
-                        label="Website"
-                        leftSection={<IconWorld size={16} />}
-                        value={schoolData.website}
-                        onChange={(e) => setSchoolData({ ...schoolData, website: e.target.value })}
-                    />
+                    <TextInput label="Website" leftSection={<IconWorld size={16} />} value={form.website} onChange={u('website')} />
                     <Group grow>
-                        <TextInput
-                            label="Facebook"
-                            leftSection={<IconBrandFacebook size={16} />}
-                            value={schoolData.facebook}
-                            onChange={(e) => setSchoolData({ ...schoolData, facebook: e.target.value })}
-                        />
-                        <TextInput
-                            label="Instagram"
-                            leftSection={<IconBrandInstagram size={16} />}
-                            value={schoolData.instagram}
-                            onChange={(e) => setSchoolData({ ...schoolData, instagram: e.target.value })}
-                        />
+                        <TextInput label="Facebook" leftSection={<IconBrandFacebook size={16} />} value={form.facebook} onChange={u('facebook')} />
+                        <TextInput label="Instagram" leftSection={<IconBrandInstagram size={16} />} value={form.instagram} onChange={u('instagram')} />
                     </Group>
                 </Stack>
             </Card>
@@ -154,7 +135,7 @@ export default function EscolaPage() {
                             <Text size="sm">Modo de manutenção</Text>
                             <Text size="xs" c="dimmed">Desabilita acesso de alunos ao portal</Text>
                         </div>
-                        <Switch />
+                        <Switch checked={form.maintenanceMode} onChange={(e) => setForm(p => ({ ...p, maintenanceMode: e.currentTarget.checked }))} />
                     </Group>
                     <Divider />
                     <Group justify="space-between">
@@ -162,7 +143,7 @@ export default function EscolaPage() {
                             <Text size="sm">Notificações por e-mail</Text>
                             <Text size="xs" c="dimmed">Enviar resumo diário para administradores</Text>
                         </div>
-                        <Switch defaultChecked />
+                        <Switch checked={form.emailNotifications} onChange={(e) => setForm(p => ({ ...p, emailNotifications: e.currentTarget.checked }))} />
                     </Group>
                     <Divider />
                     <Group justify="space-between">
@@ -170,11 +151,10 @@ export default function EscolaPage() {
                             <Text size="sm">Backup automático</Text>
                             <Text size="xs" c="dimmed">Backup diário dos dados às 3h</Text>
                         </div>
-                        <Switch defaultChecked />
+                        <Switch checked={form.autoBackup} onChange={(e) => setForm(p => ({ ...p, autoBackup: e.currentTarget.checked }))} />
                     </Group>
                 </Stack>
             </Card>
         </Stack>
     );
 }
-

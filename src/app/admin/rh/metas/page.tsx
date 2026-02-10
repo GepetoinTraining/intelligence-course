@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Container, Title, Text, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Table, Loader, Alert, Select, Progress, Paper,
@@ -9,6 +9,7 @@ import {
     IconAlertCircle, IconTarget, IconChecklist, IconTrophy,
     IconClock, IconChartBar,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface ActionItem {
     id: string;
@@ -32,30 +33,9 @@ const STATUS_LABELS: Record<string, string> = { pending: 'Pendente', in_progress
 const PRIORITY_COLORS: Record<string, string> = { urgent: 'red', high: 'orange', medium: 'yellow', low: 'gray' };
 
 export default function MetasPage() {
-    const [items, setItems] = useState<ActionItem[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { data: apiData, isLoading: loading, error } = useApi<{ items: ActionItem[] }>('/api/action-items?view=all&limit=100');
+    const items = apiData?.items || (Array.isArray(apiData) ? apiData : []);
     const [statusFilter, setStatusFilter] = useState<string | null>(null);
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const params = new URLSearchParams({ view: 'all', limit: '100' });
-            if (statusFilter) params.set('status', statusFilter);
-            const res = await fetch(`/api/action-items?${params}`);
-            if (!res.ok) throw new Error('Falha ao buscar metas');
-            const data = await res.json();
-            setItems(data.items || []);
-        } catch (err) {
-            setError('Falha ao carregar metas');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    }, [statusFilter]);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
 
     const stats = useMemo(() => {
         const completed = items.filter(i => i.status === 'completed');
@@ -288,6 +268,21 @@ export default function MetasPage() {
                         </Table>
                     )}
                 </Card>
+
+                {/* PDI / Performance Alert */}
+                <Alert
+                    icon={<IconTarget size={16} />}
+                    color="blue"
+                    variant="light"
+                    title="Metas e Avaliação de Desempenho — Boas Práticas"
+                >
+                    <Text size="xs">
+                        <strong>PDI (Plano de Desenvolvimento Individual):</strong> Deve ser documentado e compartilhado com o colaborador.
+                        <strong> CLT Art. 461:</strong> Equiparação salarial — funções idênticas exigem mesma remuneração.
+                        Metas devem ser objetivas, mensuráveis e razoáveis para evitar passivos trabalhistas (assédio moral).
+                        <strong> Feedback:</strong> Recomenda-se reuniões formais de devolutiva no mínimo semestrais.
+                    </Text>
+                </Alert>
             </Stack>
         </Container>
     );

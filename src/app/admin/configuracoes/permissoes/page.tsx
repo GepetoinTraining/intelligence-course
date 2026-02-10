@@ -1,76 +1,75 @@
 'use client';
 
 import {
-    Title,
-    Text,
-    Stack,
-    SimpleGrid,
-    Card,
-    Badge,
-    Group,
-    ThemeIcon,
-    Button,
-    Table,
-    Switch,
-    Loader,
-    Alert,
-    Center,
+    Title, Text, Stack, SimpleGrid, Card, Badge, Group, ThemeIcon, Button,
+    Table, Switch, Loader, Alert, Center,
 } from '@mantine/core';
 import {
-    IconShield,
-    IconPlus,
-    IconKey,
-    IconUsers,
-    IconCheck,
-    IconLock,
-    IconAlertCircle,
+    IconShield, IconKey, IconUsers, IconLock, IconAlertCircle, IconDeviceFloppy,
 } from '@tabler/icons-react';
+import { useState, useMemo } from 'react';
 import { useApi } from '@/hooks/useApi';
 
-// Demo permissions modules
-const modules = [
-    { id: 1, name: 'Marketing', permissions: ['Visualizar', 'Editar', 'Criar'], roles: ['Admin', 'Marketing'] },
-    { id: 2, name: 'Comercial', permissions: ['Visualizar', 'Editar', 'Criar'], roles: ['Admin', 'Comercial'] },
-    { id: 3, name: 'Operacional', permissions: ['Visualizar', 'Editar', 'Criar'], roles: ['Admin', 'Operacional', 'Professor'] },
-    { id: 4, name: 'Financeiro', permissions: ['Visualizar', 'Editar', 'Criar', 'Excluir'], roles: ['Admin', 'Financeiro'] },
-    { id: 5, name: 'Pedagógico', permissions: ['Visualizar', 'Editar'], roles: ['Admin', 'Professor', 'Coordenador'] },
-    { id: 6, name: 'RH', permissions: ['Visualizar', 'Editar', 'Criar'], roles: ['Admin', 'RH'] },
-    { id: 7, name: 'Contábil', permissions: ['Visualizar', 'Editar'], roles: ['Admin', 'Contador'] },
-    { id: 8, name: 'Configurações', permissions: ['Visualizar', 'Editar'], roles: ['Admin'] },
+const ALL_MODULES = [
+    'Marketing', 'Comercial', 'Operacional', 'Pedagógico', 'Financeiro', 'RH', 'Contábil', 'Configurações',
 ];
 
+const ACTIONS = ['Visualizar', 'Criar', 'Editar', 'Excluir'];
+
 export default function PermissoesPage() {
-    // API data (falls back to inline demo data below)
-    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/permissions');
+    const { data: apiData, isLoading, error, refetch } = useApi<any[]>('/api/permissions');
+    const { data: rolesData } = useApi<any[]>('/api/positions');
+    const [saving, setSaving] = useState(false);
 
-    const totalModules = modules.length;
-    const rolesCount = new Set(modules.flatMap(m => m.roles)).size;
+    // Build matrix: module → action → enabled
+    const [matrix, setMatrix] = useState<Record<string, Record<string, boolean>>>({});
 
+    const permissions = useMemo(() => {
+        if (!apiData || !Array.isArray(apiData)) return [];
+        return apiData;
+    }, [apiData]);
 
-    if (_apiLoading) {
-        return <Center h={400}><Loader size="lg" /></Center>;
-    }
+    const roles = useMemo(() => {
+        if (!rolesData || !Array.isArray(rolesData)) return [];
+        return rolesData;
+    }, [rolesData]);
+
+    const totalModules = ALL_MODULES.length;
+    const rolesCount = roles.length;
+    const permCount = permissions.length || ALL_MODULES.length * ACTIONS.length;
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            await fetch('/api/permissions', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ matrix }),
+            });
+            refetch();
+        } catch (e) { console.error(e); }
+        finally { setSaving(false); }
+    };
+
+    if (isLoading) return <Center h={400}><Loader size="lg" /></Center>;
+    if (error) return <Alert icon={<IconAlertCircle />} color="red" title="Erro">{String(error)}</Alert>;
 
     return (
         <Stack gap="lg">
-            {/* Header */}
             <Group justify="space-between" align="flex-end">
                 <div>
                     <Text size="sm" c="dimmed">Configurações</Text>
                     <Title order={2}>Permissões</Title>
                 </div>
-                <Button leftSection={<IconPlus size={16} />}>
-                    Nova Permissão
+                <Button leftSection={<IconDeviceFloppy size={16} />} onClick={handleSave} loading={saving}>
+                    Salvar Alterações
                 </Button>
             </Group>
 
-            {/* Quick Stats */}
             <SimpleGrid cols={{ base: 2, sm: 3 }}>
                 <Card withBorder p="md">
                     <Group>
-                        <ThemeIcon variant="light" color="blue" size="lg">
-                            <IconShield size={20} />
-                        </ThemeIcon>
+                        <ThemeIcon variant="light" color="blue" size="lg"><IconShield size={20} /></ThemeIcon>
                         <div>
                             <Text size="xs" c="dimmed">Módulos</Text>
                             <Text fw={700} size="lg">{totalModules}</Text>
@@ -79,9 +78,7 @@ export default function PermissoesPage() {
                 </Card>
                 <Card withBorder p="md">
                     <Group>
-                        <ThemeIcon variant="light" color="green" size="lg">
-                            <IconUsers size={20} />
-                        </ThemeIcon>
+                        <ThemeIcon variant="light" color="green" size="lg"><IconUsers size={20} /></ThemeIcon>
                         <div>
                             <Text size="xs" c="dimmed">Cargos</Text>
                             <Text fw={700} size="lg">{rolesCount}</Text>
@@ -90,18 +87,15 @@ export default function PermissoesPage() {
                 </Card>
                 <Card withBorder p="md">
                     <Group>
-                        <ThemeIcon variant="light" color="purple" size="lg">
-                            <IconKey size={20} />
-                        </ThemeIcon>
+                        <ThemeIcon variant="light" color="purple" size="lg"><IconKey size={20} /></ThemeIcon>
                         <div>
                             <Text size="xs" c="dimmed">Permissões</Text>
-                            <Text fw={700} size="lg">{modules.reduce((sum, m) => sum + m.permissions.length, 0)}</Text>
+                            <Text fw={700} size="lg">{permCount}</Text>
                         </div>
                     </Group>
                 </Card>
             </SimpleGrid>
 
-            {/* Permissions Matrix */}
             <Card withBorder p="md">
                 <Text fw={500} mb="md">Matriz de Permissões por Módulo</Text>
                 <Table>
@@ -114,37 +108,46 @@ export default function PermissoesPage() {
                         </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
-                        {modules.map((mod) => (
-                            <Table.Tr key={mod.id}>
-                                <Table.Td>
-                                    <Group gap="xs">
-                                        <IconLock size={14} />
-                                        <Text fw={500}>{mod.name}</Text>
-                                    </Group>
-                                </Table.Td>
-                                <Table.Td>
-                                    <Group gap={4}>
-                                        {mod.permissions.map((p, i) => (
-                                            <Badge key={i} variant="light" size="xs">{p}</Badge>
-                                        ))}
-                                    </Group>
-                                </Table.Td>
-                                <Table.Td>
-                                    <Group gap={4}>
-                                        {mod.roles.map((r, i) => (
-                                            <Badge key={i} variant="outline" size="xs">{r}</Badge>
-                                        ))}
-                                    </Group>
-                                </Table.Td>
-                                <Table.Td>
-                                    <Switch defaultChecked={mod.roles.length <= 2} size="sm" />
-                                </Table.Td>
-                            </Table.Tr>
-                        ))}
+                        {ALL_MODULES.map((mod) => {
+                            const modPerms = permissions.filter((p: any) => p.module === mod);
+                            const modActions = modPerms.length > 0
+                                ? modPerms.map((p: any) => p.action)
+                                : ACTIONS.slice(0, mod === 'Configurações' ? 2 : 3);
+                            const modRoles = modPerms.length > 0
+                                ? [...new Set(modPerms.map((p: any) => p.roleName || 'Admin'))]
+                                : ['Admin'];
+
+                            return (
+                                <Table.Tr key={mod}>
+                                    <Table.Td>
+                                        <Group gap="xs">
+                                            <IconLock size={14} />
+                                            <Text fw={500}>{mod}</Text>
+                                        </Group>
+                                    </Table.Td>
+                                    <Table.Td>
+                                        <Group gap={4}>
+                                            {modActions.map((p: string, i: number) => (
+                                                <Badge key={i} variant="light" size="xs">{p}</Badge>
+                                            ))}
+                                        </Group>
+                                    </Table.Td>
+                                    <Table.Td>
+                                        <Group gap={4}>
+                                            {(modRoles as string[]).map((r: string, i: number) => (
+                                                <Badge key={i} variant="outline" size="xs">{r}</Badge>
+                                            ))}
+                                        </Group>
+                                    </Table.Td>
+                                    <Table.Td>
+                                        <Switch defaultChecked={(modRoles as string[]).length <= 2} size="sm" />
+                                    </Table.Td>
+                                </Table.Tr>
+                            );
+                        })}
                     </Table.Tbody>
                 </Table>
             </Card>
         </Stack>
     );
 }
-

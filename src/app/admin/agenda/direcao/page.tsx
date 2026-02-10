@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Container, Title, Text, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Table, Loader, Alert, Select, Paper,
@@ -9,6 +9,7 @@ import {
     IconAlertCircle, IconCalendarEvent, IconTarget, IconClock,
     IconChecklist, IconAlertTriangle,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface Meeting {
     id: string;
@@ -48,38 +49,6 @@ export default function AgendaDirecaoPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [period, setPeriod] = useState('week');
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const now = Math.floor(Date.now() / 1000);
-            const weekMs = 7 * 24 * 3600;
-            const periodMap: Record<string, number> = { week: weekMs, month: weekMs * 4, quarter: weekMs * 13 };
-            const endDate = now + (periodMap[period] || weekMs);
-
-            const [meetingsRes, tasksRes] = await Promise.all([
-                fetch(`/api/meetings?startDate=${now}&endDate=${endDate}&includeTeam=true`),
-                fetch('/api/action-items?view=all&limit=50'),
-            ]);
-
-            if (meetingsRes.ok) {
-                const mData = await meetingsRes.json();
-                setMeetings(mData.meetings || []);
-            }
-            if (tasksRes.ok) {
-                const tData = await tasksRes.json();
-                setTasks(tData.items || []);
-            }
-        } catch (err) {
-            setError('Falha ao carregar agenda da direção');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    }, [period]);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
 
     const fmtTime = (ts: number) => new Date(ts * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const fmtDate = (ts: number) => new Date(ts * 1000).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });

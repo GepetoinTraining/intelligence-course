@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Container, Title, Text, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Table, Loader, Alert, Select, TextInput,
@@ -10,6 +10,7 @@ import {
     IconAlertCircle, IconShieldCheck, IconBell, IconEye,
     IconSearch, IconClock, IconUser, IconFilter,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface NotificationEntry {
     id: string;
@@ -33,31 +34,11 @@ const CATEGORY_COLORS: Record<string, string> = {
 const PRIORITY_COLORS: Record<string, string> = { low: 'gray', normal: 'blue', high: 'orange', urgent: 'red' };
 
 export default function AuditoriaPage() {
-    const [notifications, setNotifications] = useState<NotificationEntry[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { data: notifData, isLoading: loading } = useApi<any>('/api/notifications?limit=100');
+    const notifications: NotificationEntry[] = notifData?.data || [];
+    const error: string | null = null;
     const [search, setSearch] = useState('');
     const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const params = new URLSearchParams({ limit: '100' });
-            if (categoryFilter) params.set('category', categoryFilter);
-            const res = await fetch(`/api/notifications?${params}`);
-            if (!res.ok) throw new Error('Falha ao buscar auditoria');
-            const data = await res.json();
-            setNotifications(data.data || []);
-        } catch (err) {
-            setError('Falha ao carregar trilha de auditoria');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    }, [categoryFilter]);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
 
     const searchLower = search.toLowerCase();
     const filtered = useMemo(() => {

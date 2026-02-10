@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Container, Title, Text, Paper, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Table, Select, Loader, Alert, Progress,
@@ -10,6 +10,7 @@ import {
     IconBriefcase, IconCash, IconCalendar, IconClock,
 } from '@tabler/icons-react';
 import { ExportButton } from '@/components/shared';
+import { useApi } from '@/hooks/useApi';
 
 interface PayrollRecord {
     id: string;
@@ -43,38 +44,14 @@ interface ContractRecord {
 }
 
 export default function RelatorioRHPage() {
-    const [payroll, setPayroll] = useState<PayrollRecord[]>([]);
-    const [contracts, setContracts] = useState<ContractRecord[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { data: payrollData, isLoading: loadingPayroll, error: errorPayroll } = useApi<PayrollRecord[]>('/api/staff-payroll?limit=200');
+    const { data: contractsData, isLoading: loadingContracts, error: errorContracts } = useApi<ContractRecord[]>('/api/staff-contracts?limit=200');
+
+    const payroll = payrollData || [];
+    const contracts = contractsData || [];
+    const loading = loadingPayroll || loadingContracts;
+    const error = errorPayroll || errorContracts;
     const [period, setPeriod] = useState('current');
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const [payrollRes, contractsRes] = await Promise.all([
-                fetch('/api/staff-payroll?limit=200'),
-                fetch('/api/staff-contracts?limit=200'),
-            ]);
-
-            if (payrollRes.ok) {
-                const pData = await payrollRes.json();
-                setPayroll(pData.data || []);
-            }
-            if (contractsRes.ok) {
-                const cData = await contractsRes.json();
-                setContracts(cData.data || []);
-            }
-        } catch (err) {
-            setError('Falha ao carregar dados de RH');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
 
     const fmt = (cents: number) => `R$ ${(cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 

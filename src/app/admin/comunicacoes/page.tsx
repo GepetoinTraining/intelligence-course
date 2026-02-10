@@ -17,8 +17,12 @@ import {
     IconSend,
 } from '@tabler/icons-react';
 import Link from 'next/link';
+import { useApi } from '@/hooks/useApi';
 
 export default function ComunicacoesPage() {
+    const { data: convsData, isLoading } = useApi<any>('/api/communicator/conversations');
+    const unread = (convsData?.data || []).filter((c: any) => c.status === 'unread').length;
+
     return (
         <div>
             <Group justify="space-between" mb="xl">
@@ -39,7 +43,7 @@ export default function ComunicacoesPage() {
                             <Text size="sm" c="dimmed">Caixa de entrada e envio de mensagens</Text>
                         </div>
                     </Group>
-                    <Badge mt="md" color="blue">3 não lidas</Badge>
+                    <Badge mt="md" color="blue">{isLoading ? '...' : `${unread || 0} não lidas`}</Badge>
                 </Card>
 
                 <Card withBorder p="lg" component={Link} href="/admin/comunicacoes/notificacoes" style={{ textDecoration: 'none' }}>

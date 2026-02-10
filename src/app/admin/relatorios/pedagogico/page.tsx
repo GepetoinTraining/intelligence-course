@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Container, Title, Text, Paper, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Table, Select, Loader, Alert, Progress, RingProgress,
@@ -10,6 +10,7 @@ import {
     IconUserCheck, IconUserX, IconClock, IconChartBar,
 } from '@tabler/icons-react';
 import { ExportButton } from '@/components/shared';
+import { useApi } from '@/hooks/useApi';
 
 interface ClassData {
     id: string;
@@ -28,38 +29,14 @@ interface EnrollmentData {
 }
 
 export default function RelatorioPedagogicoPage() {
-    const [classes, setClasses] = useState<ClassData[]>([]);
-    const [enrollments, setEnrollments] = useState<EnrollmentData[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { data: classesData, isLoading: loadingClasses, error: errorClasses } = useApi<ClassData[]>('/api/classes?limit=200');
+    const { data: enrollmentsData, isLoading: loadingEnrollments, error: errorEnrollments } = useApi<EnrollmentData[]>('/api/enrollments?limit=500');
+
+    const classes = classesData || [];
+    const enrollments = enrollmentsData || [];
+    const loading = loadingClasses || loadingEnrollments;
+    const error = errorClasses || errorEnrollments;
     const [period, setPeriod] = useState('current');
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const [classesRes, enrollmentsRes] = await Promise.all([
-                fetch('/api/classes?limit=200'),
-                fetch('/api/enrollments?limit=500'),
-            ]);
-
-            if (classesRes.ok) {
-                const cData = await classesRes.json();
-                setClasses(cData.data || []);
-            }
-            if (enrollmentsRes.ok) {
-                const eData = await enrollmentsRes.json();
-                setEnrollments(eData.data || []);
-            }
-        } catch (err) {
-            setError('Falha ao carregar dados pedagógicos');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
 
     const stats = useMemo(() => {
         const activeClasses = classes.filter(c => c.status === 'active' || c.status === 'in_progress');

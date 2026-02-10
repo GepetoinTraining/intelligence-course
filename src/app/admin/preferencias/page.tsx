@@ -11,6 +11,7 @@ import {
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { useUserContext } from '@/hooks/useUser';
+import { useApi } from '@/hooks/useApi';
 
 export default function PreferenciasPage() {
     const { user } = useUserContext();

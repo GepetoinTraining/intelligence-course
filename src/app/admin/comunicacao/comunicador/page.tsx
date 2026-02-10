@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import {
     Container, Title, Text, Card, Group, Stack, Badge, Button,
     TextInput, Paper, ThemeIcon, SimpleGrid, Loader, Center,
@@ -11,6 +11,7 @@ import {
     IconInbox, IconMail, IconBrandWhatsapp, IconPhone,
     IconRefresh, IconPlus, IconArrowLeft,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 // ============================================================================
 // TYPES
@@ -40,42 +41,18 @@ interface Conversation {
 // ============================================================================
 
 export default function ComunicadorPage() {
-    const [contacts, setContacts] = useState<Contact[]>([]);
-    const [conversations, setConversations] = useState<Conversation[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { data: contactsData, isLoading: loadingContacts, refetch } = useApi<Contact[]>('/api/communicator/contacts');
+    const { data: convsData, isLoading: loadingConvs } = useApi<Conversation[]>('/api/communicator/conversations');
+
+    const contacts = contactsData || [];
+    const conversations = convsData || [];
+    const loading = loadingContacts || loadingConvs;
     const [search, setSearch] = useState('');
     const [activeTab, setActiveTab] = useState<string | null>('conversations');
     const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
     const [messageText, setMessageText] = useState('');
 
-    const fetchData = useCallback(async () => {
-        try {
-            setLoading(true);
-            const [contactsRes, convsRes] = await Promise.all([
-                fetch('/api/communicator/contacts'),
-                fetch('/api/communicator/conversations'),
-            ]);
-
-            if (contactsRes.ok) {
-                const data = await contactsRes.json();
-                setContacts(data.data || []);
-            }
-            if (convsRes.ok) {
-                const data = await convsRes.json();
-                setConversations(data.data || []);
-            }
-        } catch (err) {
-            console.error('Error fetching communicator data:', err);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
-
-    const filteredContacts = contacts.filter(c =>
+    const filteredContacts = contacts.filter((c: Contact) =>
         !search || c.name.toLowerCase().includes(search.toLowerCase()) ||
         (c.email || '').toLowerCase().includes(search.toLowerCase())
     );
@@ -128,7 +105,7 @@ export default function ComunicadorPage() {
                         </div>
                         <Group>
                             <Tooltip label="Atualizar">
-                                <ActionIcon variant="subtle" onClick={fetchData} size="lg">
+                                <ActionIcon variant="subtle" onClick={refetch} size="lg">
                                     <IconRefresh size={18} />
                                 </ActionIcon>
                             </Tooltip>

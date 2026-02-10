@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useApi } from '@/hooks/useApi';
 import {
     Card,
     Title,
@@ -39,13 +40,7 @@ interface Message {
     createdAt: string;
 }
 
-// Mock data
-const mockMessages: Message[] = [
-    { id: '1', from: 'Maria Silva', to: 'Secretaria', subject: 'Dúvida sobre matrícula', preview: 'Gostaria de saber sobre o processo de matrícula...', status: 'unread', type: 'inbox', createdAt: '2026-02-05T10:30:00' },
-    { id: '2', from: 'Pedro Santos', to: 'Secretaria', subject: 'Reposição de aula', preview: 'Preciso remarcar a aula de quinta...', status: 'read', type: 'inbox', createdAt: '2026-02-05T09:15:00' },
-    { id: '3', from: 'Escola', to: 'João Costa', subject: 'Boleto disponível', preview: 'Seu boleto de fevereiro está disponível...', status: 'read', type: 'sent', createdAt: '2026-02-04T14:00:00' },
-    { id: '4', from: 'Ana Lima', to: 'Coordenação', subject: 'Feedback da turma', preview: 'Gostaria de compartilhar algumas observações...', status: 'replied', type: 'inbox', createdAt: '2026-02-04T11:00:00' },
-];
+
 
 const statusColors: Record<string, string> = {
     unread: 'blue',
@@ -63,7 +58,8 @@ function formatDate(dateStr: string) {
 }
 
 export default function MensagensPage() {
-    const [messages] = useState<Message[]>(mockMessages);
+    const { data: messagesData, isLoading } = useApi<any>('/api/communicator/conversations');
+    const messages: Message[] = messagesData?.data || [];
     const [activeTab, setActiveTab] = useState<string | null>('inbox');
 
     const filtered = activeTab === 'inbox'

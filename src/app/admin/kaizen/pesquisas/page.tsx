@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Container, Title, Text, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Table, Loader, Alert, Select, Progress,
@@ -10,6 +10,7 @@ import {
     IconAlertCircle, IconStars, IconChartBar, IconThumbUp,
     IconThumbDown, IconBulb, IconTrendingUp, IconMoodHappy,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface Suggestion {
     id: string;
@@ -48,32 +49,11 @@ const PROBLEM_LABELS: Record<string, string> = {
 };
 
 export default function PesquisasPage() {
-    const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { data: suggestionsData, isLoading: loading } = useApi<Suggestion[]>('/api/kaizen/suggestions?limit=50');
+    const suggestions = suggestionsData || [];
     const [error, setError] = useState<string | null>(null);
     const [statusFilter, setStatusFilter] = useState<string | null>(null);
     const [total, setTotal] = useState(0);
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const params = new URLSearchParams({ limit: '50' });
-            if (statusFilter) params.set('status', statusFilter);
-            const res = await fetch(`/api/kaizen/suggestions?${params}`);
-            if (!res.ok) throw new Error('Falha ao buscar pesquisas');
-            const data = await res.json();
-            setSuggestions(data.data || []);
-            setTotal(data.meta?.total || 0);
-        } catch (err) {
-            setError('Falha ao carregar pesquisas');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    }, [statusFilter]);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
 
     const stats = useMemo(() => {
         const implemented = suggestions.filter(s => s.status === 'implemented').length;

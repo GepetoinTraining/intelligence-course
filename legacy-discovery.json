@@ -1,0 +1,586 @@
+{
+  "summary": {
+    "totalOrphaned": 176,
+    "tablesWithRefs": 21,
+    "tablesWithNoRefs": 155,
+    "filesWithRefs": 14
+  },
+  "tablesWithCode": [
+    {
+      "table": "genesisNodes",
+      "refCount": 39,
+      "files": [
+        "src/lib/genesis/executor.ts",
+        "src/lib/genesis/subconscious.ts"
+      ],
+      "locations": {
+        "api": 0,
+        "page": 0,
+        "component": 0,
+        "lib": 39,
+        "other": 0
+      }
+    },
+    {
+      "table": "badges",
+      "refCount": 20,
+      "files": [
+        "src/app/(dashboard)/dashboard/page.tsx",
+        "src/app/(dashboard)/graveyard/page.tsx",
+        "src/app/(dashboard)/parent/page.tsx",
+        "src/app/(dashboard)/student/techniques/page.tsx",
+        "src/app/form/[slug]/page.tsx",
+        "src/components/shared/KanbanBoard.tsx"
+      ],
+      "locations": {
+        "api": 0,
+        "page": 17,
+        "component": 3,
+        "lib": 0,
+        "other": 0
+      }
+    },
+    {
+      "table": "latticeEvidence",
+      "refCount": 18,
+      "files": [
+        "src/lib/lattice/evidence.ts"
+      ],
+      "locations": {
+        "api": 0,
+        "page": 0,
+        "component": 0,
+        "lib": 18,
+        "other": 0
+      }
+    },
+    {
+      "table": "genesisLedger",
+      "refCount": 16,
+      "files": [
+        "src/lib/genesis/executor.ts",
+        "src/lib/genesis/subconscious.ts"
+      ],
+      "locations": {
+        "api": 0,
+        "page": 0,
+        "component": 0,
+        "lib": 16,
+        "other": 0
+      }
+    },
+    {
+      "table": "leadRoles",
+      "refCount": 11,
+      "files": [
+        "src/lib/identity/person-helpers.ts"
+      ],
+      "locations": {
+        "api": 0,
+        "page": 0,
+        "component": 0,
+        "lib": 11,
+        "other": 0
+      }
+    },
+    {
+      "table": "personLattice",
+      "refCount": 10,
+      "files": [
+        "src/lib/ai/lattice-interview.ts",
+        "src/lib/identity/person-helpers.ts"
+      ],
+      "locations": {
+        "api": 0,
+        "page": 0,
+        "component": 0,
+        "lib": 10,
+        "other": 0
+      }
+    },
+    {
+      "table": "genesisEdges",
+      "refCount": 8,
+      "files": [
+        "src/lib/genesis/executor.ts",
+        "src/lib/genesis/subconscious.ts"
+      ],
+      "locations": {
+        "api": 0,
+        "page": 0,
+        "component": 0,
+        "lib": 8,
+        "other": 0
+      }
+    },
+    {
+      "table": "studentRoles",
+      "refCount": 6,
+      "files": [
+        "src/lib/identity/person-helpers.ts"
+      ],
+      "locations": {
+        "api": 0,
+        "page": 0,
+        "component": 0,
+        "lib": 6,
+        "other": 0
+      }
+    },
+    {
+      "table": "parentRoles",
+      "refCount": 6,
+      "files": [
+        "src/lib/identity/person-helpers.ts"
+      ],
+      "locations": {
+        "api": 0,
+        "page": 0,
+        "component": 0,
+        "lib": 6,
+        "other": 0
+      }
+    },
+    {
+      "table": "teacherRoles",
+      "refCount": 5,
+      "files": [
+        "src/lib/identity/person-helpers.ts"
+      ],
+      "locations": {
+        "api": 0,
+        "page": 0,
+        "component": 0,
+        "lib": 5,
+        "other": 0
+      }
+    },
+    {
+      "table": "staffRoles",
+      "refCount": 5,
+      "files": [
+        "src/lib/identity/person-helpers.ts"
+      ],
+      "locations": {
+        "api": 0,
+        "page": 0,
+        "component": 0,
+        "lib": 5,
+        "other": 0
+      }
+    },
+    {
+      "table": "genesisEmbeddings",
+      "refCount": 4,
+      "files": [
+        "src/lib/genesis/executor.ts"
+      ],
+      "locations": {
+        "api": 0,
+        "page": 0,
+        "component": 0,
+        "lib": 4,
+        "other": 0
+      }
+    },
+    {
+      "table": "ownerRoles",
+      "refCount": 4,
+      "files": [
+        "src/lib/identity/person-helpers.ts"
+      ],
+      "locations": {
+        "api": 0,
+        "page": 0,
+        "component": 0,
+        "lib": 4,
+        "other": 0
+      }
+    },
+    {
+      "table": "genesisCubePositions",
+      "refCount": 3,
+      "files": [
+        "src/lib/genesis/executor.ts"
+      ],
+      "locations": {
+        "api": 0,
+        "page": 0,
+        "component": 0,
+        "lib": 3,
+        "other": 0
+      }
+    },
+    {
+      "table": "personBankAccounts",
+      "refCount": 3,
+      "files": [
+        "src/lib/identity/person-helpers.ts"
+      ],
+      "locations": {
+        "api": 0,
+        "page": 0,
+        "component": 0,
+        "lib": 3,
+        "other": 0
+      }
+    },
+    {
+      "table": "bankAccounts",
+      "refCount": 3,
+      "files": [
+        "src/lib/identity/person-helpers.ts"
+      ],
+      "locations": {
+        "api": 0,
+        "page": 0,
+        "component": 0,
+        "lib": 3,
+        "other": 0
+      }
+    },
+    {
+      "table": "organizationBranding",
+      "refCount": 3,
+      "files": [
+        "src/lib/org.ts"
+      ],
+      "locations": {
+        "api": 0,
+        "page": 0,
+        "component": 0,
+        "lib": 3,
+        "other": 0
+      }
+    },
+    {
+      "table": "stakeholderLifecycles",
+      "refCount": 3,
+      "files": [
+        "src/lib/services/process-discovery.ts"
+      ],
+      "locations": {
+        "api": 0,
+        "page": 0,
+        "component": 0,
+        "lib": 3,
+        "other": 0
+      }
+    },
+    {
+      "table": "latticeSkillDefinitions",
+      "refCount": 1,
+      "files": [
+        "src/lib/lattice/evidence.ts"
+      ],
+      "locations": {
+        "api": 0,
+        "page": 0,
+        "component": 0,
+        "lib": 1,
+        "other": 0
+      }
+    },
+    {
+      "table": "latticeSkillAssessments",
+      "refCount": 1,
+      "files": [
+        "src/lib/lattice/projection.ts"
+      ],
+      "locations": {
+        "api": 0,
+        "page": 0,
+        "component": 0,
+        "lib": 1,
+        "other": 0
+      }
+    },
+    {
+      "table": "procedureAnalytics",
+      "refCount": 1,
+      "files": [
+        "src/lib/services/process-discovery.ts"
+      ],
+      "locations": {
+        "api": 0,
+        "page": 0,
+        "component": 0,
+        "lib": 1,
+        "other": 0
+      }
+    }
+  ],
+  "trulyOrphaned": [
+    "organizationDomains",
+    "landingPages",
+    "staffSalaryHistory",
+    "staffSentimentHistory",
+    "staffInsightCommunications",
+    "staffTrainingRecords",
+    "timeClockEntries",
+    "timeSheets",
+    "orgChartPositions",
+    "positionAssignments",
+    "talentPoolCandidates",
+    "laborProvisionSettings",
+    "laborProvisionBalances",
+    "terminationPlans",
+    "workScheduleTemplates",
+    "employeeBenefits",
+    "scheduleExceptions",
+    "aiProviders",
+    "promptDeltas",
+    "challengeAttempts",
+    "userBadges",
+    "teacherProfiles",
+    "coursePricing",
+    "schoolServices",
+    "paymentGateways",
+    "splitRecipients",
+    "splitRules",
+    "splitRuleItems",
+    "receivablePayments",
+    "moneyFlows",
+    "commissionPayouts",
+    "financialGoals",
+    "organizationFinancialSettings",
+    "organizationLocations",
+    "campaignLeads",
+    "marketingIntegrations",
+    "contentTypes",
+    "contentAssets",
+    "marketingEvents",
+    "eventRegistrations",
+    "marketingPartners",
+    "contentCalendar",
+    "abTestAssignments",
+    "landingPageDailyMetrics",
+    "campaignDailyMetrics",
+    "marketingTargets",
+    "salesTeams",
+    "salesTeamMembers",
+    "salesCalendar",
+    "salesActions",
+    "brandActivations",
+    "coupons",
+    "couponRedemptions",
+    "sweepstakesEntries",
+    "salesPipeline",
+    "pipelineStageHistory",
+    "salesTouches",
+    "salesTeamDailyMetrics",
+    "cashiers",
+    "cashierSessions",
+    "cashTransactions",
+    "receptionVisits",
+    "intakeInterviews",
+    "checkoutRecords",
+    "contractClauses",
+    "paymentReminders",
+    "lateFeeNegotiations",
+    "makeupClasses",
+    "staffAuthorityLevels",
+    "teachingMethodologies",
+    "classStructures",
+    "homeworkPolicies",
+    "gradingScales",
+    "assessmentTypes",
+    "scoringCriteria",
+    "rubrics",
+    "rubricCriteria",
+    "rubricPerformanceLevels",
+    "proficiencyLevels",
+    "schoolPrograms",
+    "programUnits",
+    "programAssessmentWeights",
+    "programPassRequirements",
+    "classGroups",
+    "teacherAssignments",
+    "programClassSchedules",
+    "programClassSessions",
+    "studentAssessments",
+    "studentGrades",
+    "gradebookEntries",
+    "teacherWorkload",
+    "homeworkAssignments",
+    "homeworkSubmissions",
+    "studentProgressions",
+    "pedagogicalNotes",
+    "pedagogicalNoteReplies",
+    "pedagogicalNoteAcknowledgements",
+    "progressReports",
+    "parentCommunications",
+    "teacherAvailability",
+    "lessonPlans",
+    "curriculumMaterials",
+    "classroomIncidents",
+    "teacherEvaluations",
+    "academicActivities",
+    "activityRegistrations",
+    "studentCertificates",
+    "substituteTeacherLogs",
+    "studentLearningProfiles",
+    "varkAssessmentResponses",
+    "generatedStudentMaterials",
+    "materialSubmissions",
+    "materialTemplates",
+    "memoryContradictions",
+    "studentWorldOverlay",
+    "memoryIntegrityHashes",
+    "alertAcknowledgments",
+    "wellbeingSnapshots",
+    "privacyConsents",
+    "dataExportRequests",
+    "dataDeletionRequests",
+    "dataAccessAuditLog",
+    "fiscalTaxWithholdings",
+    "fiscalTransactions",
+    "fiscalTransactionDocuments",
+    "accountantApiKeys",
+    "accountantApiLogs",
+    "accountantDeliveryConfig",
+    "accountantDeliveryHistory",
+    "latticeShares",
+    "actionItemComments",
+    "userCalendarSettings",
+    "meetingTemplates",
+    "pipelineEvents",
+    "messageReadReceipts",
+    "communicationTemplates",
+    "typingIndicators",
+    "wikiArticleStubs",
+    "wikiEvidencePoints",
+    "knowledgeGenBatches",
+    "knowledgeGenRuns",
+    "wikiEditSessions",
+    "wikiQualityMetrics",
+    "procedureBranches",
+    "branchChanges",
+    "branchStakeholders",
+    "trialExecutions",
+    "trialMetricsComparison",
+    "trialVibeSummary",
+    "procedureVersions",
+    "journeyInstances",
+    "journeyEvents",
+    "dropoffInferences",
+    "cohortAnalytics",
+    "cacLtvSnapshots"
+  ],
+  "legacyHotspots": [
+    {
+      "file": "src/lib/identity/person-helpers.ts",
+      "tableCount": 9,
+      "tables": [
+        "studentRoles",
+        "parentRoles",
+        "teacherRoles",
+        "staffRoles",
+        "leadRoles",
+        "ownerRoles",
+        "personLattice",
+        "personBankAccounts",
+        "bankAccounts"
+      ]
+    },
+    {
+      "file": "src/lib/genesis/executor.ts",
+      "tableCount": 5,
+      "tables": [
+        "genesisNodes",
+        "genesisEdges",
+        "genesisCubePositions",
+        "genesisLedger",
+        "genesisEmbeddings"
+      ]
+    },
+    {
+      "file": "src/lib/genesis/subconscious.ts",
+      "tableCount": 3,
+      "tables": [
+        "genesisNodes",
+        "genesisEdges",
+        "genesisLedger"
+      ]
+    },
+    {
+      "file": "src/lib/lattice/evidence.ts",
+      "tableCount": 2,
+      "tables": [
+        "latticeSkillDefinitions",
+        "latticeEvidence"
+      ]
+    },
+    {
+      "file": "src/lib/services/process-discovery.ts",
+      "tableCount": 2,
+      "tables": [
+        "procedureAnalytics",
+        "stakeholderLifecycles"
+      ]
+    },
+    {
+      "file": "src/app/(dashboard)/dashboard/page.tsx",
+      "tableCount": 1,
+      "tables": [
+        "badges"
+      ]
+    },
+    {
+      "file": "src/app/(dashboard)/graveyard/page.tsx",
+      "tableCount": 1,
+      "tables": [
+        "badges"
+      ]
+    },
+    {
+      "file": "src/app/(dashboard)/parent/page.tsx",
+      "tableCount": 1,
+      "tables": [
+        "badges"
+      ]
+    },
+    {
+      "file": "src/app/(dashboard)/student/techniques/page.tsx",
+      "tableCount": 1,
+      "tables": [
+        "badges"
+      ]
+    },
+    {
+      "file": "src/app/form/[slug]/page.tsx",
+      "tableCount": 1,
+      "tables": [
+        "badges"
+      ]
+    },
+    {
+      "file": "src/components/shared/KanbanBoard.tsx",
+      "tableCount": 1,
+      "tables": [
+        "badges"
+      ]
+    },
+    {
+      "file": "src/lib/ai/lattice-interview.ts",
+      "tableCount": 1,
+      "tables": [
+        "personLattice"
+      ]
+    },
+    {
+      "file": "src/lib/lattice/projection.ts",
+      "tableCount": 1,
+      "tables": [
+        "latticeSkillAssessments"
+      ]
+    },
+    {
+      "file": "src/lib/org.ts",
+      "tableCount": 1,
+      "tables": [
+        "organizationBranding"
+      ]
+    }
+  ]
+}

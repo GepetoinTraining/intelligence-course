@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Container, Title, Text, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Loader, Alert, Paper, Select,
@@ -9,6 +9,7 @@ import {
     IconAlertCircle, IconHierarchy, IconUsers, IconUser,
     IconShieldCheck, IconChevronRight,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface Role {
     id: string;
@@ -38,28 +39,9 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export default function OrganogramaPage() {
-    const [roles, setRoles] = useState<Role[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { data: apiData, isLoading: loading, error } = useApi<{ roles: Role[] }>('/api/roles?includeInactive=true');
+    const roles = apiData?.roles || (Array.isArray(apiData) ? apiData : []);
     const [departmentFilter, setDepartmentFilter] = useState<string | null>(null);
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const res = await fetch('/api/roles?includeInactive=true');
-            if (!res.ok) throw new Error('Falha ao buscar cargos');
-            const data = await res.json();
-            setRoles(data.roles || []);
-        } catch (err) {
-            setError('Falha ao carregar organograma');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
 
     const departments = useMemo(() => {
         const depts = new Set<string>();
@@ -255,6 +237,20 @@ export default function OrganogramaPage() {
                         ))}
                     </Stack>
                 )}
+
+                {/* Headcount Alert */}
+                <Alert
+                    icon={<IconHierarchy size={16} />}
+                    color="indigo"
+                    variant="light"
+                    title="Estrutura Organizacional — Compliance"
+                >
+                    <Text size="xs">
+                        <strong>eSocial S-2200/S-2300:</strong> Toda movimentação de cargo/função deve ser refletida nos eventos eSocial.
+                        <strong> CLT Art. 468:</strong> Alteração de função só é lícita com consentimento mútuo e sem prejuízo ao empregado.
+                        <strong> Headcount:</strong> Mantenha o organograma atualizado para planejamento de headcount e orçamento de folha.
+                    </Text>
+                </Alert>
             </Stack>
         </Container>
     );

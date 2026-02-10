@@ -55,6 +55,7 @@ import {
     IconRefresh,
     IconUserOff,
     IconArrowsExchange,
+    IconTools,
     // Pedagógico
     IconBooks,
     IconUsersGroup,
@@ -228,6 +229,7 @@ const BUNDLES: Bundle[] = [
             { id: 'renewals', label: 'Renovações', href: '/admin/operacional/renovacoes', icon: <IconRefresh size={18} /> },
             { id: 'cancellations', label: 'Cancelamentos', href: '/admin/operacional/cancelamentos', icon: <IconUserOff size={18} /> },
             { id: 'transfers', label: 'Transferências', href: '/admin/operacional/transferencias', icon: <IconArrowsExchange size={18} /> },
+            { id: 'equipment', label: 'Equipamentos', href: '/admin/operacional/equipamentos', icon: <IconTools size={18} /> },
         ],
     },
     // 4. Pedagógico

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Container, Title, Text, Paper, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Table, Loader, Alert, Button, ActionIcon,
@@ -11,6 +11,7 @@ import {
     IconKey, IconAlertCircle, IconCopy, IconCheck,
     IconTrash, IconPlus, IconShieldLock,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface ApiKeyRecord {
     id: string;
@@ -29,31 +30,13 @@ const PROVIDER_INFO: Record<string, { label: string; color: string; prefix: stri
 };
 
 export default function ApiKeysPage() {
-    const [keys, setKeys] = useState<ApiKeyRecord[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { data: keysData, isLoading: loading, refetch } = useApi<ApiKeyRecord[]>('/api/api-keys');
+    const keys = keysData || [];
     const [error, setError] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [opened, { open, close }] = useDisclosure(false);
     const [newProvider, setNewProvider] = useState<string | null>(null);
     const [newKey, setNewKey] = useState('');
-
-    const fetchKeys = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const res = await fetch('/api/api-keys');
-            if (!res.ok) throw new Error('Falha ao buscar chaves');
-            const data = await res.json();
-            setKeys(data.keys || []);
-        } catch (err) {
-            setError('Falha ao carregar chaves de API');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => { fetchKeys(); }, [fetchKeys]);
 
     const handleAdd = async () => {
         if (!newProvider || !newKey.trim()) return;
@@ -72,7 +55,7 @@ export default function ApiKeysPage() {
             setNewProvider(null);
             setNewKey('');
             close();
-            fetchKeys();
+            refetch();
         } catch (err) {
             setError('Erro ao adicionar chave de API');
             console.error(err);
@@ -84,7 +67,7 @@ export default function ApiKeysPage() {
     const handleDelete = async (provider: string) => {
         try {
             const res = await fetch(`/api/api-keys?provider=${provider}`, { method: 'DELETE' });
-            if (res.ok) fetchKeys();
+            if (res.ok) refetch();
         } catch (err) {
             console.error(err);
         }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import {
     Container, Title, Text, Card, Group, Stack, Badge, Button,
     SimpleGrid, ThemeIcon, Table, Paper, Select, Loader, Center,
@@ -13,6 +13,7 @@ import {
     IconEye, IconBrandWhatsapp,
 } from '@tabler/icons-react';
 import { ExportButton } from '@/components/shared';
+import { useApi } from '@/hooks/useApi';
 
 // ============================================================================
 // TYPES
@@ -61,32 +62,11 @@ const sourceLabels: Record<string, string> = {
 // ============================================================================
 
 export default function RelatorioComercialPage() {
-    const [leads, setLeads] = useState<Lead[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { data: leadsData, isLoading: loading, refetch } = useApi<Lead[]>('/api/leads?limit=100');
+    const leads = leadsData || [];
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<string | null>(null);
     const [sourceFilter, setSourceFilter] = useState<string | null>(null);
-
-    const fetchLeads = useCallback(async () => {
-        try {
-            setLoading(true);
-            const params = new URLSearchParams({ limit: '100' });
-            if (statusFilter) params.set('status', statusFilter);
-            if (sourceFilter) params.set('source', sourceFilter);
-
-            const res = await fetch(`/api/leads?${params.toString()}`);
-            const json = await res.json();
-            if (json.data) setLeads(json.data);
-        } catch (err) {
-            console.error('Error fetching leads:', err);
-        } finally {
-            setLoading(false);
-        }
-    }, [statusFilter, sourceFilter]);
-
-    useEffect(() => {
-        fetchLeads();
-    }, [fetchLeads]);
 
     const filtered = leads.filter(l =>
         !search || l.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -161,7 +141,7 @@ export default function RelatorioComercialPage() {
                                 label="Exportar"
                             />
                             <Tooltip label="Atualizar">
-                                <ActionIcon variant="subtle" onClick={fetchLeads} size="lg">
+                                <ActionIcon variant="subtle" onClick={refetch} size="lg">
                                     <IconRefresh size={18} />
                                 </ActionIcon>
                             </Tooltip>

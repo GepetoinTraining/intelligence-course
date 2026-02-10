@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Container, Title, Text, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Table, Loader, Alert, Select, Paper,
@@ -9,6 +9,7 @@ import {
     IconAlertCircle, IconUsers, IconCalendar, IconClock,
     IconUser, IconTarget,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface Meeting {
     id: string;
@@ -28,38 +29,10 @@ const TYPE_COLORS: Record<string, string> = {
 };
 
 export default function LideresPage() {
-    const [meetings, setMeetings] = useState<Meeting[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { data: meetingsData, isLoading: loading } = useApi<Meeting[]>('/api/meetings?limit=100');
+    const meetings = meetingsData || [];
     const [error, setError] = useState<string | null>(null);
     const [period, setPeriod] = useState<string>('current');
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const now = new Date();
-            let from: Date, to: Date;
-            if (period === 'last') { from = new Date(now.getTime() - 7 * 86400000); to = now; }
-            else if (period === 'next') { from = now; to = new Date(now.getTime() + 7 * 86400000); }
-            else { const d = now.getDay(); from = new Date(now.getTime() - d * 86400000); to = new Date(from.getTime() + 7 * 86400000); }
-            const params = new URLSearchParams({
-                from: Math.floor(from.getTime() / 1000).toString(),
-                to: Math.floor(to.getTime() / 1000).toString(),
-                includeTeam: 'true',
-            });
-            const res = await fetch(`/api/meetings?${params}`);
-            if (!res.ok) throw new Error('Falha ao buscar reuniões');
-            const data = await res.json();
-            setMeetings(data.data || []);
-        } catch (err) {
-            setError('Falha ao carregar agenda de líderes');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    }, [period]);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
 
     const stats = useMemo(() => {
         const total = meetings.length;

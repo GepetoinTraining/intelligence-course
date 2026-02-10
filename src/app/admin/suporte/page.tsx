@@ -8,6 +8,7 @@ import {
     Badge,
     SimpleGrid,
     ThemeIcon,
+    Loader,
 } from '@mantine/core';
 import {
     IconTicket,
@@ -16,8 +17,12 @@ import {
     IconMessages,
 } from '@tabler/icons-react';
 import Link from 'next/link';
+import { useApi } from '@/hooks/useApi';
 
 export default function SuportePage() {
+    const { data: ticketsData, isLoading } = useApi<any>('/api/tickets');
+    const openCount = (ticketsData?.data || []).filter((t: any) => t.status === 'open' || t.status === 'in_progress').length;
+
     return (
         <div>
             <Group justify="space-between" mb="xl">
@@ -38,7 +43,7 @@ export default function SuportePage() {
                             <Text size="sm" c="dimmed">Gerenciar solicitações de suporte</Text>
                         </div>
                     </Group>
-                    <Badge mt="md" color="blue">5 abertos</Badge>
+                    <Badge mt="md" color="blue">{isLoading ? <Loader size={10} /> : `${openCount} abertos`}</Badge>
                 </Card>
 
                 <Card withBorder p="lg" component={Link} href="/admin/suporte/chat" style={{ textDecoration: 'none' }}>

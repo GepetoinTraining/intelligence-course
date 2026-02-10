@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import {
     Container, Title, Text, Card, Group, Stack, Badge, Button,
     TextInput, Table, Avatar, Loader, Center, Paper, SimpleGrid,
-    ThemeIcon, Select, Tabs, ActionIcon, Menu, Tooltip,
+    ThemeIcon, Select, Tabs, ActionIcon, Menu, Tooltip, Alert,
 } from '@mantine/core';
 import {
     IconFileText, IconSearch, IconFilter, IconUsers,
@@ -13,6 +13,7 @@ import {
     IconAlertTriangle, IconRefresh,
 } from '@tabler/icons-react';
 import { ExportButton } from '@/components/shared';
+import { useApi } from '@/hooks/useApi';
 
 // ============================================================================
 // TYPES
@@ -69,33 +70,12 @@ const statusConfig: Record<string, { label: string; color: string }> = {
 // ============================================================================
 
 export default function ContratosPage() {
-    const [contracts, setContracts] = useState<StaffContract[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { data: contractsData, isLoading: loading, refetch } = useApi<StaffContract[]>('/api/staff-contracts');
+    const contracts = contractsData || [];
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<string | null>(null);
     const [departmentFilter, setDepartmentFilter] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<string | null>('all');
-
-    const fetchContracts = useCallback(async () => {
-        try {
-            setLoading(true);
-            const params = new URLSearchParams();
-            if (statusFilter) params.set('status', statusFilter);
-            if (departmentFilter) params.set('department', departmentFilter);
-
-            const res = await fetch(`/api/staff-contracts?${params.toString()}`);
-            const json = await res.json();
-            if (json.data) setContracts(json.data);
-        } catch (err) {
-            console.error('Error fetching contracts:', err);
-        } finally {
-            setLoading(false);
-        }
-    }, [statusFilter, departmentFilter]);
-
-    useEffect(() => {
-        fetchContracts();
-    }, [fetchContracts]);
 
     const filtered = contracts.filter(c => {
         const matchesSearch = !search ||
@@ -168,7 +148,7 @@ export default function ContratosPage() {
                                 label="Exportar"
                             />
                             <Tooltip label="Atualizar">
-                                <ActionIcon variant="subtle" onClick={fetchContracts} size="lg">
+                                <ActionIcon variant="subtle" onClick={refetch} size="lg">
                                     <IconRefresh size={18} />
                                 </ActionIcon>
                             </Tooltip>
@@ -373,6 +353,22 @@ export default function ContratosPage() {
                         </Table>
                     </Card>
                 )}
+
+                {/* CLT Compliance Alert */}
+                <Alert
+                    icon={<IconFileText size={16} />}
+                    color="violet"
+                    variant="light"
+                    title="Obrigações Contratuais — CLT"
+                >
+                    <Text size="xs">
+                        <strong>Contrato por prazo determinado (CLT Art. 445):</strong> Máximo 2 anos, incluindo prorrogação.
+                        Exceção: contrato de experiência = máx 90 dias.
+                        <strong> eSocial:</strong> Evento S-2200 (admissão) deve ser enviado até a véspera do início das atividades.
+                        <strong> FGTS (Lei 8.036/90):</strong> Depósito de 8% sobre remuneração para todos os CLT.
+                        <strong> Exame admissional (NR-7):</strong> Obrigatório antes do início das atividades.
+                    </Text>
+                </Alert>
             </Stack>
         </Container>
     );

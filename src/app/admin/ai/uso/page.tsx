@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Container, Title, Text, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Table, Loader, Alert, Paper, Progress,
@@ -9,6 +9,7 @@ import {
     IconAlertCircle, IconChartBar, IconMessage, IconClock,
     IconUsers, IconBrain, IconCoin,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface ChatSession {
     id: string;
@@ -19,27 +20,9 @@ interface ChatSession {
 }
 
 export default function UsoPage() {
-    const [sessions, setSessions] = useState<ChatSession[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const res = await fetch('/api/chat/sessions?limit=100');
-            if (!res.ok) throw new Error('Falha ao buscar sessões');
-            const data = await res.json();
-            setSessions(data.data || []);
-        } catch (err) {
-            setError('Falha ao carregar dados de uso');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
+    const { data: sessionsData, isLoading: loading } = useApi<ChatSession[]>('/api/chat/sessions?limit=100');
+    const sessions = sessionsData || [];
+    const error: string | null = null;
 
     const stats = useMemo(() => {
         const totalSessions = sessions.length;

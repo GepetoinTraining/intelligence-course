@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Container, Title, Text, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Table, Loader, Alert, TextInput, Select,
@@ -11,6 +11,7 @@ import {
     IconAlertTriangle,
 } from '@tabler/icons-react';
 import { ExportButton } from '@/components/shared';
+import { useApi } from '@/hooks/useApi';
 
 interface Conversation {
     id: string;
@@ -38,35 +39,11 @@ const CHANNEL_ICONS: Record<string, { icon: any; color: string; label: string }>
 };
 
 export default function EnviadosPage() {
-    const [conversations, setConversations] = useState<Conversation[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { data: apiData, isLoading: loading, error } = useApi<{ conversations: Conversation[] }>('/api/communicator/conversations?limit=100');
+    const allConversations = apiData?.conversations || (Array.isArray(apiData) ? apiData : []);
+    const conversations = useMemo(() => allConversations.filter(c => c.messageCount > 0), [allConversations]);
     const [search, setSearch] = useState('');
     const [typeFilter, setTypeFilter] = useState<string | null>(null);
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const params = new URLSearchParams({ limit: '100' });
-            if (typeFilter) params.set('type', typeFilter);
-
-            const res = await fetch(`/api/communicator/conversations?${params}`);
-            if (!res.ok) throw new Error('Falha ao buscar mensagens');
-
-            const data = await res.json();
-            // Filter to conversations with messages (sent)
-            const withMessages = (data.conversations || []).filter((c: Conversation) => c.messageCount > 0);
-            setConversations(withMessages);
-        } catch (err) {
-            setError('Falha ao carregar mensagens enviadas');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    }, [typeFilter]);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
 
     const fmtDate = (ts?: number) => ts ? new Date(ts).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
 

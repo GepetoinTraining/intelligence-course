@@ -17,6 +17,7 @@ import {
     IconAlertCircle,
     IconArrowRight,
     IconEye,
+    IconFileText,
     IconKey,
     IconPalette,
     IconSchool,
@@ -132,6 +133,24 @@ export default function ConfiguraesHubPage() {
                         </ThemeIcon>
                         <div style={{ flex: 1 }}>
                             <Text fw={500}>Cargos</Text>
+                        </div>
+                        <IconArrowRight size={16} color="gray" />
+                    </Group>
+                </Card>
+
+                <Card
+                    key="Contratos"
+                    withBorder
+                    p="lg"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => window.location.href = '/admin/configuracoes/contratos'}
+                >
+                    <Group>
+                        <ThemeIcon variant="light" color="violet" size="lg" radius="md">
+                            <IconFileText size={20} />
+                        </ThemeIcon>
+                        <div style={{ flex: 1 }}>
+                            <Text fw={500}>Contratos</Text>
                         </div>
                         <IconArrowRight size={16} color="gray" />
                     </Group>

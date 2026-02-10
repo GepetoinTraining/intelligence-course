@@ -10,6 +10,7 @@ import {
     IconWand, IconBook, IconClipboard, IconSchool,
     IconMail, IconSparkles, IconCopy, IconCheck,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface GeneratorDef {
     id: string;

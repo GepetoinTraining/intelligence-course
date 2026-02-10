@@ -10,6 +10,7 @@ import {
     IconUser, IconMail, IconShield, IconCalendar, IconDeviceFloppy,
 } from '@tabler/icons-react';
 import { useUserContext } from '@/hooks/useUser';
+import { useApi } from '@/hooks/useApi';
 
 export default function PerfilPage() {
     const { user, isLoading } = useUserContext();

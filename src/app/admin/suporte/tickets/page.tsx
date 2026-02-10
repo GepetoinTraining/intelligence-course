@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useApi } from '@/hooks/useApi';
 import {
     Card,
     Title,
@@ -42,13 +43,7 @@ interface Ticket {
     updatedAt: string;
 }
 
-// Mock data
-const mockTickets: Ticket[] = [
-    { id: '1', number: 'TKT-2026-001', requesterName: 'Maria Silva', subject: 'Problema no portal do aluno', category: 'Técnico', priority: 'high', status: 'open', createdAt: '2026-02-05T10:00:00', updatedAt: '2026-02-05T10:00:00' },
-    { id: '2', number: 'TKT-2026-002', requesterName: 'Pedro Santos', subject: 'Dúvida sobre material', category: 'Acadêmico', priority: 'medium', status: 'in_progress', assignedTo: 'Ana', createdAt: '2026-02-04T15:30:00', updatedAt: '2026-02-05T09:00:00' },
-    { id: '3', number: 'TKT-2026-003', requesterName: 'João Costa', subject: 'Boleto não chegou', category: 'Financeiro', priority: 'medium', status: 'waiting', assignedTo: 'Carlos', createdAt: '2026-02-04T11:00:00', updatedAt: '2026-02-04T16:00:00' },
-    { id: '4', number: 'TKT-2026-004', requesterName: 'Fernanda Lima', subject: 'Solicitação de atestado', category: 'Administrativo', priority: 'low', status: 'resolved', assignedTo: 'Maria', createdAt: '2026-02-03T09:00:00', updatedAt: '2026-02-04T10:00:00' },
-];
+
 
 const statusColors: Record<string, string> = {
     open: 'blue',
@@ -90,7 +85,8 @@ function formatDate(dateStr: string) {
 }
 
 export default function TicketsPage() {
-    const [tickets] = useState<Ticket[]>(mockTickets);
+    const { data: ticketsData, isLoading } = useApi<any>('/api/tickets');
+    const tickets: Ticket[] = ticketsData?.data || [];
     const [activeTab, setActiveTab] = useState<string | null>('open');
 
     const filtered = activeTab === 'all'

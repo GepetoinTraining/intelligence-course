@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Container, Title, Text, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Table, Loader, Alert, Select, Paper,
@@ -9,6 +9,7 @@ import {
     IconAlertCircle, IconBuilding, IconDoor, IconUsers,
     IconDeviceDesktop, IconCalendar,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface Room {
     id: string;
@@ -42,36 +43,13 @@ const TYPE_LABELS: Record<string, string> = {
 const DAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
 export default function RecursosPage() {
-    const [rooms, setRooms] = useState<Room[]>([]);
-    const [schedules, setSchedules] = useState<Schedule[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { data: roomsData, isLoading: loadingRooms } = useApi<any>('/api/rooms');
+    const { data: schedulesData, isLoading: loadingSched } = useApi<any>('/api/schedules');
+    const rooms: Room[] = roomsData?.data || [];
+    const schedules: Schedule[] = schedulesData?.data || [];
+    const loading = loadingRooms || loadingSched;
+    const error: string | null = null;
     const [typeFilter, setTypeFilter] = useState<string | null>(null);
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const [roomsRes, schedulesRes] = await Promise.all([
-                fetch('/api/rooms'),
-                fetch('/api/schedules'),
-            ]);
-            if (!roomsRes.ok) throw new Error('Falha ao buscar salas');
-            const roomsData = await roomsRes.json();
-            setRooms(roomsData.data || []);
-            if (schedulesRes.ok) {
-                const schedData = await schedulesRes.json();
-                setSchedules(schedData.data || []);
-            }
-        } catch (err) {
-            setError('Falha ao carregar recursos');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
 
     const filteredRooms = useMemo(() => {
         if (!typeFilter) return rooms;

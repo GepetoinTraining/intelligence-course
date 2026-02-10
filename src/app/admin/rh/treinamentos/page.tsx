@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Container, Title, Text, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Table, Loader, Alert, Select, TextInput,
@@ -10,6 +10,7 @@ import {
     IconAlertCircle, IconSchool, IconUsers, IconCertificate,
     IconSearch, IconClock, IconChartBar,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface ActionItem {
     id: string;
@@ -29,34 +30,10 @@ const STATUS_COLORS: Record<string, string> = { pending: 'yellow', in_progress: 
 const STATUS_LABELS: Record<string, string> = { pending: 'Pendente', in_progress: 'Em Andamento', completed: 'Concluída', cancelled: 'Cancelada' };
 
 export default function TreinamentosPage() {
-    const [items, setItems] = useState<ActionItem[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { data: apiData, isLoading: loading, error } = useApi<{ items: ActionItem[] }>('/api/action-items?view=all&limit=100');
+    const items = apiData?.items || (Array.isArray(apiData) ? apiData : []);
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<string | null>(null);
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            // Use action items with training-related types
-            const params = new URLSearchParams({ view: 'all', limit: '100' });
-            if (statusFilter) params.set('status', statusFilter);
-            const res = await fetch(`/api/action-items?${params}`);
-            if (!res.ok) throw new Error('Falha ao buscar treinamentos');
-            const data = await res.json();
-            // Filter for training-related items (by entity type or type name)
-            const allItems: ActionItem[] = data.items || [];
-            setItems(allItems);
-        } catch (err) {
-            setError('Falha ao carregar treinamentos');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    }, [statusFilter]);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
 
     const searchLower = search.toLowerCase();
     const filtered = useMemo(() => {
@@ -257,6 +234,22 @@ export default function TreinamentosPage() {
                         </Table>
                     )}
                 </Card>
+
+                {/* NR Compliance Alert */}
+                <Alert
+                    icon={<IconSchool size={16} />}
+                    color="teal"
+                    variant="light"
+                    title="Treinamentos Obrigatórios — Normas Regulamentadoras"
+                >
+                    <Text size="xs">
+                        <strong>NR-1 (GRO):</strong> Gerenciamento de riscos ocupacionais — treinamento inicial obrigatório.
+                        <strong> NR-5 (CIPA):</strong> Comissão Interna — treinamento anual de 20h para cipeiros.
+                        <strong> NR-7 (PCMSO):</strong> Primeiro socorros — equipe treinada obrigatória.
+                        <strong> NR-35:</strong> Trabalho em altura — reciclagem a cada 2 anos.
+                        <strong> Integração:</strong> Todo novo colaborador deve receber treinamento de integração com orientações de segurança (CLT Art. 157).
+                    </Text>
+                </Alert>
             </Stack>
         </Container>
     );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import {
     Container, Title, Text, Card, Group, Stack, SimpleGrid,
     ThemeIcon, Table, Paper, Select, Loader, Center,
@@ -11,6 +11,7 @@ import {
     IconCalendar, IconCurrencyReal, IconBuildingBank,
 } from '@tabler/icons-react';
 import { ExportButton } from '@/components/shared';
+import { useApi } from '@/hooks/useApi';
 
 // ============================================================================
 // TYPES
@@ -38,25 +39,6 @@ export default function BalancoPatrimonialPage() {
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     });
     const [balanco, setBalanco] = useState<BalancoData | null>(null);
-
-    const fetchData = useCallback(async () => {
-        try {
-            setLoading(true);
-            const res = await fetch(`/api/reports/financial?period=${period}&section=accounting`);
-            if (res.ok) {
-                const json = await res.json();
-                setBalanco(json.data?.balanco || null);
-            }
-        } catch (err) {
-            console.error('Error fetching balance sheet:', err);
-        } finally {
-            setLoading(false);
-        }
-    }, [period]);
-
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
 
     const formatCurrency = (val: number) =>
         new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);

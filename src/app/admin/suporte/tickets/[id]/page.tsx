@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
     Card, Title, Text, Group, Badge, Button, Stack, Avatar,
@@ -13,6 +13,7 @@ import {
     IconLock, IconEye, IconRefresh, IconTag, IconTicket,
 } from '@tabler/icons-react';
 import Link from 'next/link';
+import { useApi } from '@/hooks/useApi';
 
 // ============================================================================
 // CONSTANTS
@@ -132,36 +133,15 @@ export default function TicketDetailPage() {
     const ticketId = params.id as string;
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    const [ticket, setTicket] = useState<any>(null);
-    const [messages, setMessages] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { data: ticketData, isLoading: loading, refetch } = useApi<any>(`/api/tickets/${ticketId}`);
+    const ticket = ticketData || null;
+    const messages = ticket?.messages || [];
 
     // Reply form
     const [replyContent, setReplyContent] = useState('');
     const [isInternalNote, setIsInternalNote] = useState(false);
     const [resolveOnReply, setResolveOnReply] = useState(false);
     const [sending, setSending] = useState(false);
-
-    const fetchTicket = useCallback(async () => {
-        try {
-            const res = await fetch(`/api/tickets/${ticketId}`);
-            if (res.ok) {
-                const json = await res.json();
-                setTicket(json.data);
-                setMessages(json.data.messages || []);
-            } else if (res.status === 404) {
-                router.push('/admin/suporte/tickets');
-            }
-        } catch (e) {
-            console.error('Failed to fetch ticket:', e);
-        } finally {
-            setLoading(false);
-        }
-    }, [ticketId, router]);
-
-    useEffect(() => {
-        fetchTicket();
-    }, [fetchTicket]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -186,7 +166,7 @@ export default function TicketDetailPage() {
                 setReplyContent('');
                 setIsInternalNote(false);
                 setResolveOnReply(false);
-                fetchTicket();
+                refetch();
             }
         } catch (e) {
             console.error('Error sending reply:', e);
@@ -202,7 +182,7 @@ export default function TicketDetailPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: newStatus }),
             });
-            if (res.ok) fetchTicket();
+            if (res.ok) refetch();
         } catch (e) {
             console.error('Error updating status:', e);
         }
@@ -216,7 +196,7 @@ export default function TicketDetailPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ priority: newPriority }),
             });
-            if (res.ok) fetchTicket();
+            if (res.ok) refetch();
         } catch (e) {
             console.error('Error updating priority:', e);
         }
@@ -272,7 +252,7 @@ export default function TicketDetailPage() {
                     </Group>
                     <Title order={3} mt={4}>{ticket.subject}</Title>
                 </div>
-                <ActionIcon variant="subtle" onClick={fetchTicket}>
+                <ActionIcon variant="subtle" onClick={refetch}>
                     <IconRefresh size={18} />
                 </ActionIcon>
             </Group>
@@ -291,7 +271,7 @@ export default function TicketDetailPage() {
                                     </Stack>
                                 </Center>
                             ) : (
-                                messages.map((msg) => (
+                                messages.map((msg: any) => (
                                     <MessageBubble key={msg.id} message={msg} />
                                 ))
                             )}

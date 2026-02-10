@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Container, Title, Text, Paper, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Table, Loader, Alert, TextInput, Button,
@@ -9,6 +9,7 @@ import {
     IconNote, IconAlertCircle, IconSearch, IconPencil,
     IconMessage, IconSend, IconClock,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface Conversation {
     id: string;
@@ -25,33 +26,10 @@ interface Conversation {
 }
 
 export default function RascunhosPage() {
-    const [conversations, setConversations] = useState<Conversation[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { data: apiData, isLoading: loading, error } = useApi<{ conversations: Conversation[] }>('/api/communicator/conversations?limit=100');
+    const allConversations = apiData?.conversations || (Array.isArray(apiData) ? apiData : []);
+    const conversations = useMemo(() => allConversations.filter((c: Conversation) => c.messageCount === 0 || c.isArchived), [allConversations]);
     const [search, setSearch] = useState('');
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const res = await fetch('/api/communicator/conversations?limit=100');
-            if (!res.ok) throw new Error('Falha ao buscar rascunhos');
-
-            const data = await res.json();
-            // Drafts = conversations with 0 messages or archived
-            const drafts = (data.conversations || []).filter((c: Conversation) =>
-                c.messageCount === 0 || c.isArchived
-            );
-            setConversations(drafts);
-        } catch (err) {
-            setError('Falha ao carregar rascunhos');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
 
     const fmtDate = (ts?: number) => ts ? new Date(ts).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '—';
 

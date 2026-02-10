@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Container, Title, Text, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Loader, Alert, Select, Paper,
@@ -10,6 +10,7 @@ import {
     IconAlertCircle, IconColumns, IconThumbUp, IconArrowRight,
     IconBulb, IconClock, IconCheck, IconX,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface Suggestion {
     id: string;
@@ -56,30 +57,10 @@ const KANBAN_COLUMNS: KanbanColumn[] = [
 ];
 
 export default function QuadroPage() {
-    const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { data: suggestionsData, isLoading: loading } = useApi<Suggestion[]>('/api/kaizen/suggestions?limit=100');
+    const suggestions = suggestionsData || [];
     const [error, setError] = useState<string | null>(null);
     const [problemFilter, setProblemFilter] = useState<string | null>(null);
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const params = new URLSearchParams({ limit: '100' });
-            if (problemFilter) params.set('problemType', problemFilter);
-            const res = await fetch(`/api/kaizen/suggestions?${params}`);
-            if (!res.ok) throw new Error('Falha ao buscar sugestões');
-            const data = await res.json();
-            setSuggestions(data.data || []);
-        } catch (err) {
-            setError('Falha ao carregar quadro Kaizen');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    }, [problemFilter]);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
 
     const columns = useMemo(() => {
         return KANBAN_COLUMNS.map(col => ({

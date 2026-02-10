@@ -14104,6 +14104,53 @@ export type TicketMessage = typeof ticketMessages.$inferSelect;
 export type TicketMessageInsert = typeof ticketMessages.$inferInsert;
 
 // ============================================================================
+// GAMIFICATION - MISSIONS ENGINE
+// ============================================================================
+
+export const missions = sqliteTable('missions', {
+    id: text('id').primaryKey().default(uuid()),
+    organizationId: text('organization_id').notNull().references(() => organizations.id),
+    title: text('title').notNull(),
+    description: text('description'),
+    instructions: text('instructions'),
+    missionType: text('mission_type', { enum: ['learning', 'practice', 'challenge', 'exploration', 'review'] }).notNull().default('learning'),
+    difficulty: text('difficulty', { enum: ['beginner', 'intermediate', 'advanced', 'expert'] }).default('intermediate'),
+    xpReward: integer('xp_reward').default(100),
+    conceptTags: text('concept_tags').default('[]'),
+    lessonId: text('lesson_id').references(() => lessons.id),
+    moduleId: text('module_id').references(() => modules.id),
+    createdBy: text('created_by').references(() => persons.id),
+    generatedByAi: integer('generated_by_ai', { mode: 'boolean' }).default(false),
+    aiPromptUsed: text('ai_prompt_used'),
+    isActive: integer('is_active', { mode: 'boolean' }).default(true),
+    startsAt: integer('starts_at'),
+    expiresAt: integer('expires_at'),
+    createdAt: integer('created_at').default(timestamp()),
+    updatedAt: integer('updated_at').default(timestamp()),
+});
+
+export const studentMissions = sqliteTable('student_missions', {
+    id: text('id').primaryKey().default(uuid()),
+    missionId: text('mission_id').notNull().references(() => missions.id, { onDelete: 'cascade' }),
+    studentId: text('student_id').notNull().references(() => persons.id),
+    status: text('status', { enum: ['available', 'in_progress', 'submitted', 'completed', 'expired'] }).notNull().default('available'),
+    response: text('response'),
+    xpEarned: integer('xp_earned'),
+    feedback: text('feedback'),
+    gradedBy: text('graded_by').references(() => persons.id),
+    startedAt: integer('started_at'),
+    submittedAt: integer('submitted_at'),
+    completedAt: integer('completed_at'),
+    createdAt: integer('created_at').default(timestamp()),
+});
+
+// Type exports for missions
+export type Mission = typeof missions.$inferSelect;
+export type MissionInsert = typeof missions.$inferInsert;
+export type StudentMission = typeof studentMissions.$inferSelect;
+export type StudentMissionInsert = typeof studentMissions.$inferInsert;
+
+// ============================================================================
 // TYPE EXPORTS - Team & Role Management
 // ============================================================================
 
@@ -14121,4 +14168,113 @@ export type PermissionGroup = typeof permissionGroups.$inferSelect;
 export type PermissionGroupInsert = typeof permissionGroups.$inferInsert;
 export type PermissionAuditLog = typeof permissionAuditLog.$inferSelect;
 
+// ============================================================================
+// EQUIPMENT: School Equipment & Hardware Management
+// Categorized inventory with capabilities, rules, and teacher booking
+// ============================================================================
 
+export const schoolEquipment = sqliteTable('school_equipment', {
+    id: text('id').primaryKey().default(uuid()),
+    organizationId: text('organization_id').notNull().references(() => organizations.id),
+
+    // Identity
+    name: text('name').notNull(),
+    code: text('code'),                             // Asset tag / barcode
+    description: text('description'),
+    imageUrl: text('image_url'),                     // Photo of the item
+
+    // Classification
+    category: text('category', {
+        enum: [
+            'hardware',          // Computers, tablets, interactive boards
+            'multimedia',        // Projectors, speakers, cameras, microphones
+            'furniture',         // Tables, chairs, easels
+            'sports',            // Balls, nets, mats
+            'lab',               // Lab equipment, microscopes, chemicals
+            'office',            // Printers, laminators, binding machines
+            'musical',           // Instruments, amplifiers
+            'educational',       // Manipulatives, flashcards, globes
+        ]
+    }).notNull(),
+    subcategory: text('subcategory'),                // Free text: "projector", "speaker", etc.
+    brand: text('brand'),
+    model: text('model'),
+    serialNumber: text('serial_number'),
+
+    // Capabilities — what this equipment can do
+    capabilities: text('capabilities').default('[]'), // JSON: ["hdmi", "bluetooth", "wifi", "4k", "touch", "usb-c"]
+
+    // Rules — usage policies
+    rules: text('rules').default('{}'),              // JSON: { maxBookingHours, requiresTraining, fragile, powerRequirements, notes }
+
+    // Location
+    defaultRoomId: text('default_room_id'),          // Where it normally lives
+    defaultLocation: text('default_location'),        // Description: "Armário 3, Prateleira 2"
+    isPortable: integer('is_portable', { mode: 'boolean' }).default(true),
+
+    // Quantity & condition
+    quantity: integer('quantity').default(1),
+    condition: text('condition', {
+        enum: ['excellent', 'good', 'fair', 'needs_repair', 'broken']
+    }).default('good'),
+    purchaseDate: integer('purchase_date'),
+    warrantyExpires: integer('warranty_expires'),
+    purchaseCostCents: integer('purchase_cost_cents'),
+
+    // Status
+    status: text('status', {
+        enum: ['available', 'in_use', 'maintenance', 'retired', 'lost']
+    }).default('available'),
+    isActive: integer('is_active', { mode: 'boolean' }).default(true),
+    createdAt: integer('created_at').default(timestamp()),
+    updatedAt: integer('updated_at').default(timestamp()),
+}, (table) => [
+    index('idx_equipment_org').on(table.organizationId),
+    index('idx_equipment_category').on(table.category),
+    index('idx_equipment_status').on(table.status),
+]);
+
+export const equipmentBookings = sqliteTable('equipment_bookings', {
+    id: text('id').primaryKey().default(uuid()),
+    organizationId: text('organization_id').notNull().references(() => organizations.id),
+
+    // What
+    equipmentId: text('equipment_id').notNull().references(() => schoolEquipment.id),
+
+    // Who
+    requestedBy: text('requested_by').notNull(),     // Person ID (teacher)
+    approvedBy: text('approved_by'),                 // Person ID (coordinator/admin)
+
+    // When
+    startTime: integer('start_time').notNull(),
+    endTime: integer('end_time').notNull(),
+
+    // Why — link to pedagogical context
+    lessonId: text('lesson_id'),                     // Optional link to lesson
+    purpose: text('purpose'),                        // Free text: "Unit 3 - Listening Exercise"
+    roomId: text('room_id'),                         // Where equipment will be used
+
+    // Status
+    status: text('status', {
+        enum: ['pending', 'approved', 'in_use', 'returned', 'cancelled', 'overdue']
+    }).default('pending'),
+    notes: text('notes'),
+    returnedAt: integer('returned_at'),
+    returnCondition: text('return_condition'),        // Notes on condition at return
+
+    createdAt: integer('created_at').default(timestamp()),
+    updatedAt: integer('updated_at').default(timestamp()),
+}, (table) => [
+    index('idx_booking_equipment').on(table.equipmentId),
+    index('idx_booking_teacher').on(table.requestedBy),
+    index('idx_booking_status').on(table.status),
+]);
+
+// ============================================================================
+// TYPE EXPORTS - Equipment
+// ============================================================================
+
+export type SchoolEquipment = typeof schoolEquipment.$inferSelect;
+export type SchoolEquipmentInsert = typeof schoolEquipment.$inferInsert;
+export type EquipmentBooking = typeof equipmentBookings.$inferSelect;
+export type EquipmentBookingInsert = typeof equipmentBookings.$inferInsert;

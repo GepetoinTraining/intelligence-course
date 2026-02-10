@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Container, Title, Text, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Table, Loader, Alert, Select, Paper,
@@ -9,6 +9,7 @@ import {
     IconCalendar, IconAlertCircle, IconClock, IconUsers,
     IconVideo, IconMapPin, IconCalendarEvent,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface Meeting {
     id: string;
@@ -57,44 +58,6 @@ export default function AgendaTotalPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [weekOffset, setWeekOffset] = useState('current');
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const now = Date.now();
-            const weekMs = 7 * 24 * 60 * 60 * 1000;
-            let start = now;
-            let end = now + weekMs;
-
-            if (weekOffset === 'next') { start = now + weekMs; end = now + 2 * weekMs; }
-            if (weekOffset === 'last') { start = now - weekMs; end = now; }
-
-            const startSec = Math.floor(start / 1000);
-            const endSec = Math.floor(end / 1000);
-
-            const [meetingsRes, schedulesRes] = await Promise.all([
-                fetch(`/api/meetings?startDate=${startSec}&endDate=${endSec}`),
-                fetch('/api/schedules?limit=200'),
-            ]);
-
-            if (meetingsRes.ok) {
-                const mData = await meetingsRes.json();
-                setMeetings(mData.meetings || []);
-            }
-            if (schedulesRes.ok) {
-                const sData = await schedulesRes.json();
-                setSchedules(sData.data || []);
-            }
-        } catch (err) {
-            setError('Falha ao carregar agenda');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    }, [weekOffset]);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
 
     const fmtTime = (ts: number) => new Date(ts * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const fmtDate = (ts: number) => new Date(ts * 1000).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });

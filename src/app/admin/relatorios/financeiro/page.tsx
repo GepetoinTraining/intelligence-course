@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import {
     Container, Title, Text, Card, Group, Stack, Badge, Button,
     SimpleGrid, ThemeIcon, Table, Paper, Select, Loader, Center,
@@ -13,6 +13,7 @@ import {
     IconArrowUpRight, IconArrowDownRight,
 } from '@tabler/icons-react';
 import { ExportButton } from '@/components/shared';
+import { useApi } from '@/hooks/useApi';
 
 // ============================================================================
 // TYPES
@@ -53,31 +54,11 @@ interface TeacherCost {
 // ============================================================================
 
 export default function RelatorioFinanceiroPage() {
-    const [loading, setLoading] = useState(true);
     const [period, setPeriod] = useState(() => {
         const now = new Date();
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     });
-    const [data, setData] = useState<Record<string, any>>({});
-
-    const fetchReport = useCallback(async () => {
-        try {
-            setLoading(true);
-            const res = await fetch(`/api/reports/financial?period=${period}&section=all`);
-            if (res.ok) {
-                const json = await res.json();
-                setData(json);
-            }
-        } catch (err) {
-            console.error('Error fetching financial report:', err);
-        } finally {
-            setLoading(false);
-        }
-    }, [period]);
-
-    useEffect(() => {
-        fetchReport();
-    }, [fetchReport]);
+    const { data, isLoading: loading } = useApi<Record<string, any>>(`/api/reports/financial?period=${period}&section=all`);
 
     const formatCurrency = (val: number) =>
         new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val / 100);
@@ -85,12 +66,12 @@ export default function RelatorioFinanceiroPage() {
     const formatDate = (ts: number) =>
         new Date(ts * 1000).toLocaleDateString('pt-BR');
 
-    const revenueByCourse: RevenueItem[] = data.revenueByCourse || [];
-    const totalRevenue = data.totalRevenue || 0;
-    const paymentMethods: PaymentMethod[] = data.paymentMethods || [];
-    const defaulters: Defaulter[] = data.defaulters || [];
-    const teacherCosts: TeacherCost[] = data.teacherCosts || [];
-    const totalTeacherCosts = data.totalTeacherCosts || 0;
+    const revenueByCourse: RevenueItem[] = data?.revenueByCourse || [];
+    const totalRevenue = data?.totalRevenue || 0;
+    const paymentMethods: PaymentMethod[] = data?.paymentMethods || [];
+    const defaulters: Defaulter[] = data?.defaulters || [];
+    const teacherCosts: TeacherCost[] = data?.teacherCosts || [];
+    const totalTeacherCosts = data?.totalTeacherCosts || 0;
 
     // Period selection
     const periodOptions = [];

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Container, Title, Text, Paper, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Table, Select, Loader, Alert, TextInput, ActionIcon, Tooltip,
@@ -10,6 +10,7 @@ import {
     IconReceipt, IconCurrencyReal, IconCalendarEvent, IconExternalLink,
 } from '@tabler/icons-react';
 import { ExportButton } from '@/components/shared';
+import { useApi } from '@/hooks/useApi';
 
 interface FiscalDocument {
     id: string;
@@ -51,35 +52,12 @@ const TYPE_MAP: Record<string, string> = {
 };
 
 export default function DocumentosFiscaisPage() {
-    const [documents, setDocuments] = useState<FiscalDocument[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { data: documentsData, isLoading: loading } = useApi<FiscalDocument[]>('/api/fiscal-documents?limit=100');
+    const documents = documentsData || [];
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<string | null>(null);
     const [typeFilter, setTypeFilter] = useState<string | null>(null);
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const params = new URLSearchParams({ limit: '200' });
-            if (statusFilter) params.set('status', statusFilter);
-            if (typeFilter) params.set('type', typeFilter);
-
-            const res = await fetch(`/api/fiscal-documents?${params}`);
-            if (!res.ok) throw new Error('Falha ao buscar documentos');
-
-            const data = await res.json();
-            setDocuments(data.data || []);
-        } catch (err) {
-            setError('Falha ao carregar documentos fiscais');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    }, [statusFilter, typeFilter]);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
 
     const fmt = (cents: number) => `R$ ${(cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
     const fmtDate = (ts: number) => ts ? new Date(ts).toLocaleDateString('pt-BR') : '—';

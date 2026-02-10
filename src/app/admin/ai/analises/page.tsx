@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Container, Title, Text, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Table, Loader, Alert, Select, Paper,
@@ -9,6 +9,7 @@ import {
     IconAlertCircle, IconBrain, IconAlertTriangle, IconShieldCheck,
     IconEye, IconUser, IconClock,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface SafetyAlert {
     id: string;
@@ -36,32 +37,11 @@ const LEVEL_COLORS: Record<string, string> = { green: 'green', yellow: 'yellow',
 const LEVEL_LABELS: Record<string, string> = { green: 'Normal', yellow: 'Atenção', orange: 'Alerta', red: 'Crítico' };
 
 export default function AnalisesPage() {
-    const [alerts, setAlerts] = useState<SafetyAlert[]>([]);
-    const [summary, setSummary] = useState<AlertSummary | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { data: alertsData, isLoading: loading } = useApi<any>('/api/auditor/alerts?limit=50');
+    const alerts: SafetyAlert[] = alertsData?.data || [];
+    const summary: AlertSummary | null = alertsData?.summary || null;
+    const error: string | null = null;
     const [levelFilter, setLevelFilter] = useState<string | null>(null);
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const params = new URLSearchParams({ limit: '50' });
-            if (levelFilter) params.set('level', levelFilter);
-            const res = await fetch(`/api/auditor/alerts?${params}`);
-            if (!res.ok) throw new Error('Falha ao buscar análises');
-            const data = await res.json();
-            setAlerts(data.data || []);
-            setSummary(data.summary || null);
-        } catch (err) {
-            setError('Falha ao carregar análises de IA');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    }, [levelFilter]);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
 
     const fmtDate = (ts: number) => new Date(ts * 1000).toLocaleString('pt-BR', {
         day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit',

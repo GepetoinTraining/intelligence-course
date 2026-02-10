@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
     Container, Title, Text, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Table, Loader, Alert, Paper, Progress,
@@ -9,6 +9,7 @@ import {
     IconSchool, IconAlertCircle, IconCalendar, IconClock,
     IconBooks, IconUsers,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 interface ScheduleEntry {
     id: string;
@@ -33,37 +34,12 @@ const DAY_NAMES = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 
 const DAY_SHORT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
 export default function AgendaLetivoPage() {
-    const [schedules, setSchedules] = useState<ScheduleEntry[]>([]);
-    const [classes, setClasses] = useState<ClassInfo[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const [schedRes, classesRes] = await Promise.all([
-                fetch('/api/schedules?limit=500'),
-                fetch('/api/classes?limit=200'),
-            ]);
-
-            if (schedRes.ok) {
-                const sData = await schedRes.json();
-                setSchedules(sData.data || []);
-            }
-            if (classesRes.ok) {
-                const cData = await classesRes.json();
-                setClasses(cData.data || []);
-            }
-        } catch (err) {
-            setError('Falha ao carregar calendário letivo');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
+    const { data: schedulesData, isLoading: loadingSched } = useApi<any>('/api/schedules?limit=500');
+    const { data: classesData, isLoading: loadingClasses } = useApi<any>('/api/classes?limit=200');
+    const schedules: ScheduleEntry[] = schedulesData?.data || [];
+    const classes: ClassInfo[] = classesData?.data || [];
+    const loading = loadingSched || loadingClasses;
+    const error: string | null = null;
 
     const classMap = useMemo(() => {
         const map = new Map<string, ClassInfo>();

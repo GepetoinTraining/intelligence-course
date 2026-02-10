@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
     Container, Title, Text, Paper, Group, ThemeIcon, Stack, Badge,
     Card, SimpleGrid, Table, Loader, Alert, Select, Progress,
@@ -10,6 +10,7 @@ import {
     IconCash, IconChartBar, IconTarget,
 } from '@tabler/icons-react';
 import { ExportButton } from '@/components/shared';
+import { useApi } from '@/hooks/useApi';
 
 interface PayrollPayment {
     id: string;
@@ -39,38 +40,14 @@ interface PayrollRecord {
 }
 
 export default function ComissoesPage() {
-    const [payments, setPayments] = useState<PayrollPayment[]>([]);
-    const [payroll, setPayroll] = useState<PayrollRecord[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { data: paymentsData, isLoading: loadingPayments, error: errorPayments } = useApi<PayrollPayment[]>('/api/payroll-payments?limit=200');
+    const { data: payrollData, isLoading: loadingPayroll, error: errorPayroll } = useApi<PayrollRecord[]>('/api/staff-payroll?limit=200');
+
+    const payments = paymentsData || [];
+    const payroll = payrollData || [];
+    const loading = loadingPayments || loadingPayroll;
+    const error = errorPayments || errorPayroll;
     const [period, setPeriod] = useState('all');
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const [paymentsRes, payrollRes] = await Promise.all([
-                fetch('/api/payroll-payments?limit=200'),
-                fetch('/api/staff-payroll?limit=200'),
-            ]);
-
-            if (paymentsRes.ok) {
-                const pData = await paymentsRes.json();
-                setPayments(pData.data || []);
-            }
-            if (payrollRes.ok) {
-                const prData = await payrollRes.json();
-                setPayroll(prData.data || []);
-            }
-        } catch (err) {
-            setError('Falha ao carregar dados de comissões');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => { fetchData(); }, [fetchData]);
 
     const fmt = (cents: number) => `R$ ${(cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
     const fmtDate = (ts?: number) => ts ? new Date(ts).toLocaleDateString('pt-BR') : '—';
@@ -330,6 +307,21 @@ export default function ComissoesPage() {
                         </Table>
                     )}
                 </Card>
+
+                {/* DSR Legal Alert */}
+                <Alert
+                    icon={<IconCoin size={16} />}
+                    color="yellow"
+                    variant="light"
+                    title="DSR sobre Comissões — Obrigação Legal"
+                >
+                    <Text size="xs">
+                        <strong>Súmula TST 340 / CLT Art. 7, XV:</strong> O comissionista tem direito ao DSR
+                        (Descanso Semanal Remunerado) calculado sobre as comissões.
+                        Fórmula: Total Comissões ÷ dias úteis × domingos/feriados do mês.
+                        <strong> INSS/FGTS:</strong> Comissões integram a base de cálculo para contribuição previdenciária e FGTS.
+                    </Text>
+                </Alert>
             </Stack>
         </Container>
     );

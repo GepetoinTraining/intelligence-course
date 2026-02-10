@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import {
     Container, Title, Text, Card, Group, Stack, Button,
     TextInput, Paper, ThemeIcon, ColorSwatch, Loader, Center,
@@ -10,6 +10,7 @@ import {
     IconPalette, IconUpload, IconBuilding, IconCheck,
     IconDeviceFloppy, IconPhoto, IconBrush,
 } from '@tabler/icons-react';
+import { useApi } from '@/hooks/useApi';
 
 // ============================================================================
 // TYPES
@@ -44,32 +45,6 @@ export default function BrandingPage() {
     const [slug, setSlug] = useState('');
     const [primaryColor, setPrimaryColor] = useState('#6366f1');
     const [logoUrl, setLogoUrl] = useState('');
-
-    const fetchOrg = useCallback(async () => {
-        try {
-            setLoading(true);
-            const res = await fetch('/api/user/organizations');
-            if (res.ok) {
-                const json = await res.json();
-                const org = json.organizations?.[0];
-                if (org) {
-                    setOrgData(org);
-                    setName(org.name || '');
-                    setSlug(org.slug || '');
-                    setPrimaryColor(org.primaryColor || '#6366f1');
-                    setLogoUrl(org.logoUrl || '');
-                }
-            }
-        } catch (err) {
-            console.error('Error fetching org:', err);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchOrg();
-    }, [fetchOrg]);
 
     const handleSave = async () => {
         try {
