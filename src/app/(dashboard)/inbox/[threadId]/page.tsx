@@ -31,8 +31,8 @@ interface Thread {
     messages: ThreadMessage[];
 }
 
-// Mock thread data
-const MOCK_THREADS: Record<string, Thread> = {};
+// Thread data will be fetched from API
+const threads: Record<string, Thread> = {};
 
 interface Props {
     params: Promise<{ threadId: string }>;
@@ -40,7 +40,7 @@ interface Props {
 
 export default function ThreadPage({ params }: Props) {
     const { threadId } = use(params);
-    const thread = MOCK_THREADS[threadId] || MOCK_THREADS['thread-1'];
+    const thread = threads[threadId] || null;
     const [reply, setReply] = useState('');
     const [isStarred, setIsStarred] = useState(false);
 

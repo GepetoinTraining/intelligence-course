@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Title, Text, Stack, Group, Card, Badge, Button,
     Paper, SimpleGrid, Table, Modal, Divider, ThemeIcon,
@@ -21,8 +21,7 @@ import {
     type PaymentStatus
 } from '@/lib/financial/config';
 
-// Mock invoice data
-const MOCK_INVOICES: Invoice[] = [];
+
 
 const getStatusBadge = (status: PaymentStatus) => {
     const configs: Record<PaymentStatus, { color: string; label: string }> = {
@@ -38,9 +37,38 @@ const getStatusBadge = (status: PaymentStatus) => {
 };
 
 export default function FinancialPage() {
-    const [invoices] = useState<Invoice[]>(MOCK_INVOICES);
+    const [invoices, setInvoices] = useState<Invoice[]>([]);
+    const [loading, setLoading] = useState(true);
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
     const [paymentModalOpened, { open: openPaymentModal, close: closePaymentModal }] = useDisclosure(false);
+
+    const fetchInvoices = useCallback(async () => {
+        try {
+            setLoading(true);
+            const res = await fetch('/api/invoices');
+            if (!res.ok) return;
+            const json = await res.json();
+            setInvoices((json.data || []).map((inv: any) => ({
+                id: inv.id,
+                description: inv.description || `Fatura ${inv.id.slice(0, 8)}`,
+                amount: inv.amountCents ? inv.amountCents / 100 : inv.amount || 0,
+                discount: inv.discountCents ? inv.discountCents / 100 : inv.discount || 0,
+                finalAmount: inv.finalAmountCents ? inv.finalAmountCents / 100 : inv.finalAmount || inv.amountCents / 100 || 0,
+                dueDate: inv.dueDate || '',
+                paidDate: inv.paidDate || null,
+                status: inv.status || 'pending',
+                paymentMethod: inv.paymentMethod || null,
+            })));
+        } catch (err) {
+            console.error('Failed to fetch invoices', err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchInvoices();
+    }, [fetchInvoices]);
 
     const paidTotal = invoices.filter(i => i.status === 'paid').reduce((acc, i) => acc + i.finalAmount, 0);
     const pendingTotal = invoices.filter(i => i.status === 'pending').reduce((acc, i) => acc + i.finalAmount, 0);

@@ -29,7 +29,7 @@ interface KnowledgeNode {
 }
 
 // ============================================================================
-// MOCK DATA
+// CONFIG
 // ============================================================================
 
 const MODULE_COLORS: Record<string, string> = {
@@ -40,8 +40,6 @@ const MODULE_COLORS: Record<string, string> = {
     ethics: '#ef4444',         // red
     mastery: '#ec4899',        // pink
 };
-
-const MOCK_NODES: KnowledgeNode[] = [];
 
 // ============================================================================
 // 3D COMPONENTS (Dynamically Imported)
@@ -70,7 +68,7 @@ const Constellation3D = dynamic<Constellation3DProps>(() => import('./Constellat
 // ============================================================================
 
 export default function ConstellationPage() {
-    const [nodes, setNodes] = useState<KnowledgeNode[]>(MOCK_NODES);
+    const [nodes, setNodes] = useState<KnowledgeNode[]>([]);
     const [selectedNode, setSelectedNode] = useState<KnowledgeNode | null>(null);
     const [linkingMode, setLinkingMode] = useState(false);
     const [linkSource, setLinkSource] = useState<string | null>(null);

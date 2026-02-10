@@ -34,12 +34,6 @@ interface CalendarEvent {
     notes?: string;
 }
 
-// ============================================================================
-// MOCK DATA
-// ============================================================================
-
-const MOCK_EVENTS: CalendarEvent[] = [];
-
 const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
@@ -219,7 +213,7 @@ function CalendarGrid({
 
 export default function ContentCalendarPage() {
     const [currentDate, setCurrentDate] = useState(new Date(2026, 1, 1)); // Feb 2026
-    const [events, setEvents] = useState<CalendarEvent[]>(MOCK_EVENTS);
+    const [events, setEvents] = useState<CalendarEvent[]>([]);
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
     const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);

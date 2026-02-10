@@ -53,7 +53,7 @@ interface LandingTemplate {
 }
 
 // ============================================================================
-// MOCK DATA
+// CONFIG
 // ============================================================================
 
 const TEMPLATES: LandingTemplate[] = [
@@ -98,8 +98,6 @@ const TEMPLATES: LandingTemplate[] = [
         blocks: ['hero', 'benefits', 'testimonials', 'form'],
     },
 ];
-
-const MOCK_PAGES: LandingPage[] = [];
 
 const BLOCK_OPTIONS = [
     { value: 'hero', label: '🎯 Hero Section', description: 'Título, subtítulo e CTA principal' },
@@ -506,7 +504,7 @@ function PageBuilder({
 // ============================================================================
 
 export default function LandingPageBuilderPage() {
-    const [pages, setPages] = useState<LandingPage[]>(MOCK_PAGES);
+    const [pages, setPages] = useState<LandingPage[]>([]);
     const [createModalOpened, { open: openCreateModal, close: closeCreateModal }] = useDisclosure(false);
     const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
     const [newPageName, setNewPageName] = useState('');

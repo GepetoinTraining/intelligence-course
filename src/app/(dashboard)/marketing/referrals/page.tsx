@@ -44,7 +44,7 @@ interface Referral {
 }
 
 // ============================================================================
-// MOCK DATA
+// PRESETS
 // ============================================================================
 
 const TIERS = {
@@ -54,17 +54,13 @@ const TIERS = {
     platinum: { color: 'violet', label: 'Platina', minReferrals: 30, rewardMultiplier: 2 },
 };
 
-const MOCK_REFERRERS: Referrer[] = [];
-
-const MOCK_REFERRALS: Referral[] = [];
-
 // ============================================================================
 // COMPONENT
 // ============================================================================
 
 export default function ReferralProgramPage() {
-    const [referrers, setReferrers] = useState<Referrer[]>(MOCK_REFERRERS);
-    const [referrals, setReferrals] = useState<Referral[]>(MOCK_REFERRALS);
+    const [referrers, setReferrers] = useState<Referrer[]>([]);
+    const [referrals, setReferrals] = useState<Referral[]>([]);
     const [activeTab, setActiveTab] = useState<string | null>('referrers');
     const [selectedReferrer, setSelectedReferrer] = useState<Referrer | null>(null);
 

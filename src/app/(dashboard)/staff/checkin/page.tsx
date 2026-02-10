@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Title,
     Text,
@@ -19,6 +19,8 @@ import {
     ThemeIcon,
     ActionIcon,
     Divider,
+    Loader,
+    Center,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
@@ -33,60 +35,26 @@ import {
     IconX,
 } from '@tabler/icons-react';
 
-// Mock data for today's sessions
-const todaySessions = [
-    {
-        id: '1',
-        className: 'English A1 - Turma 1',
-        teacherName: 'Prof. Ana',
-        roomName: 'Sala 1',
-        time: '10:00 - 11:30',
-        status: 'in_progress',
-        students: [
-            { id: 's1', name: 'Lucas Silva', checkedIn: true, checkedInAt: '09:55' },
-            { id: 's2', name: 'Maria Santos', checkedIn: true, checkedInAt: '09:58' },
-            { id: 's3', name: 'Pedro Costa', checkedIn: false, checkedInAt: null },
-            { id: 's4', name: 'Ana Oliveira', checkedIn: true, checkedInAt: '10:05' },
-        ],
-    },
-    {
-        id: '2',
-        className: 'Spanish A1 - Turma 1',
-        teacherName: 'Prof. Carlos',
-        roomName: 'Sala 2',
-        time: '10:00 - 11:30',
-        status: 'in_progress',
-        students: [
-            { id: 's5', name: 'Fernanda Rocha', checkedIn: true, checkedInAt: '09:50' },
-            { id: 's6', name: 'Rafael Lima', checkedIn: true, checkedInAt: '09:52' },
-        ],
-    },
-    {
-        id: '3',
-        className: 'Intelligence',
-        teacherName: 'Prof. Roberto',
-        roomName: 'Lab',
-        time: '14:00 - 15:30',
-        status: 'scheduled',
-        students: [
-            { id: 's7', name: 'Carla Mendes', checkedIn: false, checkedInAt: null },
-            { id: 's8', name: 'João Almeida', checkedIn: false, checkedInAt: null },
-            { id: 's9', name: 'Patricia Lima', checkedIn: false, checkedInAt: null },
-        ],
-    },
-    {
-        id: '4',
-        className: 'English B1 - Turma 2',
-        teacherName: 'Prof. Ana',
-        roomName: 'Sala 1',
-        time: '16:00 - 17:30',
-        status: 'scheduled',
-        students: [
-            { id: 's10', name: 'Bruno Costa', checkedIn: false, checkedInAt: null },
-            { id: 's11', name: 'Camila Santos', checkedIn: false, checkedInAt: null },
-        ],
-    },
-];
+// ============================================================================
+// TYPES
+// ============================================================================
+
+interface SessionStudent {
+    id: string;
+    name: string;
+    checkedIn: boolean;
+    checkedInAt: string | null;
+}
+
+interface SessionEntry {
+    id: string;
+    className: string;
+    teacherName: string;
+    roomName: string;
+    time: string;
+    status: string;
+    students: SessionStudent[];
+}
 
 const statusColors: Record<string, string> = {
     in_progress: 'green',
@@ -104,6 +72,95 @@ export default function CheckinPage() {
     const [search, setSearch] = useState('');
     const [selectedSession, setSelectedSession] = useState<string | null>(null);
     const [walkInOpened, { open: openWalkIn, close: closeWalkIn }] = useDisclosure(false);
+    const [loading, setLoading] = useState(true);
+    const [todaySessions, setTodaySessions] = useState<SessionEntry[]>([]);
+
+    // Fetch today's sessions from API
+    const fetchSessions = useCallback(async () => {
+        try {
+            setLoading(true);
+            const todayDow = new Date().getDay(); // 0=Sun, 1=Mon,...
+
+            const [schedRes, classRes, enrollRes, attendRes] = await Promise.allSettled([
+                fetch('/api/schedules'),
+                fetch('/api/classes'),
+                fetch('/api/enrollments?status=active'),
+                fetch(`/api/attendance?date=${new Date().toISOString().split('T')[0]}`),
+            ]);
+
+            const schedules = schedRes.status === 'fulfilled' && schedRes.value.ok
+                ? (await schedRes.value.json()).data || [] : [];
+            const classes = classRes.status === 'fulfilled' && classRes.value.ok
+                ? (await classRes.value.json()).data || [] : [];
+            const enrollments = enrollRes.status === 'fulfilled' && enrollRes.value.ok
+                ? (await enrollRes.value.json()).data || [] : [];
+            const attendances = attendRes.status === 'fulfilled' && attendRes.value.ok
+                ? (await attendRes.value.json()).data || [] : [];
+
+            // Build class lookup
+            const classMap = new Map<string, any>();
+            classes.forEach((c: any) => classMap.set(c.id, c));
+
+            // Build attendance lookup (by personId + classId)
+            const attendSet = new Map<string, string>(); // key -> checkedInAt
+            attendances.forEach((a: any) => {
+                const key = `${a.personId || a.studentId}-${a.classId}`;
+                attendSet.set(key, a.checkedInAt ? new Date(a.checkedInAt * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'Sim');
+            });
+
+            // Filter schedules for today
+            const todaySchedules = schedules.filter((s: any) => s.dayOfWeek === todayDow);
+
+            // Build sessions
+            const sessions: SessionEntry[] = todaySchedules.map((sched: any) => {
+                const cls = classMap.get(sched.classId) || {};
+                const classEnrollments = enrollments.filter((e: any) => e.classId === sched.classId);
+
+                const now = new Date();
+                const [startH, startM] = (sched.startTime || '00:00').split(':').map(Number);
+                const [endH, endM] = (sched.endTime || '00:00').split(':').map(Number);
+                const startMin = startH * 60 + startM;
+                const endMin = endH * 60 + endM;
+                const nowMin = now.getHours() * 60 + now.getMinutes();
+
+                let status = 'scheduled';
+                if (nowMin >= startMin && nowMin <= endMin) status = 'in_progress';
+                else if (nowMin > endMin) status = 'completed';
+
+                const students: SessionStudent[] = classEnrollments.map((e: any) => {
+                    const personId = e.personId || e.studentId || e.id;
+                    const key = `${personId}-${sched.classId}`;
+                    const checkedInAt = attendSet.get(key) || null;
+                    return {
+                        id: personId,
+                        name: e.studentName || e.personName || 'Aluno',
+                        checkedIn: !!checkedInAt,
+                        checkedInAt,
+                    };
+                });
+
+                return {
+                    id: sched.id,
+                    className: cls.name || `Turma ${sched.classId?.slice(0, 6)}`,
+                    teacherName: cls.teacherName || 'Professor',
+                    roomName: sched.roomId ? `Sala ${sched.roomId.slice(0, 4)}` : 'Sem sala',
+                    time: `${(sched.startTime || '').slice(0, 5)} - ${(sched.endTime || '').slice(0, 5)}`,
+                    status,
+                    students,
+                };
+            });
+
+            setTodaySessions(sessions);
+        } catch (err) {
+            console.error('Failed to load check-in data:', err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchSessions();
+    }, [fetchSessions]);
 
     // Search results
     const searchResults = search.length >= 2
@@ -114,9 +171,25 @@ export default function CheckinPage() {
         )
         : [];
 
-    const handleQuickCheckin = (studentId: string, sessionId: string) => {
-        console.log('Quick check-in:', { studentId, sessionId });
-        // TODO: API call
+    const handleQuickCheckin = async (studentId: string, sessionId: string) => {
+        try {
+            const res = await fetch('/api/attendance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    personId: studentId,
+                    classId: sessionId,
+                    date: new Date().toISOString().split('T')[0],
+                    status: 'present',
+                }),
+            });
+            if (res.ok) {
+                // Refresh sessions to reflect check-in
+                fetchSessions();
+            }
+        } catch (err) {
+            console.error('Check-in failed:', err);
+        }
     };
 
     return (

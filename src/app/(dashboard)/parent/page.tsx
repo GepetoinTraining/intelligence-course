@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Title, Text, Stack, Group, Card, Badge, Button, SimpleGrid,
     Progress, Avatar, ThemeIcon, Paper, Timeline, Divider, Tabs,
@@ -36,11 +36,10 @@ interface ChildProgress {
     attendance: { date: string; status: 'present' | 'absent' | 'late' | 'justified'; notes?: string }[];
 }
 
-// Mock data
-const MOCK_CHILDREN: ChildProgress[] = [];
 
 export default function ParentDashboard() {
-    const [children] = useState<ChildProgress[]>(MOCK_CHILDREN);
+    const [children, setChildren] = useState<ChildProgress[]>([]);
+    const [loading, setLoading] = useState(true);
     const [reportModal, { open: openReportModal, close: closeReportModal }] = useDisclosure(false);
     const [selectedChild, setSelectedChild] = useState<ChildProgress | null>(null);
 
@@ -57,6 +56,42 @@ export default function ParentDashboard() {
         setSelectedChild(child);
         openReportModal();
     };
+
+    const fetchChildren = useCallback(async () => {
+        try {
+            setLoading(true);
+            const res = await fetch('/api/users?role=student');
+            if (!res.ok) return;
+            const json = await res.json();
+            setChildren((json.data || []).map((s: any) => ({
+                id: s.id,
+                name: s.name || 'Aluno',
+                avatar: s.avatarUrl || undefined,
+                currentModule: s.currentModule || 'Módulo 1',
+                lessonsCompleted: s.lessonsCompleted || 0,
+                totalLessons: s.totalLessons || 1,
+                lastActive: s.lastActive || '-',
+                teacher: s.teacher || '',
+                className: s.className || '',
+                xp: s.xp || 0,
+                level: s.level || 1,
+                streak: s.streak || 0,
+                badges: s.badges || 0,
+                recentActivity: s.recentActivity || [],
+                grades: s.grades || [],
+                upcomingDeadlines: s.upcomingDeadlines || [],
+                attendance: s.attendance || [],
+            })));
+        } catch (err) {
+            console.error('Failed to fetch children', err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchChildren();
+    }, [fetchChildren]);
 
     return (
         <Stack gap="xl">

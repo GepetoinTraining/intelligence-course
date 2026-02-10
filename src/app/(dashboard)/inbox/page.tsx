@@ -30,11 +30,8 @@ interface Message {
     threadCount: number;
 }
 
-// Mock data
-const MOCK_MESSAGES: Message[] = [];
-
 export default function InboxPage() {
-    const [messages, setMessages] = useState<Message[]>(MOCK_MESSAGES);
+    const [messages, setMessages] = useState<Message[]>([]);
     const [search, setSearch] = useState('');
     const [activeTab, setActiveTab] = useState<string | null>('all');
     const [composeOpened, { open: openCompose, close: closeCompose }] = useDisclosure(false);

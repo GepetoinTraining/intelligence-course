@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useState, useEffect, useCallback } from 'react';
 import {
     Title, Text, Stack, Group, Card, Badge, Button,
     Progress, Avatar, ThemeIcon, Paper, Table, ActionIcon,
@@ -24,8 +24,6 @@ interface Student {
     capstoneGrade?: number;
 }
 
-// Mock data
-const MOCK_STUDENTS: Student[] = [];
 
 const CLASS_INFO = {
     name: 'Turma A - Manhã',
@@ -39,11 +37,55 @@ interface Props {
 
 export default function ClassDetailPage({ params }: Props) {
     const { classId } = use(params);
-    const [students] = useState<Student[]>(MOCK_STUDENTS);
+    const [students, setStudents] = useState<Student[]>([]);
+    const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const [classInfo, setClassInfo] = useState(CLASS_INFO);
+
+    const fetchStudents = useCallback(async () => {
+        try {
+            setLoading(true);
+            // Fetch class info
+            const classRes = await fetch(`/api/classes/${classId}`);
+            if (classRes.ok) {
+                const classJson = await classRes.json();
+                if (classJson.data) {
+                    setClassInfo({
+                        name: classJson.data.name || CLASS_INFO.name,
+                        code: classJson.data.code || CLASS_INFO.code,
+                        module: classJson.data.module || CLASS_INFO.module,
+                    });
+                }
+            }
+            // Fetch enrolled students
+            const res = await fetch(`/api/enrollments?classId=${classId}`);
+            if (res.ok) {
+                const json = await res.json();
+                setStudents((json.data || []).map((e: any) => ({
+                    id: e.studentId || e.id,
+                    name: e.studentName || e.name || 'Aluno',
+                    email: e.studentEmail || e.email || '',
+                    avatar: e.avatarUrl || undefined,
+                    lessonsCompleted: e.lessonsCompleted || 0,
+                    totalLessons: e.totalLessons || 1,
+                    lastActive: e.lastActive || '-',
+                    capstoneStatus: e.capstoneStatus || 'not_started',
+                    capstoneGrade: e.capstoneGrade,
+                })));
+            }
+        } catch (err) {
+            console.error('Failed to fetch class data', err);
+        } finally {
+            setLoading(false);
+        }
+    }, [classId]);
+
+    useEffect(() => {
+        fetchStudents();
+    }, [fetchStudents]);
 
     const completedCount = students.filter(s => s.lessonsCompleted === s.totalLessons).length;
-    const avgProgress = Math.round(students.reduce((acc, s) => acc + (s.lessonsCompleted / s.totalLessons) * 100, 0) / students.length);
+    const avgProgress = students.length > 0 ? Math.round(students.reduce((acc, s) => acc + (s.lessonsCompleted / s.totalLessons) * 100, 0) / students.length) : 0;
     const submittedCount = students.filter(s => s.capstoneStatus === 'submitted' || s.capstoneStatus === 'graded').length;
 
     const filteredStudents = students.filter(s =>
@@ -73,7 +115,7 @@ export default function ClassDetailPage({ params }: Props) {
                         <Badge variant="light" color="violet" size="lg">{CLASS_INFO.code}</Badge>
                         <Badge variant="outline" color="gray">{CLASS_INFO.module}</Badge>
                     </Group>
-                    <Title order={2}>{CLASS_INFO.name}</Title>
+                    <Title order={2}>{classInfo.name}</Title>
                     <Text c="dimmed">{students.length} alunos matriculados</Text>
                 </div>
                 <Group>
@@ -103,7 +145,7 @@ export default function ClassDetailPage({ params }: Props) {
                             { key: 'capstoneStatus', label: 'Capstone' },
                             { key: 'lastActive', label: 'Última Atividade' },
                         ]}
-                        title={`Turma ${CLASS_INFO.name} - ${CLASS_INFO.module}`}
+                        title={`Turma ${classInfo.name} - ${classInfo.module}`}
                         filename={`turma_${classId}`}
                         formats={['csv', 'xlsx', 'pdf']}
                         label="Exportar"

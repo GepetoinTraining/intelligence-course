@@ -43,7 +43,7 @@ interface Campaign {
 }
 
 // ============================================================================
-// MOCK DATA
+// PRESETS
 // ============================================================================
 
 const COURSES = [
@@ -78,14 +78,12 @@ const GOALS = [
     { value: 'reactivation', label: '🔄 Reativação de ex-alunos' },
 ];
 
-const MOCK_CAMPAIGNS: Campaign[] = [];
-
 // ============================================================================
 // COMPONENT
 // ============================================================================
 
 export default function CampaignBuilderPage() {
-    const [campaigns, setCampaigns] = useState<Campaign[]>(MOCK_CAMPAIGNS);
+    const [campaigns, setCampaigns] = useState<Campaign[]>([]);
     const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
     const [activeTab, setActiveTab] = useState<string | null>('all');
 

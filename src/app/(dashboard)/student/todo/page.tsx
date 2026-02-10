@@ -56,8 +56,8 @@ const UNLOCK_LEVELS: UnlockLevel[] = [
     { level: 3, name: 'Dimensão Tempo', feature: '4d', requiredModules: 3, icon: <IconSparkles size={16} /> },
 ];
 
-// Mock student progress
-const MOCK_STUDENT_PROGRESS: StudentProgress = {
+// Default student progress (empty until fetched)
+const DEFAULT_PROGRESS: StudentProgress = {
     level: 0,
     currentXP: 0,
     nextLevelXP: 100,
@@ -66,10 +66,8 @@ const MOCK_STUDENT_PROGRESS: StudentProgress = {
     streak: 0,
 };
 
-const MOCK_TODOS: Todo[] = [];
-
 export default function TodoCubePage() {
-    const [todos, setTodos] = useState<Todo[]>(MOCK_TODOS);
+    const [todos, setTodos] = useState<Todo[]>([]);
     const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
     const [modal, { open: openModal, close: closeModal }] = useDisclosure(false);
 
@@ -155,13 +153,13 @@ export default function TodoCubePage() {
 
     // Calculate unlock status
     const unlockedLevels = UNLOCK_LEVELS.filter(
-        level => MOCK_STUDENT_PROGRESS.completedModules >= level.requiredModules
+        level => DEFAULT_PROGRESS.completedModules >= level.requiredModules
     );
     const nextUnlock = UNLOCK_LEVELS.find(
-        level => MOCK_STUDENT_PROGRESS.completedModules < level.requiredModules
+        level => DEFAULT_PROGRESS.completedModules < level.requiredModules
     );
-    const is3DUnlocked = MOCK_STUDENT_PROGRESS.completedModules >= 1;
-    const is4DUnlocked = MOCK_STUDENT_PROGRESS.completedModules >= 3;
+    const is3DUnlocked = DEFAULT_PROGRESS.completedModules >= 1;
+    const is4DUnlocked = DEFAULT_PROGRESS.completedModules >= 3;
 
     return (
         <Stack gap="xl">
@@ -225,7 +223,7 @@ export default function TodoCubePage() {
 
                 <Group gap="lg" wrap="wrap">
                     {UNLOCK_LEVELS.map((level, idx) => {
-                        const isUnlocked = MOCK_STUDENT_PROGRESS.completedModules >= level.requiredModules;
+                        const isUnlocked = DEFAULT_PROGRESS.completedModules >= level.requiredModules;
                         const isCurrent = nextUnlock?.level === level.level;
 
                         return (
@@ -275,7 +273,7 @@ export default function TodoCubePage() {
                         <Group gap="xs">
                             <IconSparkles size={14} color="var(--mantine-color-violet-6)" />
                             <Text size="xs">
-                                <strong>Próximo desbloqueio:</strong> Complete mais {nextUnlock.requiredModules - MOCK_STUDENT_PROGRESS.completedModules} módulo(s) para desbloquear "{nextUnlock.name}"
+                                <strong>Próximo desbloqueio:</strong> Complete mais {nextUnlock.requiredModules - DEFAULT_PROGRESS.completedModules} módulo(s) para desbloquear "{nextUnlock.name}"
                             </Text>
                         </Group>
                     </Paper>

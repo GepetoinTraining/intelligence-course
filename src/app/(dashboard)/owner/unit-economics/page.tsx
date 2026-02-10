@@ -95,20 +95,17 @@ interface ExpansionEvent {
 }
 
 // ============================================================================
-// MOCK DATA
+// EMPTY DEFAULTS
 // ============================================================================
 
-const MOCK_CHANNEL_METRICS: ChannelMetrics[] = [];
-
-const MOCK_COHORTS: CohortData[] = [];
-
-const MOCK_UNIT_ECONOMICS: UnitEconomicsData = {} as UnitEconomicsData as UnitEconomicsData;
-
-const MOCK_CUSTOMER_HEALTH: CustomerHealth[] = [];
-
-const MOCK_EXPANSION_PRODUCTS: ExpansionRevenue[] = [];
-
-const MOCK_EXPANSION_EVENTS: ExpansionEvent[] = [];
+const EMPTY_UNIT_ECONOMICS: UnitEconomicsData = {
+    blendedCac: 0,
+    avgLtv: 0,
+    cacLtvRatio: 0,
+    paybackMonths: 0,
+    customerLifespanMonths: 0,
+    monthlyArpu: 0,
+};
 
 // ============================================================================
 // METRIC CARDS
@@ -175,9 +172,9 @@ function FunnelVisualization({ channels }: { channels: ChannelMetrics[] }) {
 
     const stages = [
         { label: 'Visitantes', value: totals.visitors, color: 'gray', pct: 100 },
-        { label: 'Leads', value: totals.leads, color: 'blue', pct: (totals.leads / totals.visitors * 100) },
-        { label: 'Trials', value: totals.trials, color: 'violet', pct: (totals.trials / totals.leads * 100) },
-        { label: 'Matriculados', value: totals.enrollments, color: 'green', pct: (totals.enrollments / totals.trials * 100) },
+        { label: 'Leads', value: totals.leads, color: 'blue', pct: totals.visitors > 0 ? (totals.leads / totals.visitors * 100) : 0 },
+        { label: 'Trials', value: totals.trials, color: 'violet', pct: totals.leads > 0 ? (totals.trials / totals.leads * 100) : 0 },
+        { label: 'Matriculados', value: totals.enrollments, color: 'green', pct: totals.trials > 0 ? (totals.enrollments / totals.trials * 100) : 0 },
     ];
 
     return (
@@ -1044,7 +1041,7 @@ export default function UnitEconomicsPage() {
     const [loading, setLoading] = useState(true);
     const [channels, setChannels] = useState<ChannelMetrics[]>([]);
     const [cohorts, setCohorts] = useState<CohortData[]>([]);
-    const [economics, setEconomics] = useState<UnitEconomicsData>(MOCK_UNIT_ECONOMICS);
+    const [economics, setEconomics] = useState<UnitEconomicsData>(EMPTY_UNIT_ECONOMICS);
     const [customerHealth, setCustomerHealth] = useState<CustomerHealth[]>([]);
     const [expansionProducts, setExpansionProducts] = useState<ExpansionRevenue[]>([]);
     const [expansionEvents, setExpansionEvents] = useState<ExpansionEvent[]>([]);
@@ -1052,17 +1049,25 @@ export default function UnitEconomicsPage() {
     const [period, setPeriod] = useState('30d');
 
     useEffect(() => {
-        // Simulate API load with mock data
-        const timer = setTimeout(() => {
-            setChannels(MOCK_CHANNEL_METRICS);
-            setCohorts(MOCK_COHORTS);
-            setEconomics(MOCK_UNIT_ECONOMICS);
-            setCustomerHealth(MOCK_CUSTOMER_HEALTH);
-            setExpansionProducts(MOCK_EXPANSION_PRODUCTS);
-            setExpansionEvents(MOCK_EXPANSION_EVENTS);
-            setLoading(false);
-        }, 500);
-        return () => clearTimeout(timer);
+        const fetchUnitEconomics = async () => {
+            try {
+                const res = await fetch('/api/owner/unit-economics');
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json.channels) setChannels(json.channels);
+                    if (json.cohorts) setCohorts(json.cohorts);
+                    if (json.economics) setEconomics(json.economics);
+                    if (json.customerHealth) setCustomerHealth(json.customerHealth);
+                    if (json.expansionProducts) setExpansionProducts(json.expansionProducts);
+                    if (json.expansionEvents) setExpansionEvents(json.expansionEvents);
+                }
+            } catch (err) {
+                console.error('Error fetching unit economics:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchUnitEconomics();
     }, []);
 
     // Calculate totals

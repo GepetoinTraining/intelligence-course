@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Title, Text, Stack, Group, Card, Badge, Button, SimpleGrid,
     ThemeIcon, Paper, ActionIcon, Table, Modal, TextInput, Select,
@@ -31,17 +31,12 @@ interface Term {
 }
 
 // ============================================================================
-// MOCK DATA
-// ============================================================================
-
-const MOCK_TERMS: Term[] = [];
-
-// ============================================================================
 // COMPONENT
 // ============================================================================
 
 export default function TermManagementPage() {
-    const [terms, setTerms] = useState<Term[]>(MOCK_TERMS);
+    const [terms, setTerms] = useState<Term[]>([]);
+    const [loading, setLoading] = useState(true);
     const [selectedTerm, setSelectedTerm] = useState<Term | null>(null);
     const [isCreating, setIsCreating] = useState(false);
     const [activeTab, setActiveTab] = useState<string | null>('current');
@@ -54,6 +49,43 @@ export default function TermManagementPage() {
     const [endDate, setEndDate] = useState<Date | null>(null);
     const [enrollmentStart, setEnrollmentStart] = useState<Date | null>(null);
     const [enrollmentEnd, setEnrollmentEnd] = useState<Date | null>(null);
+
+    const fetchTerms = useCallback(async () => {
+        try {
+            setLoading(true);
+            const res = await fetch('/api/terms');
+            if (!res.ok) return;
+            const json = await res.json();
+            const rows = json.data || [];
+            const now = Date.now() / 1000;
+            setTerms(rows.map((r: any) => {
+                const start = r.startsAt || r.startDate;
+                const end = r.endsAt || r.endDate;
+                let status: 'current' | 'upcoming' | 'past' = 'upcoming';
+                if (start && end) {
+                    if (now >= start && now <= end) status = 'current';
+                    else if (now > end) status = 'past';
+                }
+                return {
+                    id: r.id,
+                    name: r.name || 'Período',
+                    startDate: start ? new Date(start * 1000).toISOString().split('T')[0] : '',
+                    endDate: end ? new Date(end * 1000).toISOString().split('T')[0] : '',
+                    enrollmentStart: r.enrollmentStart ? new Date(r.enrollmentStart * 1000).toISOString().split('T')[0] : '',
+                    enrollmentEnd: r.enrollmentEnd ? new Date(r.enrollmentEnd * 1000).toISOString().split('T')[0] : '',
+                    status,
+                    classCount: r.classCount || 0,
+                    studentCount: r.studentCount || 0,
+                };
+            }));
+        } catch (err) {
+            console.error('Failed to fetch terms', err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => { fetchTerms(); }, [fetchTerms]);
 
     const handleCreate = () => {
         setIsCreating(true);
@@ -77,33 +109,37 @@ export default function TermManagementPage() {
         openModal();
     };
 
-    const handleSave = () => {
-        if (isCreating && startDate && endDate && enrollmentStart && enrollmentEnd) {
-            const newTerm: Term = {
-                id: `term-${Date.now()}`,
-                name,
-                startDate: startDate.toISOString().split('T')[0],
-                endDate: endDate.toISOString().split('T')[0],
-                enrollmentStart: enrollmentStart.toISOString().split('T')[0],
-                enrollmentEnd: enrollmentEnd.toISOString().split('T')[0],
-                status: 'upcoming',
-                classCount: 0,
-                studentCount: 0,
-            };
-            setTerms(prev => [...prev, newTerm]);
-        } else if (selectedTerm && startDate && endDate && enrollmentStart && enrollmentEnd) {
-            setTerms(prev => prev.map(t =>
-                t.id === selectedTerm.id
-                    ? {
-                        ...t,
+    const handleSave = async () => {
+        if (isCreating && startDate && endDate) {
+            try {
+                await fetch('/api/terms', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
                         name,
-                        startDate: startDate.toISOString().split('T')[0],
-                        endDate: endDate.toISOString().split('T')[0],
-                        enrollmentStart: enrollmentStart.toISOString().split('T')[0],
-                        enrollmentEnd: enrollmentEnd.toISOString().split('T')[0],
-                    }
-                    : t
-            ));
+                        startsAt: Math.floor(startDate.getTime() / 1000),
+                        endsAt: Math.floor(endDate.getTime() / 1000),
+                        enrollmentStart: enrollmentStart ? Math.floor(enrollmentStart.getTime() / 1000) : null,
+                        enrollmentEnd: enrollmentEnd ? Math.floor(enrollmentEnd.getTime() / 1000) : null,
+                    }),
+                });
+                fetchTerms();
+            } catch (err) { console.error('Failed to create term', err); }
+        } else if (selectedTerm && startDate && endDate) {
+            try {
+                await fetch(`/api/terms/${selectedTerm.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name,
+                        startsAt: Math.floor(startDate.getTime() / 1000),
+                        endsAt: Math.floor(endDate.getTime() / 1000),
+                        enrollmentStart: enrollmentStart ? Math.floor(enrollmentStart.getTime() / 1000) : null,
+                        enrollmentEnd: enrollmentEnd ? Math.floor(enrollmentEnd.getTime() / 1000) : null,
+                    }),
+                });
+                fetchTerms();
+            } catch (err) { console.error('Failed to update term', err); }
         }
         closeModal();
     };

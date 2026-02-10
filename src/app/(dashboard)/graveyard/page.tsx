@@ -35,14 +35,9 @@ interface Badge {
     unlocked: boolean;
 }
 
-// Mock data
-const MOCK_GRAVES: GraveyardEntry[] = [];
-
-const MOCK_BADGES: Badge[] = [];
-
 export default function GraveyardPage() {
-    const [graves] = useState<GraveyardEntry[]>(MOCK_GRAVES);
-    const [badges] = useState<Badge[]>(MOCK_BADGES);
+    const [graves] = useState<GraveyardEntry[]>([]);
+    const [badges] = useState<Badge[]>([]);
     const [search, setSearch] = useState('');
     const [activeTab, setActiveTab] = useState<string | null>('graves');
     const [addOpened, { open: openAdd, close: closeAdd }] = useDisclosure(false);

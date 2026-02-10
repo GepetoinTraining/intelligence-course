@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect, useCallback } from 'react';
 import {
     Title,
     Text,
@@ -15,6 +16,8 @@ import {
     Timeline,
     Button,
     ActionIcon,
+    Loader,
+    Center,
 } from '@mantine/core';
 import {
     IconUsers,
@@ -34,33 +37,42 @@ import {
 } from '@tabler/icons-react';
 import Link from 'next/link';
 
-// Mock data - will be replaced with API calls
-const stats = {
-    newLeads: 12,
-    contactedToday: 8,
-    trialsScheduled: 5,
-    conversionsThisMonth: 15,
-    conversionRate: 32,
-};
+// ============================================================================
+// TYPES
+// ============================================================================
 
-const todayTrials = [
-    { id: '1', name: 'Maria Silva', time: '10:00', class: 'English A1', room: 'Sala 1', status: 'confirmed' },
-    { id: '2', name: 'João Santos', time: '14:30', class: 'Spanish A1', room: 'Sala 2', status: 'pending' },
-    { id: '3', name: 'Ana Oliveira', time: '16:00', class: 'Intelligence', room: 'Lab', status: 'confirmed' },
-];
+interface DashboardStats {
+    newLeads: number;
+    contactedToday: number;
+    trialsScheduled: number;
+    conversionsThisMonth: number;
+    conversionRate: number;
+}
 
-const pendingFollowups = [
-    { id: '1', name: 'Pedro Costa', daysAgo: 3, interest: 'English B1', lastContact: 'WhatsApp' },
-    { id: '2', name: 'Carla Mendes', daysAgo: 5, interest: 'Spanish A2', lastContact: 'Call' },
-    { id: '3', name: 'Rafael Lima', daysAgo: 7, interest: 'English A1', lastContact: 'Email' },
-];
+interface TrialEntry {
+    id: string;
+    name: string;
+    time: string;
+    class: string;
+    room: string;
+    status: string;
+}
 
-const recentActivity = [
-    { id: '1', type: 'lead', text: 'Novo lead: Fernanda Rocha', time: '10 min atrás', source: 'Instagram' },
-    { id: '2', type: 'trial', text: 'Trial confirmado: Maria Silva', time: '25 min atrás' },
-    { id: '3', type: 'conversion', text: 'João matriculado em English A1', time: '1h atrás' },
-    { id: '4', type: 'contact', text: 'WhatsApp enviado para 3 leads', time: '2h atrás' },
-];
+interface FollowupEntry {
+    id: string;
+    name: string;
+    daysAgo: number;
+    interest: string;
+    lastContact: string;
+}
+
+interface ActivityEntry {
+    id: string;
+    type: string;
+    text: string;
+    time: string;
+    source?: string;
+}
 
 const statusColors: Record<string, string> = {
     confirmed: 'green',
@@ -75,7 +87,119 @@ const activityIcons: Record<string, any> = {
     contact: IconMessageCircle,
 };
 
+// ============================================================================
+// COMPONENT
+// ============================================================================
+
 export default function StaffDashboardPage() {
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState<DashboardStats>({
+        newLeads: 0, contactedToday: 0, trialsScheduled: 0,
+        conversionsThisMonth: 0, conversionRate: 0,
+    });
+    const [todayTrials, setTodayTrials] = useState<TrialEntry[]>([]);
+    const [pendingFollowups, setPendingFollowups] = useState<FollowupEntry[]>([]);
+    const [recentActivity, setRecentActivity] = useState<ActivityEntry[]>([]);
+
+    const fetchDashboardData = useCallback(async () => {
+        try {
+            setLoading(true);
+
+            // Fetch leads for stats
+            const [leadsRes, trialsRes, enrollRes] = await Promise.allSettled([
+                fetch('/api/leads'),
+                fetch('/api/trials'),
+                fetch('/api/enrollments'),
+            ]);
+
+            let newLeads = 0;
+            let contactedToday = 0;
+            const followups: FollowupEntry[] = [];
+            if (leadsRes.status === 'fulfilled' && leadsRes.value.ok) {
+                const leads = await leadsRes.value.json();
+                const rows = leads.data || [];
+                const today = new Date().toISOString().split('T')[0];
+                newLeads = rows.filter((l: any) => {
+                    const created = l.createdAt ? new Date(l.createdAt * 1000).toISOString().split('T')[0] : '';
+                    return created === today;
+                }).length;
+                contactedToday = rows.filter((l: any) => l.status === 'contacted').length;
+                // Build pending followups from leads needing attention
+                rows.filter((l: any) => l.status === 'contacted' || l.status === 'qualified')
+                    .slice(0, 5)
+                    .forEach((l: any) => {
+                        const daysSince = l.lastContactAt
+                            ? Math.floor((Date.now() / 1000 - l.lastContactAt) / 86400)
+                            : Math.floor((Date.now() / 1000 - (l.createdAt || 0)) / 86400);
+                        followups.push({
+                            id: l.id,
+                            name: l.name || l.fullName || 'Lead',
+                            daysAgo: daysSince,
+                            interest: l.interest || l.course || 'Geral',
+                            lastContact: l.lastContactType || 'N/A',
+                        });
+                    });
+            }
+            setPendingFollowups(followups);
+
+            let trialsScheduled = 0;
+            const trials: TrialEntry[] = [];
+            if (trialsRes.status === 'fulfilled' && trialsRes.value.ok) {
+                const trialsData = await trialsRes.value.json();
+                const rows = trialsData.data || [];
+                trialsScheduled = rows.filter((t: any) => t.status === 'scheduled' || t.status === 'confirmed').length;
+                const today = new Date().toISOString().split('T')[0];
+                rows.filter((t: any) => {
+                    const trialDate = t.scheduledAt ? new Date(t.scheduledAt * 1000).toISOString().split('T')[0] : '';
+                    return trialDate === today;
+                }).forEach((t: any) => {
+                    trials.push({
+                        id: t.id,
+                        name: t.studentName || t.leadName || 'Aluno',
+                        time: t.scheduledAt ? new Date(t.scheduledAt * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '',
+                        class: t.className || t.course || '',
+                        room: t.roomName || '',
+                        status: t.status || 'pending',
+                    });
+                });
+            }
+            setTodayTrials(trials);
+
+            let conversionsThisMonth = 0;
+            if (enrollRes.status === 'fulfilled' && enrollRes.value.ok) {
+                const enrollData = await enrollRes.value.json();
+                const rows = enrollData.data || [];
+                const monthStart = new Date();
+                monthStart.setDate(1);
+                monthStart.setHours(0, 0, 0, 0);
+                const monthStartTs = monthStart.getTime() / 1000;
+                conversionsThisMonth = rows.filter((e: any) => {
+                    const created = e.enrolledAt || e.createdAt || 0;
+                    return created >= monthStartTs;
+                }).length;
+            }
+
+            const allLeads = newLeads + contactedToday;
+            const conversionRate = allLeads > 0 ? Math.round((conversionsThisMonth / allLeads) * 100) : 0;
+
+            setStats({
+                newLeads,
+                contactedToday,
+                trialsScheduled,
+                conversionsThisMonth,
+                conversionRate,
+            });
+
+        } catch (err) {
+            console.error('Failed to fetch staff dashboard data:', err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchDashboardData();
+    }, [fetchDashboardData]);
     return (
         <Stack gap="xl">
             {/* Header */}

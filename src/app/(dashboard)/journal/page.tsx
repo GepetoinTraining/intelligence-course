@@ -34,9 +34,6 @@ interface PromptRun {
     createdAt: string;
 }
 
-// Mock data
-const MOCK_RUNS: PromptRun[] = [];
-
 const ANNOTATION_TYPES = {
     reflection: { icon: IconBook, color: 'gray', label: 'Reflexão' },
     breakthrough: { icon: IconSparkles, color: 'yellow', label: 'Breakthrough' },
@@ -45,7 +42,7 @@ const ANNOTATION_TYPES = {
 };
 
 export default function JournalPage() {
-    const [runs] = useState<PromptRun[]>(MOCK_RUNS);
+    const [runs] = useState<PromptRun[]>([]);
     const [search, setSearch] = useState('');
     const [filterStatus, setFilterStatus] = useState<string | null>('all');
     const [expandedRuns, setExpandedRuns] = useState<Set<string>>(new Set(['run-142']));

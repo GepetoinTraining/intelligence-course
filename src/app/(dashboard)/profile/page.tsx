@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Title, Text, Stack, Group, Card, Badge, Button, SimpleGrid,
     TextInput, Textarea, Select, ThemeIcon, Paper, ActionIcon,
     Avatar, Divider, Switch, Tabs, Table, Modal, Grid,
-    NumberInput,
+    NumberInput, Loader, Center,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
@@ -15,68 +15,57 @@ import {
     IconBrandWhatsapp, IconReceipt, IconCash,
 } from '@tabler/icons-react';
 
-// Mock profile data
-const profileData = {
+// DEFAULT profile data (used as fallback when API is unavailable)
+const defaultProfileData = {
     // Personal Info
-    firstName: 'Carlos',
-    lastName: 'Silva',
-    email: 'carlos.silva@email.com',
-    phone: '(11) 99999-1111',
-    whatsapp: '(11) 99999-1111',
-    cpf: '123.456.789-00',
-    birthDate: '1985-06-15',
-    avatarUrl: null,
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    whatsapp: '',
+    cpf: '',
+    birthDate: '',
+    avatarUrl: null as string | null,
 
     // Address
     address: {
-        street: 'Rua das Flores',
-        number: '123',
-        complement: 'Apto 45',
-        neighborhood: 'Centro',
-        city: 'São Paulo',
-        state: 'SP',
-        zipCode: '01310-100',
+        street: '',
+        number: '',
+        complement: '',
+        neighborhood: '',
+        city: '',
+        state: '',
+        zipCode: '',
     },
 
     // Billing Address (can be different)
     billingAddress: {
-        sameAsAddress: false,
-        street: 'Av. Paulista',
-        number: '1000',
-        complement: 'Sala 501',
-        neighborhood: 'Bela Vista',
-        city: 'São Paulo',
-        state: 'SP',
-        zipCode: '01310-200',
+        sameAsAddress: true,
+        street: '',
+        number: '',
+        complement: '',
+        neighborhood: '',
+        city: '',
+        state: '',
+        zipCode: '',
     },
 
     // Payment Methods
-    paymentMethods: [
-        {
-            id: '1',
-            type: 'credit_card',
-            brand: 'Visa',
-            last4: '4242',
-            expiry: '12/26',
-            isDefault: true,
-            holderName: 'CARLOS SILVA',
-        },
-        {
-            id: '2',
-            type: 'credit_card',
-            brand: 'Mastercard',
-            last4: '8888',
-            expiry: '08/25',
-            isDefault: false,
-            holderName: 'CARLOS SILVA',
-        },
-    ],
+    paymentMethods: [] as Array<{
+        id: string;
+        type: string;
+        brand: string;
+        last4: string;
+        expiry: string;
+        isDefault: boolean;
+        holderName: string;
+    }>,
 
     // Emergency Contact
     emergencyContact: {
-        name: 'Maria Silva',
-        relationship: 'Esposa',
-        phone: '(11) 99999-2222',
+        name: '',
+        relationship: '',
+        phone: '',
     },
 
     // Preferences
@@ -88,15 +77,13 @@ const profileData = {
     },
 
     // Children (for parents)
-    children: [
-        {
-            id: '1',
-            name: 'Lucas Silva',
-            birthDate: '2012-03-20',
-            course: 'Intelligence',
-            class: 'Manhã - Turma A',
-        },
-    ],
+    children: [] as Array<{
+        id: string;
+        name: string;
+        birthDate: string;
+        course: string;
+        class: string;
+    }>,
 };
 
 const STATES = [
@@ -117,13 +104,62 @@ const STATES = [
 ];
 
 export default function ProfilePage() {
-    const [profile, setProfile] = useState(profileData);
+    const [profile, setProfile] = useState(defaultProfileData);
+    const [loading, setLoading] = useState(true);
     const [editingSection, setEditingSection] = useState<string | null>(null);
     const [paymentModalOpened, { open: openPaymentModal, close: closePaymentModal }] = useDisclosure(false);
-    const [sameAsBilling, setSameAsBilling] = useState(profile.billingAddress.sameAsAddress);
+    const [sameAsBilling, setSameAsBilling] = useState(true);
 
-    const handleSave = (section: string) => {
-        console.log('Saving section:', section);
+    // Fetch profile from API
+    const fetchProfile = useCallback(async () => {
+        try {
+            setLoading(true);
+            const res = await fetch('/api/users/me');
+            if (res.ok) {
+                const data = await res.json();
+                const u = data.user || data;
+                setProfile(prev => ({
+                    ...prev,
+                    firstName: u.firstName || u.name?.split(' ')[0] || '',
+                    lastName: u.lastName || u.name?.split(' ').slice(1).join(' ') || '',
+                    email: u.email || '',
+                    phone: u.phone || '',
+                    whatsapp: u.whatsapp || u.phone || '',
+                    cpf: u.cpf || '',
+                    birthDate: u.birthDate || '',
+                    avatarUrl: u.avatarUrl || u.imageUrl || null,
+                    address: u.address || prev.address,
+                    billingAddress: u.billingAddress || prev.billingAddress,
+                    paymentMethods: u.paymentMethods || prev.paymentMethods,
+                    emergencyContact: u.emergencyContact || prev.emergencyContact,
+                    preferences: u.preferences || prev.preferences,
+                    children: u.children || prev.children,
+                }));
+                if (u.billingAddress) {
+                    setSameAsBilling(u.billingAddress.sameAsAddress ?? true);
+                }
+            }
+        } catch (err) {
+            console.error('Failed to fetch profile:', err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchProfile();
+    }, [fetchProfile]);
+
+    const handleSave = async (section: string) => {
+        try {
+            await fetch('/api/users/me', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ section, data: profile }),
+            });
+        } catch (err) {
+            console.error('Failed to save profile:', err);
+        }
         setEditingSection(null);
     };
 

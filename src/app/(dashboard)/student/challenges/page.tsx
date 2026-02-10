@@ -46,15 +46,10 @@ interface LeaderboardEntry {
     challenges: number;
 }
 
-const MOCK_CHALLENGES: Challenge[] = [];
-
-const MOCK_SOLUTIONS: Solution[] = [];
-
-const MOCK_LEADERBOARD: LeaderboardEntry[] = [];
-
 export default function ChallengeBoardPage() {
-    const [challenges, setChallenges] = useState<Challenge[]>(MOCK_CHALLENGES);
-    const [solutions, setSolutions] = useState<Solution[]>(MOCK_SOLUTIONS);
+    const [challenges, setChallenges] = useState<Challenge[]>([]);
+    const [solutions, setSolutions] = useState<Solution[]>([]);
+    const [leaderboard] = useState<LeaderboardEntry[]>([]);
     const [activeTab, setActiveTab] = useState<string | null>('all');
     const [modal, { open: openModal, close: closeModal }] = useDisclosure(false);
     const [attemptModal, { open: openAttempt, close: closeAttempt }] = useDisclosure(false);
@@ -298,7 +293,7 @@ export default function ChallengeBoardPage() {
                             <Text fw={600}>Ranking</Text>
                         </Group>
                         <Stack gap="sm">
-                            {MOCK_LEADERBOARD.map((entry, i) => (
+                            {leaderboard.map((entry, i) => (
                                 <Paper key={i} p="sm" bg={i === 0 ? 'yellow.0' : 'gray.0'} radius="md">
                                     <Group justify="space-between">
                                         <Group gap="sm">

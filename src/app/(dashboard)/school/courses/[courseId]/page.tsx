@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useState, useEffect } from 'react';
 import {
     Title, Text, Stack, Group, Card, Badge, Button,
     Paper, TextInput, NumberInput, Select, Slider, Switch,
@@ -33,10 +33,8 @@ interface CourseSetup {
 }
 
 interface TeacherOption { value: string; label: string; model?: string; }
-const MOCK_TEACHERS: TeacherOption[] = [];
 
 interface ServiceItem { id: string; name: string; price: number; }
-const MOCK_SERVICES: ServiceItem[] = [];
 
 interface Props {
     params: Promise<{ courseId: string }>;
@@ -60,6 +58,18 @@ export default function CourseSetupPage({ params }: Props) {
         additionalServices: [],
     });
 
+    const [teacherOptions, setTeacherOptions] = useState<TeacherOption[]>([]);
+    const [serviceItems, setServiceItems] = useState<ServiceItem[]>([]);
+
+    useEffect(() => {
+        fetch('/api/users?role=teacher').then(r => r.json()).then(j => {
+            setTeacherOptions((j.data || []).map((t: any) => ({ value: t.id, label: t.name || t.email || t.id, model: 'hired_teacher' })));
+        }).catch(() => { });
+        fetch('/api/products').then(r => r.json()).then(j => {
+            setServiceItems((j.data || []).map((s: any) => ({ id: s.id, name: s.name || s.id, price: s.price || 0 })));
+        }).catch(() => { });
+    }, []);
+
     const updateCourse = (field: keyof CourseSetup, value: unknown) => {
         setCourse(prev => ({ ...prev, [field]: value }));
     };
@@ -79,7 +89,7 @@ export default function CourseSetupPage({ params }: Props) {
         } else if (course.paymentModel === 'external_teacher') {
             platformFeeAmount = gross * (course.platformFee / 100);
             deductions = course.roomRental +
-                MOCK_SERVICES.filter(s => course.additionalServices.includes(s.id))
+                serviceItems.filter(s => course.additionalServices.includes(s.id))
                     .reduce((acc, s) => acc + s.price, 0);
             teacherAmount = gross - platformFeeAmount - transactionFeeAmount - deductions;
             schoolAmount = platformFeeAmount + deductions;
@@ -290,7 +300,7 @@ export default function CourseSetupPage({ params }: Props) {
                                     <Select
                                         label="Professor"
                                         placeholder="Selecione o professor"
-                                        data={MOCK_TEACHERS.filter(t => t.model === 'hired_teacher')}
+                                        data={teacherOptions.filter(t => t.model === 'hired_teacher')}
                                         value={course.teacherId}
                                         onChange={(v) => updateCourse('teacherId', v)}
                                     />
@@ -325,7 +335,7 @@ export default function CourseSetupPage({ params }: Props) {
                                     <Select
                                         label="Professor"
                                         placeholder="Selecione o professor"
-                                        data={MOCK_TEACHERS.filter(t => t.model === 'external_teacher')}
+                                        data={teacherOptions.filter(t => t.model === 'external_teacher')}
                                         value={course.teacherId}
                                         onChange={(v) => updateCourse('teacherId', v)}
                                     />
@@ -363,7 +373,7 @@ export default function CourseSetupPage({ params }: Props) {
                                     <Divider label="Serviços Adicionais" labelPosition="left" />
 
                                     <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} spacing="sm">
-                                        {MOCK_SERVICES.map((service) => (
+                                        {serviceItems.map((service) => (
                                             <Paper
                                                 key={service.id}
                                                 p="sm"

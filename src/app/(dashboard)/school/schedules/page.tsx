@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
     Title, Text, Stack, Group, Card, Badge, Button, SimpleGrid,
     ThemeIcon, Paper, ActionIcon, Modal, TextInput, Select,
@@ -59,7 +59,7 @@ interface Conflict {
 }
 
 // ============================================================================
-// MOCK DATA
+// CONFIG
 // ============================================================================
 
 const DAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -76,29 +76,9 @@ const TIME_OPTIONS = [
     '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00'
 ];
 
-const CLASSES: ClassOption[] = [
-    { id: '1', name: 'Turma A - Manhã', course: 'Fundamentos de IA', color: '#7950f2' },
-    { id: '2', name: 'Turma B - Tarde', course: 'Fundamentos de IA', color: '#228be6' },
-    { id: '3', name: 'Turma C - Noite', course: 'AI Mastery', color: '#40c057' },
-    { id: '4', name: 'Turma D - Manhã', course: 'IA para Educadores', color: '#fd7e14' },
-    { id: '5', name: 'Intensivo Verão', course: 'Bootcamp Verão', color: '#e64980' },
-];
 
-const TEACHERS: TeacherOption[] = [
-    { id: '1', name: 'Prof. Maria Santos' },
-    { id: '2', name: 'Prof. João Silva' },
-    { id: '3', name: 'Prof. Ana Costa' },
-    { id: '4', name: 'Prof. Carlos Mendes' },
-];
 
-const ROOMS: RoomOption[] = [
-    { id: '1', name: 'Sala 101', capacity: 12 },
-    { id: '2', name: 'Sala 102', capacity: 8 },
-    { id: '3', name: 'Laboratório A', capacity: 20 },
-    { id: '4', name: 'Auditório', capacity: 50 },
-];
 
-const MOCK_SCHEDULE: ScheduleSlot[] = [];
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -134,7 +114,11 @@ function getSlotTop(start: string, baseHour: number): number {
 // ============================================================================
 
 export default function ScheduleBuilderPage() {
-    const [schedule, setSchedule] = useState<ScheduleSlot[]>(MOCK_SCHEDULE);
+    const [schedule, setSchedule] = useState<ScheduleSlot[]>([]);
+    const [classOptions, setClassOptions] = useState<ClassOption[]>([]);
+    const [teacherOptions, setTeacherOptions] = useState<TeacherOption[]>([]);
+    const [roomOptions, setRoomOptions] = useState<RoomOption[]>([]);
+    const [loading, setLoading] = useState(true);
     const [selectedSlot, setSelectedSlot] = useState<ScheduleSlot | null>(null);
     const [filterClass, setFilterClass] = useState<string | null>(null);
     const [filterTeacher, setFilterTeacher] = useState<string | null>(null);
@@ -151,6 +135,49 @@ export default function ScheduleBuilderPage() {
     const [dayOfWeek, setDayOfWeek] = useState<string | null>('1');
     const [startTime, setStartTime] = useState<string | null>('09:00');
     const [endTime, setEndTime] = useState<string | null>('11:00');
+
+    const COLORS = ['#7950f2', '#228be6', '#40c057', '#fd7e14', '#e64980', '#15aabf', '#be4bdb'];
+
+    const fetchSchedule = useCallback(async () => {
+        try {
+            setLoading(true);
+            const res = await fetch('/api/schedules');
+            if (!res.ok) return;
+            const json = await res.json();
+            const rows = json.data || [];
+            setSchedule(rows.map((r: any) => ({
+                id: r.id,
+                classId: r.classId || '',
+                className: r.className || '',
+                teacherId: r.teacherId || '',
+                teacherName: r.teacherName || '',
+                roomId: r.roomId || '',
+                roomName: r.roomName || '',
+                dayOfWeek: r.dayOfWeek ?? 1,
+                startTime: r.startTime || '09:00',
+                endTime: r.endTime || '10:00',
+                color: r.color || COLORS[Math.floor(Math.random() * COLORS.length)],
+                termId: r.termId || '',
+            })));
+        } catch (err) {
+            console.error('Failed to fetch schedule', err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchSchedule();
+        fetch('/api/classes').then(r => r.json()).then(j => {
+            setClassOptions((j.data || []).map((c: any, i: number) => ({ id: c.id, name: c.name || c.id, course: '', color: COLORS[i % COLORS.length] })));
+        }).catch(() => { });
+        fetch('/api/users?role=teacher').then(r => r.json()).then(j => {
+            setTeacherOptions((j.data || []).map((t: any) => ({ id: t.id, name: t.name || t.email || t.id })));
+        }).catch(() => { });
+        fetch('/api/rooms').then(r => r.json()).then(j => {
+            setRoomOptions((j.data || []).map((r: any) => ({ id: r.id, name: r.name || r.id, capacity: r.capacity || 0 })));
+        }).catch(() => { });
+    }, [fetchSchedule]);
 
     // Detect conflicts
     const conflicts = useMemo(() => {
@@ -218,54 +245,39 @@ export default function ScheduleBuilderPage() {
         openModal();
     };
 
-    const handleDelete = (slotId: string) => {
-        setSchedule(prev => prev.filter(s => s.id !== slotId));
+    const handleDelete = async (slotId: string) => {
+        try {
+            await fetch(`/api/schedules/${slotId}`, { method: 'DELETE' });
+            fetchSchedule();
+        } catch (err) { console.error('Failed to delete schedule', err); }
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!classId || !teacherId || !roomId || !startTime || !endTime) return;
-
-        const classInfo = CLASSES.find(c => c.id === classId);
-        const teacherInfo = TEACHERS.find(t => t.id === teacherId);
-        const roomInfo = ROOMS.find(r => r.id === roomId);
-
-        if (!classInfo || !teacherInfo || !roomInfo) return;
-
-        if (isCreating) {
-            const newSlot: ScheduleSlot = {
-                id: `slot-${Date.now()}`,
-                classId,
-                className: classInfo.name,
-                teacherId,
-                teacherName: teacherInfo.name,
-                roomId,
-                roomName: roomInfo.name,
-                dayOfWeek: Number(dayOfWeek),
-                startTime,
-                endTime,
-                color: classInfo.color,
-                termId: '1',
-            };
-            setSchedule(prev => [...prev, newSlot]);
-        } else if (selectedSlot) {
-            setSchedule(prev => prev.map(s =>
-                s.id === selectedSlot.id
-                    ? {
-                        ...s,
-                        classId,
-                        className: classInfo.name,
-                        teacherId,
-                        teacherName: teacherInfo.name,
-                        roomId,
-                        roomName: roomInfo.name,
-                        dayOfWeek: Number(dayOfWeek),
-                        startTime,
-                        endTime,
-                        color: classInfo.color,
-                    }
-                    : s
-            ));
-        }
+        const body = {
+            classId,
+            teacherId,
+            roomId,
+            dayOfWeek: Number(dayOfWeek),
+            startTime,
+            endTime,
+        };
+        try {
+            if (isCreating) {
+                await fetch('/api/schedules', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+            } else if (selectedSlot) {
+                await fetch(`/api/schedules/${selectedSlot.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+            }
+            fetchSchedule();
+        } catch (err) { console.error('Failed to save schedule', err); }
         closeModal();
     };
 
@@ -348,7 +360,7 @@ export default function ScheduleBuilderPage() {
                 <Group gap="sm">
                     <Select
                         placeholder="Filtrar turma"
-                        data={CLASSES.map(c => ({ value: c.id, label: c.name }))}
+                        data={classOptions.map(c => ({ value: c.id, label: c.name }))}
                         value={filterClass}
                         onChange={setFilterClass}
                         clearable
@@ -357,7 +369,7 @@ export default function ScheduleBuilderPage() {
                     />
                     <Select
                         placeholder="Filtrar professor"
-                        data={TEACHERS.map(t => ({ value: t.id, label: t.name }))}
+                        data={teacherOptions.map(t => ({ value: t.id, label: t.name }))}
                         value={filterTeacher}
                         onChange={setFilterTeacher}
                         clearable
@@ -366,7 +378,7 @@ export default function ScheduleBuilderPage() {
                     />
                     <Select
                         placeholder="Filtrar sala"
-                        data={ROOMS.map(r => ({ value: r.id, label: r.name }))}
+                        data={roomOptions.map(r => ({ value: r.id, label: r.name }))}
                         value={filterRoom}
                         onChange={setFilterRoom}
                         clearable
@@ -534,7 +546,7 @@ export default function ScheduleBuilderPage() {
             <Paper p="md" radius="md" withBorder>
                 <Text size="sm" fw={500} mb="sm">Legenda das Turmas</Text>
                 <Group gap="md">
-                    {CLASSES.map(cls => (
+                    {classOptions.map(cls => (
                         <Group key={cls.id} gap="xs">
                             <ColorSwatch color={cls.color} size={16} />
                             <Text size="xs">{cls.name}</Text>
@@ -554,7 +566,7 @@ export default function ScheduleBuilderPage() {
                     <Select
                         label="Turma"
                         placeholder="Selecione a turma"
-                        data={CLASSES.map(c => ({ value: c.id, label: `${c.name} (${c.course})` }))}
+                        data={classOptions.map(c => ({ value: c.id, label: `${c.name} (${c.course})` }))}
                         value={classId}
                         onChange={setClassId}
                         required
@@ -563,7 +575,7 @@ export default function ScheduleBuilderPage() {
                     <Select
                         label="Professor"
                         placeholder="Selecione o professor"
-                        data={TEACHERS.map(t => ({ value: t.id, label: t.name }))}
+                        data={teacherOptions.map(t => ({ value: t.id, label: t.name }))}
                         value={teacherId}
                         onChange={setTeacherId}
                         required
@@ -572,7 +584,7 @@ export default function ScheduleBuilderPage() {
                     <Select
                         label="Sala"
                         placeholder="Selecione a sala"
-                        data={ROOMS.map(r => ({ value: r.id, label: `${r.name} (${r.capacity} lugares)` }))}
+                        data={roomOptions.map(r => ({ value: r.id, label: `${r.name} (${r.capacity} lugares)` }))}
                         value={roomId}
                         onChange={setRoomId}
                         required

@@ -24,10 +24,8 @@ interface Technique {
     lastUsed?: string;
 }
 
-const MOCK_TECHNIQUES: Technique[] = [];
-
 export default function TechniqueTrackerPage() {
-    const [techniques] = useState<Technique[]>(MOCK_TECHNIQUES);
+    const [techniques] = useState<Technique[]>([]);
     const [selectedTechnique, setSelectedTechnique] = useState<Technique | null>(null);
 
     const totalUsage = techniques.reduce((acc, t) => acc + t.usageCount, 0);

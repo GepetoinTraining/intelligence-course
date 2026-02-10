@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
     Title, Text, Stack, Group, Card, Badge, Button, SimpleGrid,
@@ -44,8 +44,7 @@ interface Session {
     status: 'upcoming' | 'in_progress' | 'completed';
 }
 
-// Mock data for dev mode
-const MOCK_SESSIONS: Session[] = [];
+
 
 const statusColors = {
     present: 'green',
@@ -77,7 +76,8 @@ function AttendanceContent() {
     const searchParams = useSearchParams();
     const initialSessionId = searchParams.get('session');
 
-    const [sessions, setSessions] = useState<Session[]>(MOCK_SESSIONS);
+    const [sessions, setSessions] = useState<Session[]>([]);
+    const [loading, setLoading] = useState(true);
     const [selectedSession, setSelectedSession] = useState<string | null>(initialSessionId || null);
     const [search, setSearch] = useState('');
     const [noteModal, { open: openNoteModal, close: closeNoteModal }] = useDisclosure(false);
@@ -87,6 +87,34 @@ function AttendanceContent() {
     const [studentNote, setStudentNote] = useState('');
     const [lateMinutes, setLateMinutes] = useState<number | ''>(15);
     const [excuseReason, setExcuseReason] = useState('');
+
+    const fetchSessions = useCallback(async () => {
+        try {
+            setLoading(true);
+            const res = await fetch('/api/attendance');
+            if (!res.ok) return;
+            const json = await res.json();
+            setSessions((json.data || []).map((s: any) => ({
+                id: s.id,
+                classId: s.classId || '',
+                className: s.className || s.classId || 'Turma',
+                date: s.date || new Date().toISOString().split('T')[0],
+                time: s.time || '',
+                room: s.room || '',
+                students: s.students || [],
+                attendanceRecords: s.attendanceRecords || {},
+                status: s.status || 'upcoming',
+            })));
+        } catch (err) {
+            console.error('Failed to fetch sessions', err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchSessions();
+    }, [fetchSessions]);
 
     // Auto-select the first in_progress session if none selected
     useEffect(() => {
@@ -449,7 +477,23 @@ function AttendanceContent() {
                             </Table>
 
                             {currentSession.status !== 'completed' && (
-                                <Button color="green" fullWidth size="md">
+                                <Button
+                                    color="green"
+                                    fullWidth
+                                    size="md"
+                                    onClick={async () => {
+                                        try {
+                                            await fetch(`/api/attendance/${currentSession.id}`, {
+                                                method: 'PATCH',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ attendanceRecords: currentSession.attendanceRecords }),
+                                            });
+                                            fetchSessions();
+                                        } catch (err) {
+                                            console.error('Failed to save attendance', err);
+                                        }
+                                    }}
+                                >
                                     Salvar Chamada
                                 </Button>
                             )}

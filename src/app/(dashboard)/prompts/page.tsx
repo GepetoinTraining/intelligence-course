@@ -30,9 +30,6 @@ interface StudentPrompt {
     updatedAt: string;
 }
 
-// Mock data
-const MOCK_PROMPTS: StudentPrompt[] = [];
-
 const TECHNIQUE_TAGS = [
     { value: 'orbit', label: '🌍 Orbit', color: 'violet' },
     { value: 'slingshot', label: '🚀 Slingshot', color: 'blue' },
@@ -48,7 +45,7 @@ const CONTEXT_TAGS = [
 ];
 
 export default function PromptsPage() {
-    const [prompts, setPrompts] = useState<StudentPrompt[]>(MOCK_PROMPTS);
+    const [prompts, setPrompts] = useState<StudentPrompt[]>([]);
     const [search, setSearch] = useState('');
     const [activeTab, setActiveTab] = useState<string | null>('all');
     const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);

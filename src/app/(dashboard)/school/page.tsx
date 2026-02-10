@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Title, Text, Stack, Group, Card, Badge, Button,
     Paper, SimpleGrid, Table, Tabs, Select, ThemeIcon,
@@ -17,15 +17,8 @@ import { formatCurrency } from '@/lib/financial/config';
 import Link from 'next/link';
 import type { SchoolCashflow, Payment, CourseSummary } from '@/types/domain';
 
-// Empty data — will be populated from API
-const MOCK_CASHFLOW: SchoolCashflow = {
-    currentMonth: { expected: 0, received: 0, pending: 0, overdue: 0 },
-    lastMonth: { expected: 0, received: 0, pending: 0, overdue: 0 },
-    students: { total: 0, active: 0, defaulting: 0 },
-    revenue: { current: 0, previous: 0 },
-};
-
-const MOCK_PAYMENTS: Payment[] = [];
+// Empty defaults
+const EMPTY_PERIOD = { expected: 0, received: 0, pending: 0, overdue: 0 };
 
 const MONTHLY_REVENUE = [
     { month: 'Set/25', expected: 12000, received: 11500 },
@@ -35,8 +28,6 @@ const MONTHLY_REVENUE = [
     { month: 'Jan/26', expected: 14850, received: 14100 },
     { month: 'Fev/26', expected: 15420, received: 8940 },
 ];
-
-const MOCK_COURSES: CourseSummary[] = [];
 
 // Analytics Data
 const REVENUE_BY_COURSE = [
@@ -88,11 +79,40 @@ const getStatusBadge = (status: string) => {
 
 export default function SchoolDashboard() {
     const [period, setPeriod] = useState('current');
+    const [cashflow, setCashflow] = useState<SchoolCashflow>({
+        currentMonth: { ...EMPTY_PERIOD }, lastMonth: { ...EMPTY_PERIOD },
+        students: { total: 0, active: 0, defaulting: 0 },
+        revenue: { current: 0, previous: 0 },
+    });
+    const [payments, setPayments] = useState<Payment[]>([]);
+    const [courses, setCourses] = useState<CourseSummary[]>([]);
 
-    const data = period === 'current' ? MOCK_CASHFLOW.currentMonth : MOCK_CASHFLOW.lastMonth;
-    const collectionRate = Math.round((data.received / data.expected) * 100);
+    useEffect(() => {
+        // Fetch courses
+        fetch('/api/courses').then(r => r.json()).then(j => {
+            setCourses((j.data || []).map((c: any) => ({
+                id: c.id,
+                name: c.name || c.id,
+                level: c.level || '',
+                students: c.studentCount || 0,
+                revenue: c.revenue || 0,
+                classes: c.classCount || 0,
+            })));
+        }).catch(() => { });
+        // Students counts
+        fetch('/api/users?role=student').then(r => r.json()).then(j => {
+            const data = j.data || [];
+            setCashflow(prev => ({
+                ...prev,
+                students: { total: data.length, active: data.filter((s: any) => s.isActive !== false).length, defaulting: 0 },
+            }));
+        }).catch(() => { });
+    }, []);
 
-    const calendarEvents = MOCK_PAYMENTS.map(p => ({
+    const data = period === 'current' ? cashflow.currentMonth : cashflow.lastMonth;
+    const collectionRate = data.expected > 0 ? Math.round((data.received / data.expected) * 100) : 0;
+
+    const calendarEvents = payments.map(p => ({
         date: p.dueDate,
         type: p.status === 'paid' ? 'payment_paid' as const :
             p.status === 'overdue' ? 'payment_overdue' as const :
@@ -224,21 +244,21 @@ export default function SchoolDashboard() {
                             <ThemeIcon size={36} radius="xl" variant="light" color="violet" mx="auto" mb="xs">
                                 <IconUsers size={18} />
                             </ThemeIcon>
-                            <Text size="xl" fw={700}>{MOCK_CASHFLOW.students.total}</Text>
+                            <Text size="xl" fw={700}>{cashflow.students.total}</Text>
                             <Text size="xs" c="dimmed">Total</Text>
                         </Paper>
                         <Paper p="md" radius="md" withBorder ta="center">
                             <ThemeIcon size={36} radius="xl" variant="light" color="green" mx="auto" mb="xs">
                                 <IconCheck size={18} />
                             </ThemeIcon>
-                            <Text size="xl" fw={700}>{MOCK_CASHFLOW.students.active}</Text>
+                            <Text size="xl" fw={700}>{cashflow.students.active}</Text>
                             <Text size="xs" c="dimmed">Em dia</Text>
                         </Paper>
                         <Paper p="md" radius="md" withBorder ta="center">
                             <ThemeIcon size={36} radius="xl" variant="light" color="red" mx="auto" mb="xs">
                                 <IconAlertCircle size={18} />
                             </ThemeIcon>
-                            <Text size="xl" fw={700}>{MOCK_CASHFLOW.students.defaulting}</Text>
+                            <Text size="xl" fw={700}>{cashflow.students.defaulting}</Text>
                             <Text size="xs" c="dimmed">Inadimplentes</Text>
                         </Paper>
                     </SimpleGrid>
@@ -480,7 +500,7 @@ export default function SchoolDashboard() {
                                 </Table.Tr>
                             </Table.Thead>
                             <Table.Tbody>
-                                {MOCK_PAYMENTS.map((payment) => (
+                                {payments.map((payment) => (
                                     <Table.Tr key={payment.id}>
                                         <Table.Td>
                                             <Text size="sm" fw={500}>{payment.student}</Text>
@@ -528,7 +548,7 @@ export default function SchoolDashboard() {
                                 </Table.Tr>
                             </Table.Thead>
                             <Table.Tbody>
-                                {MOCK_PAYMENTS.filter(p => p.status === 'overdue').map((payment) => (
+                                {payments.filter(p => p.status === 'overdue').map((payment) => (
                                     <Table.Tr key={payment.id}>
                                         <Table.Td>
                                             <Text size="sm" fw={500}>{payment.student}</Text>
@@ -576,7 +596,7 @@ export default function SchoolDashboard() {
                                 </Table.Tr>
                             </Table.Thead>
                             <Table.Tbody>
-                                {MOCK_COURSES.map((course) => (
+                                {courses.map((course) => (
                                     <Table.Tr key={course.id}>
                                         <Table.Td>
                                             <Text size="sm" fw={500}>{course.title}</Text>

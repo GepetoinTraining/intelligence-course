@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Title, Text, Stack, Group, Card, Badge, Button, SimpleGrid,
     ThemeIcon, Paper, ActionIcon, Table, Modal, TextInput, Select,
@@ -34,25 +34,16 @@ interface ClassItem {
 }
 
 // ============================================================================
-// MOCK DATA
-// ============================================================================
-
-const MOCK_COURSE_TYPES: SelectOption[] = [];
-
-const MOCK_LEVELS: SelectOption[] = [];
-
-const MOCK_TEACHERS: SelectOption[] = [];
-
-const MOCK_ROOMS: SelectOption[] = [];
-
-const MOCK_CLASSES: ClassItem[] = [];
-
-// ============================================================================
 // COMPONENT
 // ============================================================================
 
 export default function ClassManagementPage() {
-    const [classes, setClasses] = useState<ClassItem[]>(MOCK_CLASSES);
+    const [classes, setClasses] = useState<ClassItem[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [courseTypes, setCourseTypes] = useState<SelectOption[]>([]);
+    const [levels, setLevels] = useState<SelectOption[]>([]);
+    const [teachers, setTeachers] = useState<SelectOption[]>([]);
+    const [rooms, setRooms] = useState<SelectOption[]>([]);
     const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
     const [isCreating, setIsCreating] = useState(false);
     const [activeTab, setActiveTab] = useState<string | null>('all');
@@ -67,6 +58,55 @@ export default function ClassManagementPage() {
     const [roomId, setRoomId] = useState<string | null>(null);
     const [schedule, setSchedule] = useState('');
     const [capacity, setCapacity] = useState<number>(15);
+
+    const fetchClasses = useCallback(async () => {
+        try {
+            setLoading(true);
+            const res = await fetch('/api/classes');
+            if (!res.ok) return;
+            const json = await res.json();
+            const rows = json.data || [];
+            setClasses(rows.map((r: any) => ({
+                id: r.id,
+                name: r.name || 'Sem nome',
+                courseType: r.courseTypeId || '',
+                level: r.levelId || '',
+                teacherId: r.teacherId || '',
+                teacherName: '',
+                roomId: r.roomId || '',
+                roomName: '',
+                schedule: '',
+                capacity: r.maxStudents || 15,
+                enrolled: r.currentStudents || 0,
+                status: r.status === 'cancelled' ? 'cancelled' : (r.currentStudents >= r.maxStudents ? 'full' : 'active') as ClassItem['status'],
+            })));
+        } catch (err) {
+            console.error('Failed to fetch classes', err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    // Load dropdown options
+    useEffect(() => {
+        fetchClasses();
+        // Load courses
+        fetch('/api/courses').then(r => r.json()).then(j => {
+            setCourseTypes((j.data || []).map((r: any) => ({ value: r.id, label: r.name || r.id })));
+        }).catch(() => { });
+        // Load rooms
+        fetch('/api/rooms').then(r => r.json()).then(j => {
+            setRooms((j.data || []).map((r: any) => ({ value: r.id, label: r.name || r.id })));
+        }).catch(() => { });
+        // Load levels
+        fetch('/api/levels').then(r => r.json()).then(j => {
+            setLevels((j.data || []).map((r: any) => ({ value: r.id, label: r.name || r.id })));
+        }).catch(() => { });
+        // Load teachers
+        fetch('/api/users?role=teacher').then(r => r.json()).then(j => {
+            setTeachers((j.data || []).map((r: any) => ({ value: r.id, label: r.name || r.email || r.id })));
+        }).catch(() => { });
+    }, [fetchClasses]);
 
     const handleCreate = () => {
         setIsCreating(true);
@@ -94,38 +134,53 @@ export default function ClassManagementPage() {
         openModal();
     };
 
-    const handleSave = () => {
-        const teacherName = MOCK_TEACHERS.find(t => t.value === teacherId)?.label || '';
-        const roomName = MOCK_ROOMS.find(r => r.value === roomId)?.label || '';
-
-        if (isCreating && courseType && level && teacherId && roomId) {
-            const newClass: ClassItem = {
-                id: `class-${Date.now()}`,
-                name,
-                courseType,
-                level,
-                teacherId,
-                teacherName,
-                roomId,
-                roomName,
-                schedule,
-                capacity,
-                enrolled: 0,
-                status: 'active',
-            };
-            setClasses(prev => [...prev, newClass]);
-        } else if (selectedClass && courseType && level && teacherId && roomId) {
-            setClasses(prev => prev.map(c =>
-                c.id === selectedClass.id
-                    ? { ...c, name, courseType, level, teacherId, teacherName, roomId, roomName, schedule, capacity }
-                    : c
-            ));
+    const handleSave = async () => {
+        if (isCreating) {
+            try {
+                await fetch('/api/classes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name,
+                        courseTypeId: courseType,
+                        levelId: level,
+                        teacherId,
+                        maxStudents: capacity,
+                        status: 'active',
+                    }),
+                });
+                fetchClasses();
+            } catch (err) {
+                console.error('Failed to create class', err);
+            }
+        } else if (selectedClass) {
+            try {
+                await fetch(`/api/classes/${selectedClass.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name,
+                        courseTypeId: courseType,
+                        levelId: level,
+                        teacherId,
+                        maxStudents: capacity,
+                    }),
+                });
+                fetchClasses();
+            } catch (err) {
+                console.error('Failed to update class', err);
+            }
         }
         closeModal();
     };
 
-    const handleDelete = (id: string) => {
-        setClasses(prev => prev.filter(c => c.id !== id));
+    const handleDelete = async (id: string) => {
+        try {
+            await fetch(`/api/classes/${id}`, { method: 'DELETE' });
+            fetchClasses();
+        } catch (err) {
+            console.error('Failed to delete class', err);
+        }
     };
 
     const getStatusInfo = (status: string) => {
@@ -223,7 +278,7 @@ export default function ClassManagementPage() {
             <Tabs value={activeTab} onChange={setActiveTab}>
                 <Tabs.List>
                     <Tabs.Tab value="all">Todas</Tabs.Tab>
-                    {MOCK_COURSE_TYPES.map(ct => (
+                    {courseTypes.map(ct => (
                         <Tabs.Tab key={ct.value} value={ct.value}>
                             {ct.label}
                         </Tabs.Tab>
@@ -249,8 +304,8 @@ export default function ClassManagementPage() {
                     <Table.Tbody>
                         {filteredClasses.map(classItem => {
                             const statusInfo = getStatusInfo(classItem.status);
-                            const courseLabel = MOCK_COURSE_TYPES.find(c => c.value === classItem.courseType)?.label;
-                            const levelLabel = MOCK_LEVELS.find(l => l.value === classItem.level)?.label;
+                            const courseLabel = courseTypes.find(c => c.value === classItem.courseType)?.label;
+                            const levelLabel = levels.find(l => l.value === classItem.level)?.label;
 
                             return (
                                 <Table.Tr key={classItem.id}>
@@ -342,7 +397,7 @@ export default function ClassManagementPage() {
                             <Select
                                 label="Tipo de Curso"
                                 placeholder="Selecione..."
-                                data={MOCK_COURSE_TYPES}
+                                data={courseTypes}
                                 value={courseType}
                                 onChange={setCourseType}
                                 required
@@ -352,7 +407,7 @@ export default function ClassManagementPage() {
                             <Select
                                 label="Nível"
                                 placeholder="Selecione..."
-                                data={MOCK_LEVELS}
+                                data={levels}
                                 value={level}
                                 onChange={setLevel}
                                 required
@@ -364,7 +419,7 @@ export default function ClassManagementPage() {
                             <Select
                                 label="Professor"
                                 placeholder="Selecione..."
-                                data={MOCK_TEACHERS}
+                                data={teachers}
                                 value={teacherId}
                                 onChange={setTeacherId}
                                 required
@@ -374,7 +429,7 @@ export default function ClassManagementPage() {
                             <Select
                                 label="Sala"
                                 placeholder="Selecione..."
-                                data={MOCK_ROOMS}
+                                data={rooms}
                                 value={roomId}
                                 onChange={setRoomId}
                                 required

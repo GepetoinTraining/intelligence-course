@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Title, Text, Stack, Group, Card, Badge, Button, SimpleGrid,
     ThemeIcon, Paper, ActionIcon, Table, Modal, TextInput, Select,
@@ -32,19 +32,13 @@ interface Enrollment {
 }
 
 // ============================================================================
-// MOCK DATA
-// ============================================================================
-
-const MOCK_CLASSES: SelectOption[] = [];
-
-const MOCK_ENROLLMENTS: Enrollment[] = [];
-
-// ============================================================================
 // COMPONENT
 // ============================================================================
 
 export default function EnrollmentManagementPage() {
-    const [enrollments, setEnrollments] = useState<Enrollment[]>(MOCK_ENROLLMENTS);
+    const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [classOptions, setClassOptions] = useState<SelectOption[]>([]);
     const [selectedEnrollment, setSelectedEnrollment] = useState<Enrollment | null>(null);
     const [activeTab, setActiveTab] = useState<string | null>('active');
 
@@ -54,6 +48,38 @@ export default function EnrollmentManagementPage() {
 
     const [targetClass, setTargetClass] = useState<string | null>(null);
     const [dropReason, setDropReason] = useState('');
+
+    const fetchEnrollments = useCallback(async () => {
+        try {
+            setLoading(true);
+            const res = await fetch('/api/enrollments');
+            if (!res.ok) return;
+            const json = await res.json();
+            const rows = json.data || [];
+            setEnrollments(rows.map((r: any) => ({
+                id: r.id,
+                studentId: r.studentId || '',
+                studentName: r.studentName || 'Aluno',
+                classId: r.classId || '',
+                className: r.className || 'Turma',
+                status: r.status || 'active',
+                enrolledAt: r.enrolledAt ? new Date(r.enrolledAt * 1000).toISOString().split('T')[0] : '',
+                droppedAt: r.droppedAt ? new Date(r.droppedAt * 1000).toISOString().split('T')[0] : undefined,
+                notes: r.notes || '',
+            })));
+        } catch (err) {
+            console.error('Failed to fetch enrollments', err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchEnrollments();
+        fetch('/api/classes').then(r => r.json()).then(j => {
+            setClassOptions((j.data || []).map((c: any) => ({ value: c.id, label: c.name || c.id })));
+        }).catch(() => { });
+    }, [fetchEnrollments]);
 
     const handleTransfer = (enrollment: Enrollment) => {
         setSelectedEnrollment(enrollment);
@@ -67,49 +93,33 @@ export default function EnrollmentManagementPage() {
         openDropModal();
     };
 
-    const confirmTransfer = () => {
+    const confirmTransfer = async () => {
         if (!selectedEnrollment || !targetClass) return;
-
-        setEnrollments(prev => prev.map(e =>
-            e.id === selectedEnrollment.id
-                ? {
-                    ...e,
-                    status: 'transferred',
-                    droppedAt: new Date().toISOString().split('T')[0],
-                    notes: `Transferido para ${MOCK_CLASSES.find(c => c.value === targetClass)?.label}`
-                }
-                : e
-        ));
-
-        // Create new enrollment for target class
-        const newEnrollment: Enrollment = {
-            id: `enr-${Date.now()}`,
-            studentId: selectedEnrollment.studentId,
-            studentName: selectedEnrollment.studentName,
-            classId: targetClass,
-            className: MOCK_CLASSES.find(c => c.value === targetClass)?.label || '',
-            status: 'active',
-            enrolledAt: new Date().toISOString().split('T')[0],
-        };
-        setEnrollments(prev => [...prev, newEnrollment]);
-
+        try {
+            await fetch(`/api/enrollments/${selectedEnrollment.id}/transfer`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ targetClassId: targetClass }),
+            });
+            fetchEnrollments();
+        } catch (err) {
+            console.error('Failed to transfer enrollment', err);
+        }
         closeTransferModal();
     };
 
-    const confirmDrop = () => {
+    const confirmDrop = async () => {
         if (!selectedEnrollment) return;
-
-        setEnrollments(prev => prev.map(e =>
-            e.id === selectedEnrollment.id
-                ? {
-                    ...e,
-                    status: 'dropped',
-                    droppedAt: new Date().toISOString().split('T')[0],
-                    notes: dropReason
-                }
-                : e
-        ));
-
+        try {
+            await fetch(`/api/enrollments/${selectedEnrollment.id}/drop`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason: dropReason }),
+            });
+            fetchEnrollments();
+        } catch (err) {
+            console.error('Failed to drop enrollment', err);
+        }
         closeDropModal();
     };
 
@@ -316,7 +326,7 @@ export default function EnrollmentManagementPage() {
                     <Select
                         label="Transferir para"
                         placeholder="Selecione a turma de destino"
-                        data={MOCK_CLASSES.filter(c => c.value !== selectedEnrollment?.classId)}
+                        data={classOptions.filter(c => c.value !== selectedEnrollment?.classId)}
                         value={targetClass}
                         onChange={setTargetClass}
                         required
@@ -378,7 +388,7 @@ export default function EnrollmentManagementPage() {
                     <Select
                         label="Turma"
                         placeholder="Selecione..."
-                        data={MOCK_CLASSES}
+                        data={classOptions}
                         required
                     />
                     <DateInput

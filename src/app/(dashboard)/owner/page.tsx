@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Title, Text, Stack, Group, Card, Badge, Button, SimpleGrid,
     ThemeIcon, Paper, Grid, RingProgress, Progress, Table, Tabs,
@@ -15,28 +15,41 @@ import {
 import Link from 'next/link';
 import type { FinancialSummary, MonthlyFinancial, CashFlowProjection } from '@/types/domain';
 
-// Empty data — will be populated from API
-const MOCK_FINANCIALS: FinancialSummary = {
-    revenue: { current: 0, previous: 0 },
-    expenses: { current: 0, previous: 0 },
-    profit: { current: 0, previous: 0 },
-    students: { current: 0, previous: 0 },
-    pendingPayments: 0,
-    payrollDue: 0,
-};
-
-const MOCK_MONTHLY_2026: MonthlyFinancial[] = [];
-
-const MOCK_MONTHLY_2025: MonthlyFinancial[] = [];
-
-const MOCK_CASH_FLOW: CashFlowProjection = {
-    currentBalance: 0,
-    projectedInflows: [],
-    projectedOutflows: [],
-};
-
 export default function OwnerDashboardPage() {
     const [comparisonView, setComparisonView] = useState<'monthly' | 'quarterly' | 'annual'>('monthly');
+    const [financials, setFinancials] = useState<FinancialSummary>({
+        revenue: { current: 0, previous: 0 },
+        expenses: { current: 0, previous: 0 },
+        profit: { current: 0, previous: 0 },
+        students: { current: 0, previous: 0 },
+        pendingPayments: 0,
+        payrollDue: 0,
+    });
+    const [monthly2026, setMonthly2026] = useState<MonthlyFinancial[]>([]);
+    const [monthly2025, setMonthly2025] = useState<MonthlyFinancial[]>([]);
+    const [cashFlow, setCashFlow] = useState<CashFlowProjection>({
+        currentBalance: 0,
+        projectedInflows: [],
+        projectedOutflows: [],
+    });
+
+    useEffect(() => {
+        const fetchOwnerData = async () => {
+            try {
+                const res = await fetch('/api/owner/financials');
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json.financials) setFinancials(json.financials);
+                    if (json.monthly2026) setMonthly2026(json.monthly2026);
+                    if (json.monthly2025) setMonthly2025(json.monthly2025);
+                    if (json.cashFlow) setCashFlow(json.cashFlow);
+                }
+            } catch (err) {
+                console.error('Error fetching owner data:', err);
+            }
+        };
+        fetchOwnerData();
+    }, []);
 
     const getGrowth = (current: number, previous: number) => {
         if (previous === 0) return { value: '0', positive: true };
@@ -49,34 +62,34 @@ export default function OwnerDashboardPage() {
     };
 
     // Calculate YTD totals
-    const ytd2026 = MOCK_MONTHLY_2026.slice(0, 2).reduce((acc, m) => ({
+    const ytd2026 = monthly2026.slice(0, 2).reduce((acc, m) => ({
         revenue: acc.revenue + m.revenue,
         expenses: acc.expenses + m.expenses,
     }), { revenue: 0, expenses: 0 });
 
-    const ytd2025 = MOCK_MONTHLY_2025.slice(0, 2).reduce((acc, m) => ({
+    const ytd2025 = monthly2025.slice(0, 2).reduce((acc, m) => ({
         revenue: acc.revenue + m.revenue,
         expenses: acc.expenses + m.expenses,
     }), { revenue: 0, expenses: 0 });
 
     // Annual totals
-    const annual2025 = MOCK_MONTHLY_2025.reduce((acc, m) => ({
+    const annual2025 = monthly2025.reduce((acc, m) => ({
         revenue: acc.revenue + m.revenue,
         expenses: acc.expenses + m.expenses,
     }), { revenue: 0, expenses: 0 });
 
-    const revenueGrowth = getGrowth(MOCK_FINANCIALS.revenue.current, MOCK_FINANCIALS.revenue.previous);
-    const profitGrowth = getGrowth(MOCK_FINANCIALS.profit.current, MOCK_FINANCIALS.profit.previous);
-    const studentGrowth = getGrowth(MOCK_FINANCIALS.students.current, MOCK_FINANCIALS.students.previous);
-    const profitMargin = (MOCK_FINANCIALS.profit.current / MOCK_FINANCIALS.revenue.current) * 100;
+    const revenueGrowth = getGrowth(financials.revenue.current, financials.revenue.previous);
+    const profitGrowth = getGrowth(financials.profit.current, financials.profit.previous);
+    const studentGrowth = getGrowth(financials.students.current, financials.students.previous);
+    const profitMargin = financials.revenue.current > 0 ? (financials.profit.current / financials.revenue.current) * 100 : 0;
 
     const ytdRevenueGrowth = getGrowth(ytd2026.revenue, ytd2025.revenue);
     const ytdProfitGrowth = getGrowth(ytd2026.revenue - ytd2026.expenses, ytd2025.revenue - ytd2025.expenses);
 
     // Cash flow projection
-    const projectedBalance = MOCK_CASH_FLOW.currentBalance
-        + MOCK_CASH_FLOW.projectedInflows.reduce((acc: number, i: any) => acc + i.amount, 0)
-        - MOCK_CASH_FLOW.projectedOutflows.reduce((acc: number, o: any) => acc + o.amount, 0);
+    const projectedBalance = cashFlow.currentBalance
+        + cashFlow.projectedInflows.reduce((acc: number, i: any) => acc + i.amount, 0)
+        - cashFlow.projectedOutflows.reduce((acc: number, o: any) => acc + o.amount, 0);
 
     return (
         <Stack gap="xl">
@@ -117,7 +130,7 @@ export default function OwnerDashboardPage() {
                         </Badge>
                     </Group>
                     <Text size="xs" c="dimmed">Receita Mensal</Text>
-                    <Text size="xl" fw={700}>R$ {MOCK_FINANCIALS.revenue.current.toLocaleString('pt-BR')}</Text>
+                    <Text size="xl" fw={700}>R$ {financials.revenue.current.toLocaleString('pt-BR')}</Text>
                 </Paper>
 
                 <Paper shadow="sm" radius="md" p="lg" withBorder>
@@ -126,11 +139,11 @@ export default function OwnerDashboardPage() {
                             <IconReceipt size={24} />
                         </ThemeIcon>
                         <Badge color="gray" variant="light">
-                            {((MOCK_FINANCIALS.expenses.current / MOCK_FINANCIALS.revenue.current) * 100).toFixed(0)}%
+                            {financials.revenue.current > 0 ? ((financials.expenses.current / financials.revenue.current) * 100).toFixed(0) : '0'}%
                         </Badge>
                     </Group>
                     <Text size="xs" c="dimmed">Despesas</Text>
-                    <Text size="xl" fw={700}>R$ {MOCK_FINANCIALS.expenses.current.toLocaleString('pt-BR')}</Text>
+                    <Text size="xl" fw={700}>R$ {financials.expenses.current.toLocaleString('pt-BR')}</Text>
                 </Paper>
 
                 <Paper shadow="sm" radius="md" p="lg" withBorder>
@@ -143,7 +156,7 @@ export default function OwnerDashboardPage() {
                         </Badge>
                     </Group>
                     <Text size="xs" c="dimmed">Lucro Líquido</Text>
-                    <Text size="xl" fw={700} c="blue">R$ {MOCK_FINANCIALS.profit.current.toLocaleString('pt-BR')}</Text>
+                    <Text size="xl" fw={700} c="blue">R$ {financials.profit.current.toLocaleString('pt-BR')}</Text>
                 </Paper>
 
                 <Paper shadow="sm" radius="md" p="lg" withBorder>
@@ -156,7 +169,7 @@ export default function OwnerDashboardPage() {
                         </Badge>
                     </Group>
                     <Text size="xs" c="dimmed">Alunos Ativos</Text>
-                    <Text size="xl" fw={700}>{MOCK_FINANCIALS.students.current}</Text>
+                    <Text size="xl" fw={700}>{financials.students.current}</Text>
                 </Paper>
             </SimpleGrid>
 
@@ -196,8 +209,8 @@ export default function OwnerDashboardPage() {
                             </Table.Tr>
                         </Table.Thead>
                         <Table.Tbody>
-                            {MOCK_MONTHLY_2026.slice(0, 2).map((month, i) => {
-                                const prev = MOCK_MONTHLY_2025[i];
+                            {monthly2026.slice(0, 2).map((month, i) => {
+                                const prev = monthly2025[i];
                                 const growth = getGrowth(month.revenue, prev.revenue);
                                 return (
                                     <Table.Tr key={month.month}>
@@ -255,8 +268,8 @@ export default function OwnerDashboardPage() {
                 {comparisonView === 'quarterly' && (
                     <SimpleGrid cols={4} spacing="md">
                         {['Q1', 'Q2', 'Q3', 'Q4'].map((quarter, qi) => {
-                            const q2025 = MOCK_MONTHLY_2025.slice(qi * 3, (qi + 1) * 3).reduce((acc, m) => acc + m.revenue, 0);
-                            const q2026 = MOCK_MONTHLY_2026.slice(qi * 3, (qi + 1) * 3).reduce((acc, m) => acc + m.revenue, 0);
+                            const q2025 = monthly2025.slice(qi * 3, (qi + 1) * 3).reduce((acc: number, m: MonthlyFinancial) => acc + m.revenue, 0);
+                            const q2026 = monthly2026.slice(qi * 3, (qi + 1) * 3).reduce((acc: number, m: MonthlyFinancial) => acc + m.revenue, 0);
                             const growth = getGrowth(q2026, q2025);
                             const isFuture = qi > 0; // Only Q1 has data so far
 
@@ -352,7 +365,7 @@ export default function OwnerDashboardPage() {
                         </div>
                     </Group>
                     <Badge color="teal" variant="light" size="lg">
-                        Saldo Atual: {formatCurrency(MOCK_CASH_FLOW.currentBalance)}
+                        Saldo Atual: {formatCurrency(cashFlow.currentBalance)}
                     </Badge>
                 </Group>
 
@@ -360,8 +373,8 @@ export default function OwnerDashboardPage() {
                     <Grid.Col span={{ base: 12, md: 8 }}>
                         <SimpleGrid cols={3} spacing="md">
                             {['Fev', 'Mar', 'Abr'].map((month, i) => {
-                                const inflow = MOCK_CASH_FLOW.projectedInflows.find((f: any) => f.month === month)?.amount || 0;
-                                const outflow = MOCK_CASH_FLOW.projectedOutflows
+                                const inflow = cashFlow.projectedInflows.find((f: any) => f.month === month)?.amount || 0;
+                                const outflow = cashFlow.projectedOutflows
                                     .filter((o: any) => o.month === month)
                                     .reduce((acc: number, o: any) => acc + o.amount, 0);
                                 const net = inflow - outflow;
@@ -406,9 +419,9 @@ export default function OwnerDashboardPage() {
                                 </Text>
                                 <Divider />
                                 <Group justify="center" gap="xs">
-                                    <Badge color={projectedBalance > MOCK_CASH_FLOW.currentBalance ? 'green' : 'red'} variant="light">
-                                        {projectedBalance > MOCK_CASH_FLOW.currentBalance ? '+' : ''}
-                                        {formatCurrency(projectedBalance - MOCK_CASH_FLOW.currentBalance)}
+                                    <Badge color={projectedBalance > cashFlow.currentBalance ? 'green' : 'red'} variant="light">
+                                        {projectedBalance > cashFlow.currentBalance ? '+' : ''}
+                                        {formatCurrency(projectedBalance - cashFlow.currentBalance)}
                                     </Badge>
                                 </Group>
                             </Stack>
@@ -443,13 +456,13 @@ export default function OwnerDashboardPage() {
                             <Paper p="sm" bg="orange.0" radius="md">
                                 <Group justify="space-between">
                                     <Text size="sm">Pagamentos Pendentes</Text>
-                                    <Text size="sm" fw={700} c="orange">R$ {MOCK_FINANCIALS.pendingPayments.toLocaleString('pt-BR')}</Text>
+                                    <Text size="sm" fw={700} c="orange">R$ {financials.pendingPayments.toLocaleString('pt-BR')}</Text>
                                 </Group>
                             </Paper>
                             <Paper p="sm" bg="blue.0" radius="md">
                                 <Group justify="space-between">
                                     <Text size="sm">Folha a Pagar</Text>
-                                    <Text size="sm" fw={700} c="blue">R$ {MOCK_FINANCIALS.payrollDue.toLocaleString('pt-BR')}</Text>
+                                    <Text size="sm" fw={700} c="blue">R$ {financials.payrollDue.toLocaleString('pt-BR')}</Text>
                                 </Group>
                             </Paper>
                         </Stack>

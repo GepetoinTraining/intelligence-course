@@ -14,6 +14,7 @@ import {
     IconUser, IconMail, IconPhone, IconShield
 } from '@tabler/icons-react';
 import { ExportButton } from '@/components/shared';
+import { InviteTeamModal } from '@/components/InviteTeamModal';
 
 interface Staff {
     id: string;
@@ -63,7 +64,7 @@ const contractTypeConfig: Record<string, string> = {
     volunteer: 'Voluntário',
 };
 
-const MOCK_STAFF: Staff[] = [];
+
 
 const weekDays = [
     { key: 'mon', label: 'Seg' },
@@ -84,6 +85,7 @@ export default function OwnerEmployeesPage() {
     const [activeTab, setActiveTab] = useState<string | null>('all');
     const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
     const [scheduleModalOpened, { open: openScheduleModal, close: closeScheduleModal }] = useDisclosure(false);
+    const [inviteModalOpened, { open: openInviteModal, close: closeInviteModal }] = useDisclosure(false);
     const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
     const [formData, setFormData] = useState({
         name: '',
@@ -306,6 +308,14 @@ export default function OwnerEmployeesPage() {
                         formats={['csv', 'xlsx', 'pdf']}
                         label="Exportar"
                     />
+                    <Button
+                        variant="light"
+                        color="violet"
+                        leftSection={<IconMail size={16} />}
+                        onClick={openInviteModal}
+                    >
+                        Convidar Equipe
+                    </Button>
                     <Button leftSection={<IconPlus size={16} />} onClick={handleOpenCreate}>
                         Novo Funcionário
                     </Button>
@@ -652,6 +662,13 @@ export default function OwnerEmployeesPage() {
                     </Group>
                 </Stack>
             </Modal>
+
+            {/* Invite Team Modal */}
+            <InviteTeamModal
+                opened={inviteModalOpened}
+                onClose={closeInviteModal}
+                onInviteSent={() => fetchStaff()}
+            />
         </Container>
     );
 }

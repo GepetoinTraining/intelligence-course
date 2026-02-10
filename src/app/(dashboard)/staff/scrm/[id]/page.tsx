@@ -15,11 +15,7 @@ import Link from 'next/link';
 import { SCRMExpandedView } from '@/components/scrm/SCRMExpandedView';
 import type { SCRMProfile } from '@/components/scrm/SCRMProfileModal';
 
-// ============================================================================
-// MOCK DATA (for dev mode when API unavailable)
-// ============================================================================
 
-const MOCK_PROFILES: Record<string, SCRMProfile> = {};
 
 // ============================================================================
 // MAIN PAGE COMPONENT
@@ -59,26 +55,13 @@ export default function SCRMLeadDetailsPage() {
             setProfile(enrichedProfile);
             setIsDemo(false);
         } catch (error) {
-            console.error('Error fetching lead, using mock data:', error);
-
-            // Use mock data as fallback
-            const mockProfile = MOCK_PROFILES[leadId];
-            if (mockProfile) {
-                setProfile(mockProfile);
-                setIsDemo(true);
-                notifications.show({
-                    title: '📋 Modo Demo',
-                    message: 'Exibindo dados de demonstração',
-                    color: 'blue',
-                });
-            } else {
-                notifications.show({
-                    title: 'Erro',
-                    message: 'Lead não encontrado',
-                    color: 'red',
-                });
-                router.push('/staff/scrm');
-            }
+            console.error('Error fetching lead:', error);
+            notifications.show({
+                title: 'Erro',
+                message: 'Lead não encontrado',
+                color: 'red',
+            });
+            router.push('/staff/scrm');
         } finally {
             setLoading(false);
         }

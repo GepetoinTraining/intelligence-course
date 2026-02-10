@@ -29,7 +29,7 @@ interface EmailTemplate {
 }
 
 // ============================================================================
-// MOCK DATA
+// PRESETS
 // ============================================================================
 
 const CATEGORIES = [
@@ -55,14 +55,12 @@ const AVAILABLE_VARIABLES = [
     { key: '{{link_trial}}', description: 'Link para agendar trial' },
 ];
 
-const MOCK_TEMPLATES: EmailTemplate[] = [];
-
 // ============================================================================
 // COMPONENT
 // ============================================================================
 
 export default function EmailTemplatesPage() {
-    const [templates, setTemplates] = useState<EmailTemplate[]>(MOCK_TEMPLATES);
+    const [templates, setTemplates] = useState<EmailTemplate[]>([]);
     const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
     const [activeTab, setActiveTab] = useState<string | null>('all');
 

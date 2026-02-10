@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import {
     Title, Text, Stack, Group, Card, Badge, Button, SimpleGrid,
@@ -69,16 +69,7 @@ interface GradeRecord {
     teacherFeedback?: string;
 }
 
-// Mock data
-const MOCK_STUDENT: StudentDetail = {} as StudentDetail as StudentDetail;
 
-const MOCK_ATTENDANCE: AttendanceRecord[] = [];
-
-const MOCK_PROGRESS: ProgressRecord[] = [];
-
-const MOCK_ACTIVITY: ActivityRecord[] = [];
-
-const MOCK_GRADES: GradeRecord[] = [];
 
 const attendanceStatusColors = {
     present: 'green',
@@ -114,22 +105,61 @@ export default function TeacherStudentDetailPage() {
     const params = useParams();
     const studentId = params.id as string;
 
-    const [student] = useState<StudentDetail>(MOCK_STUDENT);
-    const [attendance] = useState<AttendanceRecord[]>(MOCK_ATTENDANCE);
-    const [progress] = useState<ProgressRecord[]>(MOCK_PROGRESS);
-    const [activity] = useState<ActivityRecord[]>(MOCK_ACTIVITY);
-    const [grades] = useState<GradeRecord[]>(MOCK_GRADES);
-    const [notes, setNotes] = useState<string>('Aluna muito dedicada. Tem facilidade com os conceitos de prompting.');
+    const [student, setStudent] = useState<StudentDetail>({} as StudentDetail);
+    const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
+    const [progress, setProgress] = useState<ProgressRecord[]>([]);
+    const [activity, setActivity] = useState<ActivityRecord[]>([]);
+    const [grades, setGrades] = useState<GradeRecord[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [notes, setNotes] = useState<string>('');
 
     const [noteModal, { open: openNoteModal, close: closeNoteModal }] = useDisclosure(false);
     const [tempNote, setTempNote] = useState(notes);
 
+    const fetchStudentData = useCallback(async () => {
+        try {
+            setLoading(true);
+            const res = await fetch(`/api/users/${studentId}`);
+            if (res.ok) {
+                const json = await res.json();
+                const d = json.data || json;
+                setStudent({
+                    id: d.id || studentId,
+                    name: d.name || 'Aluno',
+                    email: d.email || '',
+                    phone: d.phone || undefined,
+                    avatarUrl: d.avatarUrl || undefined,
+                    enrolledAt: d.enrolledAt || d.createdAt || '',
+                    classId: d.classId || '',
+                    className: d.className || '',
+                    level: d.level || '',
+                    parentName: d.parentName || undefined,
+                    parentEmail: d.parentEmail || undefined,
+                    parentPhone: d.parentPhone || undefined,
+                });
+                if (d.notes) setNotes(d.notes);
+                if (d.attendance) setAttendance(d.attendance);
+                if (d.progress) setProgress(d.progress);
+                if (d.activity) setActivity(d.activity);
+                if (d.grades) setGrades(d.grades);
+            }
+        } catch (err) {
+            console.error('Failed to fetch student data', err);
+        } finally {
+            setLoading(false);
+        }
+    }, [studentId]);
+
+    useEffect(() => {
+        fetchStudentData();
+    }, [fetchStudentData]);
+
     // Calculate stats
     const totalClasses = attendance.length;
     const presentClasses = attendance.filter(a => a.status === 'present' || a.status === 'late').length;
-    const attendanceRate = Math.round((presentClasses / totalClasses) * 100);
+    const attendanceRate = totalClasses > 0 ? Math.round((presentClasses / totalClasses) * 100) : 0;
 
-    const totalProgress = Math.round(progress.reduce((acc, p) => acc + p.progress, 0) / progress.length);
+    const totalProgress = progress.length > 0 ? Math.round(progress.reduce((acc, p) => acc + p.progress, 0) / progress.length) : 0;
     const averageGrade = grades.length > 0
         ? grades.reduce((acc, g) => acc + g.finalScore, 0) / grades.length
         : 0;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Title, Text, Stack, Group, Card, Badge, Button, SimpleGrid,
     ThemeIcon, Paper, ActionIcon, Modal, TextInput, Textarea, Select,
@@ -41,12 +41,6 @@ interface Lesson {
     hasPrerequisites: boolean;
 }
 
-// ============================================================================
-// MOCK DATA
-// ============================================================================
-
-const MOCK_MODULES: ModuleRef[] = [];
-
 const ACTIVITY_TYPES = [
     { value: 'prompt', label: '🤖 Prompt Practice', icon: IconRobot, color: 'violet' },
     { value: 'exercise', label: '✏️ Exercício', icon: IconPencil, color: 'blue' },
@@ -55,14 +49,14 @@ const ACTIVITY_TYPES = [
     { value: 'reflection', label: '🧠 Reflexão', icon: IconBrain, color: 'pink' },
 ];
 
-const MOCK_LESSONS: Lesson[] = [];
-
 // ============================================================================
 // COMPONENT
 // ============================================================================
 
 export default function LessonManagementPage() {
-    const [lessons, setLessons] = useState<Lesson[]>(MOCK_LESSONS);
+    const [lessons, setLessons] = useState<Lesson[]>([]);
+    const [moduleOptions, setModuleOptions] = useState<ModuleRef[]>([]);
+    const [loading, setLoading] = useState(true);
     const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
     const [isCreating, setIsCreating] = useState(false);
     const [filterModule, setFilterModule] = useState<string | null>(null);
@@ -83,6 +77,40 @@ export default function LessonManagementPage() {
     const [activityTitle, setActivityTitle] = useState('');
     const [activityInstructions, setActivityInstructions] = useState('');
     const [activityAiEnabled, setActivityAiEnabled] = useState(true);
+
+    const fetchLessons = useCallback(async () => {
+        try {
+            setLoading(true);
+            const res = await fetch('/api/lessons');
+            if (!res.ok) return;
+            const json = await res.json();
+            const rows = json.data || [];
+            setLessons(rows.map((r: any) => ({
+                id: r.id,
+                moduleId: r.moduleId || '',
+                moduleName: r.moduleName || '',
+                courseName: r.courseName || '',
+                title: r.title || r.name || 'Aula',
+                description: r.description || '',
+                order: r.order || r.sortOrder || 0,
+                duration: r.duration || 30,
+                activities: r.activities ? (typeof r.activities === 'string' ? JSON.parse(r.activities) : r.activities) : [],
+                status: r.status || 'draft',
+                hasPrerequisites: !!r.hasPrerequisites,
+            })));
+        } catch (err) {
+            console.error('Failed to fetch lessons', err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchLessons();
+        fetch('/api/modules').then(r => r.json()).then(j => {
+            setModuleOptions((j.data || []).map((m: any) => ({ id: m.id, name: m.name || m.id, courseName: m.courseName || '' })));
+        }).catch(() => { });
+    }, [fetchLessons]);
 
     const handleCreate = () => {
         setIsCreating(true);
@@ -106,43 +134,31 @@ export default function LessonManagementPage() {
         openModal();
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!title || !moduleId) return;
-
-        const module = MOCK_MODULES.find(m => m.id === moduleId);
-
-        if (isCreating) {
-            const moduleeLessons = lessons.filter(l => l.moduleId === moduleId);
-            const newLesson: Lesson = {
-                id: `less-${Date.now()}`,
-                moduleId,
-                moduleName: module?.name || '',
-                courseName: module?.courseName || '',
-                title,
-                description,
-                order: moduleeLessons.length + 1,
-                duration: Number(duration) || 30,
-                activities: [],
-                status: 'draft',
-                hasPrerequisites,
-            };
-            setLessons(prev => [...prev, newLesson]);
-        } else if (selectedLesson) {
-            setLessons(prev => prev.map(l =>
-                l.id === selectedLesson.id
-                    ? {
-                        ...l,
-                        moduleId,
-                        moduleName: module?.name || '',
-                        courseName: module?.courseName || '',
-                        title,
-                        description,
-                        duration: Number(duration) || 30,
-                        hasPrerequisites,
-                    }
-                    : l
-            ));
-        }
+        const body = {
+            moduleId,
+            title,
+            description,
+            duration: Number(duration) || 30,
+            hasPrerequisites,
+        };
+        try {
+            if (isCreating) {
+                await fetch('/api/lessons', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+            } else if (selectedLesson) {
+                await fetch(`/api/lessons/${selectedLesson.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+            }
+            fetchLessons();
+        } catch (err) { console.error('Failed to save lesson', err); }
         closeModal();
     };
 
@@ -251,7 +267,7 @@ export default function LessonManagementPage() {
 
                 <Select
                     placeholder="Filtrar por módulo"
-                    data={MOCK_MODULES.map(m => ({ value: m.id, label: `${m.courseName} > ${m.name}` }))}
+                    data={moduleOptions.map(m => ({ value: m.id, label: `${m.courseName} > ${m.name}` }))}
                     value={filterModule}
                     onChange={setFilterModule}
                     clearable
@@ -411,7 +427,7 @@ export default function LessonManagementPage() {
                     <Select
                         label="Módulo"
                         placeholder="Selecione o módulo"
-                        data={MOCK_MODULES.map(m => ({ value: m.id, label: `${m.courseName} > ${m.name}` }))}
+                        data={moduleOptions.map(m => ({ value: m.id, label: `${m.courseName} > ${m.name}` }))}
                         value={moduleId}
                         onChange={setModuleId}
                         required

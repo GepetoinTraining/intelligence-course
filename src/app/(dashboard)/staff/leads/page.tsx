@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Title,
     Text,
@@ -51,17 +51,7 @@ const stages = [
     { id: 'proposal_sent', label: 'Proposta', color: 'orange' },
 ];
 
-// Mock leads data
-const initialLeads = [
-    { id: '1', name: 'Maria Silva', email: 'maria@email.com', phone: '(11) 99999-1111', status: 'new', source: 'instagram', interest: 'English A1', createdAt: '2h atrás', assignedTo: 'Carlos', tags: ['hot'] },
-    { id: '2', name: 'João Santos', email: 'joao@email.com', phone: '(11) 99999-2222', status: 'new', source: 'website', interest: 'Spanish A1', createdAt: '3h atrás', assignedTo: null, tags: [] },
-    { id: '3', name: 'Ana Oliveira', email: 'ana@email.com', phone: '(11) 99999-3333', status: 'contacted', source: 'referral', interest: 'English B1', createdAt: '1d atrás', assignedTo: 'Julia', tags: ['priority'] },
-    { id: '4', name: 'Pedro Costa', email: 'pedro@email.com', phone: '(11) 99999-4444', status: 'contacted', source: 'google', interest: 'Intelligence', createdAt: '2d atrás', assignedTo: 'Carlos', tags: [] },
-    { id: '5', name: 'Carla Mendes', email: 'carla@email.com', phone: '(11) 99999-5555', status: 'qualified', source: 'instagram', interest: 'English A2', createdAt: '3d atrás', assignedTo: 'Marina', tags: ['hot'] },
-    { id: '6', name: 'Rafael Lima', email: 'rafael@email.com', phone: '(11) 99999-6666', status: 'trial_scheduled', source: 'facebook', interest: 'Spanish B1', createdAt: '4d atrás', assignedTo: 'Julia', tags: [] },
-    { id: '7', name: 'Fernanda Rocha', email: 'fernanda@email.com', phone: '(11) 99999-7777', status: 'trial_completed', source: 'walk_in', interest: 'English A1', createdAt: '5d atrás', assignedTo: 'Carlos', tags: ['priority'] },
-    { id: '8', name: 'Lucas Almeida', email: 'lucas@email.com', phone: '(11) 99999-8888', status: 'proposal_sent', source: 'referral', interest: 'Intelligence', createdAt: '6d atrás', assignedTo: 'Marina', tags: [] },
-];
+
 
 const sourceLabels: Record<string, string> = {
     instagram: 'Instagram',
@@ -235,7 +225,36 @@ function LeadCard({ lead, onContact, isSelected, onSelect, onDragStart }: LeadCa
 }
 
 export default function LeadPipelinePage() {
-    const [leads, setLeads] = useState<Lead[]>(initialLeads);
+    const [leads, setLeads] = useState<Lead[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await fetch('/api/leads');
+                const json = await res.json();
+                if (json.data) {
+                    const mapped = json.data.map((l: any) => ({
+                        id: l.id,
+                        name: l.name || '',
+                        email: l.email || '',
+                        phone: l.phone || '',
+                        status: l.status || 'new',
+                        source: l.source || 'website',
+                        interest: l.interestedIn ? (JSON.parse(l.interestedIn)[0] || '') : '',
+                        createdAt: l.createdAt ? new Date(l.createdAt).toLocaleDateString('pt-BR') : '',
+                        assignedTo: l.assignedTo || null,
+                        tags: l.tags ? JSON.parse(l.tags) : [],
+                    }));
+                    setLeads(mapped);
+                }
+            } catch (err) {
+                console.error('Failed to fetch leads:', err);
+            } finally {
+                setLoading(false);
+            }
+        })();
+    }, []);
     const [search, setSearch] = useState('');
     const [sourceFilter, setSourceFilter] = useState<string | null>(null);
     const [assigneeFilter, setAssigneeFilter] = useState<string | null>(null);

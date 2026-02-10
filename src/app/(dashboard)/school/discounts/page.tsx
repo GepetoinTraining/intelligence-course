@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Title, Text, Stack, Group, Card, Badge, Button, SimpleGrid,
     ThemeIcon, Paper, ActionIcon, Table, Modal, TextInput, Select,
@@ -27,11 +27,38 @@ interface Discount {
     status: 'active' | 'expired' | 'exhausted' | 'scheduled';
 }
 
-const MOCK_DISCOUNTS: Discount[] = [];
-
 export default function DiscountManagementPage() {
-    const [discounts, setDiscounts] = useState<Discount[]>(MOCK_DISCOUNTS);
+    const [discounts, setDiscounts] = useState<Discount[]>([]);
+    const [loading, setLoading] = useState(true);
     const [modal, { open: openModal, close: closeModal }] = useDisclosure(false);
+
+    const fetchDiscounts = useCallback(async () => {
+        try {
+            setLoading(true);
+            const res = await fetch('/api/discounts');
+            if (!res.ok) return;
+            const json = await res.json();
+            const rows = json.data || [];
+            setDiscounts(rows.map((r: any) => ({
+                id: r.id,
+                name: r.name || r.code || 'Desconto',
+                code: r.code || '',
+                type: r.type || 'percentage',
+                value: r.value || 0,
+                maxUses: r.maxUses || 0,
+                currentUses: r.currentUses || 0,
+                startDate: r.startsAt ? new Date(r.startsAt * 1000).toISOString() : '',
+                endDate: r.endsAt ? new Date(r.endsAt * 1000).toISOString() : '',
+                status: r.status || 'active',
+            })));
+        } catch (err) {
+            console.error('Failed to fetch discounts', err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => { fetchDiscounts(); }, [fetchDiscounts]);
 
     const getStatusInfo = (status: string) => {
         const map: Record<string, { color: string; label: string }> = {

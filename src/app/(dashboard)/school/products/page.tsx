@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Title, Text, Stack, Group, Card, Badge, Button, SimpleGrid,
     ThemeIcon, Paper, ActionIcon, Table, Modal, TextInput, Select,
@@ -57,10 +57,9 @@ const LEVELS = [
     { value: 'b2', label: 'B2 - Avançado' },
 ];
 
-const MOCK_PRODUCTS: Product[] = [];
-
 export default function ProductCatalogPage() {
-    const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
     const [modal, { open: openModal, close: closeModal }] = useDisclosure(false);
     const [tierModal, { open: openTierModal, close: closeTierModal }] = useDisclosure(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -92,6 +91,36 @@ export default function ProductCatalogPage() {
         setEditingProduct(null);
     };
 
+    const fetchProducts = useCallback(async () => {
+        try {
+            setLoading(true);
+            const res = await fetch('/api/products');
+            if (!res.ok) return;
+            const json = await res.json();
+            const rows = json.data || [];
+            setProducts(rows.map((r: any) => ({
+                id: r.id,
+                name: r.name || 'Produto',
+                type: r.type || 'other',
+                basePrice: r.price || r.basePrice || 0,
+                description: r.description || '',
+                courseId: r.courseId,
+                courseName: r.courseName,
+                levelId: r.levelId,
+                levelName: r.levelName,
+                pricingTiers: r.pricingTiers || [],
+                isActive: r.isActive !== false && r.isActive !== 0,
+                salesCount: r.salesCount || 0,
+            })));
+        } catch (err) {
+            console.error('Failed to fetch products', err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => { fetchProducts(); }, [fetchProducts]);
+
     const handleEdit = (product: Product) => {
         setEditingProduct(product);
         setName(product.name);
@@ -104,32 +133,25 @@ export default function ProductCatalogPage() {
         openModal();
     };
 
-    const handleSave = () => {
-        const courseName = COURSES.find(c => c.value === courseId)?.label;
-        const levelName = LEVELS.find(l => l.value === levelId)?.label;
-
+    const handleSave = async () => {
         if (editingProduct) {
-            setProducts(prev => prev.map(p =>
-                p.id === editingProduct.id
-                    ? { ...p, name, type: productType as Product['type'], basePrice, description, courseId: courseId || undefined, courseName, levelId: levelId || undefined, levelName, pricingTiers }
-                    : p
-            ));
+            try {
+                await fetch(`/api/products/${editingProduct.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, type: productType, price: basePrice, description }),
+                });
+                fetchProducts();
+            } catch (err) { console.error('Failed to update product', err); }
         } else if (name && productType) {
-            const newProduct: Product = {
-                id: `prod-${Date.now()}`,
-                name,
-                type: productType as Product['type'],
-                basePrice,
-                description,
-                courseId: courseId || undefined,
-                courseName,
-                levelId: levelId || undefined,
-                levelName,
-                pricingTiers,
-                isActive: true,
-                salesCount: 0,
-            };
-            setProducts(prev => [...prev, newProduct]);
+            try {
+                await fetch('/api/products', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, type: productType, price: basePrice, description }),
+                });
+                fetchProducts();
+            } catch (err) { console.error('Failed to create product', err); }
         }
         closeModal();
         resetForm();

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Title, Text, Stack, Group, Card, Badge, Button, SimpleGrid,
     ThemeIcon, Paper, ActionIcon, Modal, TextInput, Textarea, Select,
@@ -37,19 +37,13 @@ interface Course {
 }
 
 // ============================================================================
-// MOCK DATA
-// ============================================================================
-
-const MOCK_COURSES: Course[] = [];
-
-const MOCK_MODULES: Module[] = [];
-
-// ============================================================================
 // COMPONENT
 // ============================================================================
 
 export default function ModuleManagementPage() {
-    const [modules, setModules] = useState<Module[]>(MOCK_MODULES);
+    const [modules, setModules] = useState<Module[]>([]);
+    const [courses, setCourses] = useState<Course[]>([]);
+    const [loading, setLoading] = useState(true);
     const [selectedModule, setSelectedModule] = useState<Module | null>(null);
     const [isCreating, setIsCreating] = useState(false);
     const [filterCourse, setFilterCourse] = useState<string | null>(null);
@@ -62,6 +56,39 @@ export default function ModuleManagementPage() {
     const [description, setDescription] = useState('');
     const [objectives, setObjectives] = useState('');
     const [duration, setDuration] = useState<number | ''>(60);
+
+    const fetchModules = useCallback(async () => {
+        try {
+            setLoading(true);
+            const res = await fetch('/api/modules');
+            if (!res.ok) return;
+            const json = await res.json();
+            const rows = json.data || [];
+            setModules(rows.map((r: any) => ({
+                id: r.id,
+                courseId: r.courseId || '',
+                courseName: r.courseName || '',
+                name: r.name || 'Módulo',
+                description: r.description || '',
+                objectives: r.objectives ? (typeof r.objectives === 'string' ? JSON.parse(r.objectives) : r.objectives) : [],
+                order: r.order || r.sortOrder || 0,
+                lessonCount: r.lessonCount || 0,
+                duration: r.duration || 60,
+                status: r.status || 'draft',
+            })));
+        } catch (err) {
+            console.error('Failed to fetch modules', err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchModules();
+        fetch('/api/courses').then(r => r.json()).then(j => {
+            setCourses((j.data || []).map((c: any) => ({ id: c.id, name: c.name || c.id })));
+        }).catch(() => { });
+    }, [fetchModules]);
 
     const handleCreate = () => {
         setIsCreating(true);
@@ -85,41 +112,31 @@ export default function ModuleManagementPage() {
         openModal();
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!name || !courseId) return;
-
-        const course = MOCK_COURSES.find(c => c.id === courseId);
-
-        if (isCreating) {
-            const courseModules = modules.filter(m => m.courseId === courseId);
-            const newModule: Module = {
-                id: `mod-${Date.now()}`,
-                courseId,
-                courseName: course?.name || '',
-                name,
-                description,
-                objectives: objectives.split('\n').filter(o => o.trim()),
-                order: courseModules.length + 1,
-                lessonCount: 0,
-                duration: Number(duration) || 60,
-                status: 'draft',
-            };
-            setModules(prev => [...prev, newModule]);
-        } else if (selectedModule) {
-            setModules(prev => prev.map(m =>
-                m.id === selectedModule.id
-                    ? {
-                        ...m,
-                        courseId,
-                        courseName: course?.name || '',
-                        name,
-                        description,
-                        objectives: objectives.split('\n').filter(o => o.trim()),
-                        duration: Number(duration) || 60,
-                    }
-                    : m
-            ));
-        }
+        const body = {
+            courseId,
+            name,
+            description,
+            objectives: JSON.stringify(objectives.split('\n').filter(o => o.trim())),
+            duration: Number(duration) || 60,
+        };
+        try {
+            if (isCreating) {
+                await fetch('/api/modules', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+            } else if (selectedModule) {
+                await fetch(`/api/modules/${selectedModule.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+            }
+            fetchModules();
+        } catch (err) { console.error('Failed to save module', err); }
         closeModal();
     };
 
@@ -154,7 +171,7 @@ export default function ModuleManagementPage() {
         : modules;
 
     // Group modules by course
-    const groupedModules = MOCK_COURSES.map(course => ({
+    const groupedModules = courses.map(course => ({
         course,
         modules: filteredModules.filter(m => m.courseId === course.id).sort((a, b) => a.order - b.order),
     })).filter(g => g.modules.length > 0);
@@ -209,7 +226,7 @@ export default function ModuleManagementPage() {
 
                 <Select
                     placeholder="Filtrar por curso"
-                    data={MOCK_COURSES.map(c => ({ value: c.id, label: c.name }))}
+                    data={courses.map(c => ({ value: c.id, label: c.name }))}
                     value={filterCourse}
                     onChange={setFilterCourse}
                     clearable
@@ -358,7 +375,7 @@ export default function ModuleManagementPage() {
                     <Select
                         label="Curso"
                         placeholder="Selecione o curso"
-                        data={MOCK_COURSES.map(c => ({ value: c.id, label: c.name }))}
+                        data={courses.map(c => ({ value: c.id, label: c.name }))}
                         value={courseId}
                         onChange={setCourseId}
                         required

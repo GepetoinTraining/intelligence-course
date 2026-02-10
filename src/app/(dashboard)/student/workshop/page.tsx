@@ -24,10 +24,8 @@ interface Workshop {
     firstAction: string;
 }
 
-const MOCK_WORKSHOPS: Workshop[] = [];
-
 export default function ProblemWorkshopPage() {
-    const [workshops, setWorkshops] = useState<Workshop[]>(MOCK_WORKSHOPS);
+    const [workshops, setWorkshops] = useState<Workshop[]>([]);
     const [activeStep, setActiveStep] = useState(0);
     const [isCreating, setIsCreating] = useState(false);
 

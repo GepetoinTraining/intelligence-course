@@ -64,9 +64,6 @@ const AUDIENCE_OPTIONS = [
     { value: 'general', label: 'Público geral' },
 ];
 
-// Mock pre-generated copies for demo
-const MOCK_GENERATED_COPIES: GeneratedCopy[] = [];
-
 // ============================================================================
 // AI COPY GENERATOR (Simulated)
 // ============================================================================
@@ -156,7 +153,7 @@ export default function CopyGeneratorPage() {
     const [creativity, setCreativity] = useState(50);
     const [generating, setGenerating] = useState(false);
     const [generatedContent, setGeneratedContent] = useState('');
-    const [copies, setCopies] = useState<GeneratedCopy[]>(MOCK_GENERATED_COPIES);
+    const [copies, setCopies] = useState<GeneratedCopy[]>([]);
     const [activeTab, setActiveTab] = useState<string | null>('generator');
 
     const selectedType = COPY_TYPES.find(t => t.value === copyType);

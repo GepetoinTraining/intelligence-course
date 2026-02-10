@@ -51,7 +51,7 @@ const statusConfig: Record<string, { label: string; color: string }> = {
     cancelled: { label: 'Cancelado', color: 'gray' },
 };
 
-const MOCK_PAYABLES: Payable[] = [];
+
 
 export default function OwnerPayablesPage() {
     const [payables, setPayables] = useState<Payable[]>([]);

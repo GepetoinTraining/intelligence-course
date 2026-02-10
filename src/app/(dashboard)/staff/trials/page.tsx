@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Title,
     Text,
@@ -41,127 +41,7 @@ import {
 } from '@tabler/icons-react';
 import Link from 'next/link';
 
-// Mock data
-const todayTrials = [
-    {
-        id: '1',
-        leadId: '1',
-        leadName: 'Maria Silva',
-        leadPhone: '(11) 99999-1111',
-        leadEmail: 'maria@email.com',
-        time: '10:00',
-        className: 'English A1 - Turma 3',
-        teacherName: 'Prof. Ana',
-        roomName: 'Sala 1',
-        status: 'confirmed',
-        notes: 'Primeiro contato via Instagram',
-    },
-    {
-        id: '2',
-        leadId: '2',
-        leadName: 'João Santos',
-        leadPhone: '(11) 99999-2222',
-        leadEmail: 'joao@email.com',
-        time: '14:30',
-        className: 'Spanish A1 - Turma 1',
-        teacherName: 'Prof. Carlos',
-        roomName: 'Sala 2',
-        status: 'pending',
-        notes: 'Indicação do Pedro Costa',
-    },
-    {
-        id: '3',
-        leadId: '3',
-        leadName: 'Ana Oliveira',
-        leadPhone: '(11) 99999-3333',
-        leadEmail: 'ana@email.com',
-        time: '16:00',
-        className: 'Intelligence',
-        teacherName: 'Prof. Roberto',
-        roomName: 'Lab',
-        status: 'confirmed',
-        notes: 'Muito interessada no curso de IA',
-    },
-];
-
-const upcomingTrials = [
-    {
-        id: '4',
-        leadId: '4',
-        leadName: 'Pedro Costa',
-        leadPhone: '(11) 99999-4444',
-        date: '2025-02-04',
-        time: '10:00',
-        className: 'English B1 - Turma 2',
-        roomName: 'Sala 1',
-        status: 'confirmed',
-    },
-    {
-        id: '5',
-        leadId: '5',
-        leadName: 'Carla Mendes',
-        leadPhone: '(11) 99999-5555',
-        date: '2025-02-05',
-        time: '14:30',
-        className: 'Spanish A2 - Turma 1',
-        roomName: 'Sala 2',
-        status: 'pending',
-    },
-    {
-        id: '6',
-        leadId: '6',
-        leadName: 'Lucas Ferreira',
-        leadPhone: '(11) 99999-6666',
-        date: '2025-02-06',
-        time: '09:00',
-        className: 'Intelligence',
-        roomName: 'Lab',
-        status: 'confirmed',
-    },
-];
-
-const pastTrials = [
-    {
-        id: '7',
-        leadId: '7',
-        leadName: 'Rafael Lima',
-        date: '2025-01-30',
-        time: '10:00',
-        className: 'English A1 - Turma 1',
-        roomName: 'Sala 1',
-        status: 'completed',
-        outcome: 'enrolled',
-    },
-    {
-        id: '8',
-        leadId: '8',
-        leadName: 'Fernanda Rocha',
-        date: '2025-01-29',
-        time: '16:00',
-        className: 'Intelligence',
-        roomName: 'Lab',
-        status: 'completed',
-        outcome: 'thinking',
-    },
-    {
-        id: '9',
-        leadId: '9',
-        leadName: 'Lucas Almeida',
-        leadPhone: '(11) 99999-8888',
-        date: '2025-01-28',
-        time: '14:30',
-        className: 'English A2 - Turma 2',
-        roomName: 'Sala 2',
-        status: 'no_show',
-        outcome: null,
-        noShowFollowup: {
-            attempts: 2,
-            lastAttempt: '2025-01-29',
-            nextAction: 'reschedule',
-            notes: 'Tentou contato 2x, aguardando resposta',
-        },
-    },
-];
+// Status config
 
 const statusColors: Record<string, string> = {
     confirmed: 'green',
@@ -353,6 +233,10 @@ function TrialCard({ trial, onRecordOutcome, onNoShowFollowup, showDate }: Trial
 }
 
 export default function TrialsPage() {
+    const [todayTrials, setTodayTrials] = useState<Trial[]>([]);
+    const [upcomingTrials, setUpcomingTrials] = useState<Trial[]>([]);
+    const [pastTrials, setPastTrials] = useState<Trial[]>([]);
+    const [loading, setLoading] = useState(true);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
@@ -362,12 +246,47 @@ export default function TrialsPage() {
     const [outcome, setOutcome] = useState<string | null>(null);
     const [noShowAction, setNoShowAction] = useState<string | null>(null);
 
-    // All trials for calendar
-    const allTrials = [
-        ...todayTrials.map(t => ({ ...t, date: new Date().toISOString().split('T')[0] })),
-        ...upcomingTrials,
-        ...pastTrials,
-    ];
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await fetch('/api/trials');
+                const json = await res.json();
+                if (json.data) {
+                    const today = new Date().toISOString().split('T')[0];
+                    const todayTs = new Date(today).getTime();
+
+                    const mapped: Trial[] = json.data.map((t: any) => {
+                        const dateStr = t.scheduledDate
+                            ? new Date(typeof t.scheduledDate === 'number' ? t.scheduledDate : t.scheduledDate).toISOString().split('T')[0]
+                            : today;
+                        return {
+                            id: t.id,
+                            leadId: t.leadId || '',
+                            leadName: t.leadName || t.personId || 'Lead',
+                            leadPhone: t.leadPhone || '',
+                            leadEmail: t.leadEmail || '',
+                            date: dateStr,
+                            time: t.scheduledTime || '00:00',
+                            className: t.className || '',
+                            teacherName: t.teacherName || '',
+                            roomName: t.roomName || '',
+                            status: t.status || 'scheduled',
+                            notes: t.notes || '',
+                            outcome: t.outcome || null,
+                        };
+                    });
+
+                    setTodayTrials(mapped.filter(t => t.date === today));
+                    setUpcomingTrials(mapped.filter(t => t.date && t.date > today));
+                    setPastTrials(mapped.filter(t => t.date && t.date < today));
+                }
+            } catch (err) {
+                console.error('Failed to fetch trials:', err);
+            } finally {
+                setLoading(false);
+            }
+        })();
+    }, []);
 
     const handleRecordOutcome = (trialId: string) => {
         setSelectedTrialId(trialId);
@@ -410,6 +329,9 @@ export default function TrialsPage() {
             setCurrentMonth(currentMonth + 1);
         }
     };
+
+    // All trials for calendar
+    const allTrials = [...todayTrials, ...upcomingTrials, ...pastTrials];
 
     // Get trials for a specific date
     const getTrialsForDate = (day: number) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Title, Text, Stack, Group, Card, Badge, Button, SimpleGrid,
     Paper, ThemeIcon, Progress, Modal, TextInput, Textarea,
@@ -70,17 +70,7 @@ interface ABTest {
     status: 'running' | 'concluded';
 }
 
-// ============================================================================
-// MOCK DATA
-// ============================================================================
 
-const MOCK_CAMPAIGNS: Campaign[] = [];
-
-const MOCK_CHANNEL_METRICS: ChannelMetrics[] = [];
-
-const MOCK_ASSETS: ContentAsset[] = [];
-
-const MOCK_AB_TESTS: ABTest[] = [];
 
 // ============================================================================
 // MAIN COMPONENT
@@ -98,14 +88,26 @@ export default function MarketingPage() {
     const [campaignModalOpened, { open: openCampaignModal, close: closeCampaignModal }] = useDisclosure(false);
 
     useEffect(() => {
-        // Simulate API fetch
-        setTimeout(() => {
-            setCampaigns(MOCK_CAMPAIGNS);
-            setChannelMetrics(MOCK_CHANNEL_METRICS);
-            setAssets(MOCK_ASSETS);
-            setAbTests(MOCK_AB_TESTS);
-            setLoading(false);
-        }, 500);
+        const fetchAll = async () => {
+            try {
+                setLoading(true);
+                const [campRes, chanRes, assetRes, abRes] = await Promise.allSettled([
+                    fetch('/api/campaigns').then(r => r.ok ? r.json() : { data: [] }),
+                    fetch('/api/marketing/channels').then(r => r.ok ? r.json() : { data: [] }),
+                    fetch('/api/marketing/assets').then(r => r.ok ? r.json() : { data: [] }),
+                    fetch('/api/marketing/ab-tests').then(r => r.ok ? r.json() : { data: [] }),
+                ]);
+                setCampaigns(campRes.status === 'fulfilled' ? (campRes.value.data || []) : []);
+                setChannelMetrics(chanRes.status === 'fulfilled' ? (chanRes.value.data || []) : []);
+                setAssets(assetRes.status === 'fulfilled' ? (assetRes.value.data || []) : []);
+                setAbTests(abRes.status === 'fulfilled' ? (abRes.value.data || []) : []);
+            } catch (err) {
+                console.error('Failed to fetch marketing data', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchAll();
     }, []);
 
     // Calculate aggregate metrics

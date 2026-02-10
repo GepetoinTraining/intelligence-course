@@ -17,6 +17,7 @@ export default async function middleware(req: NextRequest) {
         '/sign-in(.*)',
         '/sign-up(.*)',
         '/onboarding(.*)',
+        '/join(.*)',
         '/platform(.*)',
         '/p/(.*)',
         '/cert/(.*)',
@@ -25,6 +26,7 @@ export default async function middleware(req: NextRequest) {
         '/lattice/demo(.*)',
         '/api/careers(.*)',
         '/api/onboarding(.*)',
+        '/api/invites(.*)',
         '/eco-escola(.*)',
     ]);
 

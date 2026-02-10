@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Title, Text, Stack, Group, Card, Badge, Button, SimpleGrid,
     Avatar, ThemeIcon, Paper, Table, ActionIcon, Tabs, Modal, Divider,
@@ -30,8 +30,7 @@ interface Invoice {
     installment?: { current: number; total: number };
 }
 
-// Mock data
-const MOCK_INVOICES: Invoice[] = [];
+
 
 const statusColors = {
     pending: 'yellow',
@@ -55,7 +54,8 @@ const statusIcons = {
 };
 
 export default function ParentBillingPage() {
-    const [invoices] = useState<Invoice[]>(MOCK_INVOICES);
+    const [invoices, setInvoices] = useState<Invoice[]>([]);
+    const [loading, setLoading] = useState(true);
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
     const [paymentModal, { open: openPaymentModal, close: closePaymentModal }] = useDisclosure(false);
     const [pdfModal, { open: openPdfModal, close: closePdfModal }] = useDisclosure(false);
@@ -67,6 +67,36 @@ export default function ParentBillingPage() {
         defaultValue: false,
     });
     const [autoPayCard, setAutoPayCard] = useState('**** **** **** 4242');
+
+    const fetchInvoices = useCallback(async () => {
+        try {
+            setLoading(true);
+            const res = await fetch('/api/invoices');
+            if (!res.ok) return;
+            const json = await res.json();
+            setInvoices((json.data || []).map((inv: any) => ({
+                id: inv.id,
+                description: inv.description || `Fatura ${inv.id.slice(0, 8)}`,
+                studentName: inv.studentName || 'Aluno',
+                dueDate: inv.dueDate || '',
+                grossAmount: inv.amountCents ? inv.amountCents / 100 : inv.grossAmount || 0,
+                discountAmount: inv.discountCents ? inv.discountCents / 100 : inv.discountAmount || 0,
+                netAmount: inv.finalAmountCents ? inv.finalAmountCents / 100 : inv.netAmount || 0,
+                status: inv.status || 'pending',
+                paidDate: inv.paidDate || undefined,
+                paymentMethod: inv.paymentMethod || undefined,
+                installment: inv.installment || undefined,
+            })));
+        } catch (err) {
+            console.error('Failed to fetch invoices', err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchInvoices();
+    }, [fetchInvoices]);
 
     const handlePayClick = (invoice: Invoice) => {
         setSelectedInvoice(invoice);

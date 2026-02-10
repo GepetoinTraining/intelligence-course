@@ -43,7 +43,7 @@ interface ProviderCredentials {
 }
 
 // ============================================================================
-// MOCK DATA
+// CONFIG
 // ============================================================================
 
 const INITIAL_PROVIDERS: ProviderCredentials[] = [

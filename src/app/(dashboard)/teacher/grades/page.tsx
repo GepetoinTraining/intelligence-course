@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Title, Text, Stack, Group, Card, Badge, Button, SimpleGrid,
     Avatar, ThemeIcon, Paper, ActionIcon, Table, Select, Modal,
@@ -83,14 +83,9 @@ const RUBRIC_CRITERIA: RubricCriterion[] = [
 const MAX_TOTAL_SCORE = RUBRIC_CRITERIA.reduce((acc, c) => acc + c.maxScore, 0);
 
 // ============================================================================
-// MOCK DATA
+// DATA FETCHING (replaces MOCK data)
 // ============================================================================
 
-const MOCK_CLASSES: ClassRef[] = [];
-
-const MOCK_MODULES: ModuleRef[] = [];
-
-const MOCK_SUBMISSIONS: Record<string, CapstoneSubmission[]> = {};
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -127,9 +122,11 @@ const getScoreColor = (score: number, max: number): string => {
 // ============================================================================
 
 export default function TeacherGradesPage() {
-    const [selectedClass, setSelectedClass] = useState<string>('class-1');
-    const [selectedModule, setSelectedModule] = useState<string>('mod-1');
-    const [submissions, setSubmissions] = useState<CapstoneSubmission[]>(MOCK_SUBMISSIONS['class-1']);
+    const [classes, setClasses] = useState<ClassRef[]>([]);
+    const [modules, setModules] = useState<ModuleRef[]>([]);
+    const [selectedClass, setSelectedClass] = useState<string>('');
+    const [selectedModule, setSelectedModule] = useState<string>('');
+    const [submissions, setSubmissions] = useState<CapstoneSubmission[]>([]);
     const [selectedSubmission, setSelectedSubmission] = useState<CapstoneSubmission | null>(null);
 
     const [gradeModal, { open: openGradeModal, close: closeGradeModal }] = useDisclosure(false);
@@ -137,10 +134,44 @@ export default function TeacherGradesPage() {
     const [rubricScores, setRubricScores] = useState<Record<string, number>>({});
     const [teacherFeedback, setTeacherFeedback] = useState('');
 
+    // Fetch classes and modules on mount
+    useEffect(() => {
+        fetch('/api/classes').then(r => r.json()).then(j => {
+            const data = (j.data || []).map((c: any) => ({ id: c.id, name: c.name || c.id }));
+            setClasses(data);
+            if (data.length > 0 && !selectedClass) setSelectedClass(data[0].id);
+        }).catch(() => { });
+        fetch('/api/modules').then(r => r.json()).then(j => {
+            const data = (j.data || []).map((m: any) => ({ id: m.id, name: m.name || m.id }));
+            setModules(data);
+            if (data.length > 0 && !selectedModule) setSelectedModule(data[0].id);
+        }).catch(() => { });
+    }, []);
+
+    // Fetch submissions when class changes
+    useEffect(() => {
+        if (!selectedClass) return;
+        fetch(`/api/reviews?classId=${selectedClass}`).then(r => r.json()).then(j => {
+            setSubmissions((j.data || []).map((s: any) => ({
+                id: s.id,
+                studentName: s.studentName || 'Aluno',
+                studentAvatar: s.studentAvatar || undefined,
+                projectTitle: s.projectTitle || s.title || 'Capstone',
+                projectUrl: s.projectUrl || '',
+                submittedAt: s.submittedAt || s.createdAt || '',
+                status: s.status || 'submitted',
+                selfAssessmentScore: s.selfAssessmentScore,
+                teacherScore: s.teacherScore,
+                peerReviewScore: s.peerReviewScore,
+                feedback: s.feedback || '',
+                rubricCategories: s.rubricCategories || [],
+            })));
+        }).catch(() => { });
+    }, [selectedClass]);
+
     const handleClassChange = (classId: string | null) => {
         if (classId) {
             setSelectedClass(classId);
-            setSubmissions(MOCK_SUBMISSIONS[classId] || []);
         }
     };
 
@@ -228,7 +259,7 @@ export default function TeacherGradesPage() {
                             { key: 'peerCount', label: 'Nº Avaliadores' },
                             { key: 'finalScore', label: 'Nota Final' },
                         ]}
-                        title={`Notas - ${MOCK_CLASSES.find(c => c.id === selectedClass)?.name || 'Turma'}`}
+                        title={`Notas - ${classes.find(c => c.id === selectedClass)?.name || 'Turma'}`}
                         filename={`notas_${selectedClass}_${selectedModule}`}
                         formats={['csv', 'xlsx', 'pdf']}
                         label="Exportar Notas"
@@ -274,7 +305,7 @@ export default function TeacherGradesPage() {
                 <Select
                     label="Turma"
                     placeholder="Selecione a turma"
-                    data={MOCK_CLASSES.map(c => ({ value: c.id, label: c.name }))}
+                    data={classes.map(c => ({ value: c.id, label: c.name }))}
                     value={selectedClass}
                     onChange={handleClassChange}
                     w={250}
@@ -282,7 +313,7 @@ export default function TeacherGradesPage() {
                 <Select
                     label="Módulo"
                     placeholder="Selecione o módulo"
-                    data={MOCK_MODULES.map(m => ({ value: m.id, label: m.name }))}
+                    data={modules.map(m => ({ value: m.id, label: m.name }))}
                     value={selectedModule}
                     onChange={(v) => v && setSelectedModule(v)}
                     w={300}
@@ -347,7 +378,7 @@ export default function TeacherGradesPage() {
             <Card shadow="sm" radius="md" p="lg" withBorder>
                 <Stack gap="md">
                     <Group justify="space-between">
-                        <Text fw={600}>Entregas - {MOCK_MODULES.find(m => m.id === selectedModule)?.name}</Text>
+                        <Text fw={600}>Entregas - {modules.find(m => m.id === selectedModule)?.name}</Text>
                     </Group>
 
                     <Table striped highlightOnHover>
@@ -664,10 +695,10 @@ export default function TeacherGradesPage() {
                         <Group justify="space-between">
                             <div>
                                 <Text size="lg" fw={700}>
-                                    {MOCK_CLASSES.find(c => c.id === selectedClass)?.name}
+                                    {classes.find(c => c.id === selectedClass)?.name}
                                 </Text>
                                 <Text size="sm" c="dimmed">
-                                    {MOCK_MODULES.find(m => m.id === selectedModule)?.name}
+                                    {modules.find(m => m.id === selectedModule)?.name}
                                 </Text>
                             </div>
                             <div style={{ textAlign: 'right' }}>

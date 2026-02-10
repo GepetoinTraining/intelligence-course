@@ -77,16 +77,13 @@ const ALL_STAGES = [
     { value: 'lost', label: 'Pausado', segment: 'outcome' },
 ];
 
-// Mock automation rules
-const MOCK_RULES: FunnelRule[] = [];
-
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
 export default function SalesManagerPage() {
     const [metrics, setMetrics] = useState<FunnelMetrics | null>(null);
-    const [rules, setRules] = useState<FunnelRule[]>(MOCK_RULES);
+    const [rules, setRules] = useState<FunnelRule[]>([]);
     const [teamStats, setTeamStats] = useState<TeamMemberStats[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<string | null>('overview');

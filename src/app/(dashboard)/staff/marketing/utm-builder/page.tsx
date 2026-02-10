@@ -64,8 +64,6 @@ const MEDIUM_PRESETS = [
     { value: 'affiliate', label: 'Affiliate' },
 ];
 
-const MOCK_SAVED_LINKS: SavedLink[] = [];
-
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
@@ -78,7 +76,7 @@ export default function UTMBuilderPage() {
     const [utmContent, setUtmContent] = useState('');
     const [utmTerm, setUtmTerm] = useState('');
     const [linkName, setLinkName] = useState('');
-    const [savedLinks, setSavedLinks] = useState<SavedLink[]>(MOCK_SAVED_LINKS);
+    const [savedLinks, setSavedLinks] = useState<SavedLink[]>([]);
     const [useShortener, setUseShortener] = useState(false);
     const [activeTab, setActiveTab] = useState<string | null>('builder');
 

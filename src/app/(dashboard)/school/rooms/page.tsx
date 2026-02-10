@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Title, Text, Stack, Group, Card, Badge, Button, SimpleGrid,
     ThemeIcon, Paper, ActionIcon, Table, Modal, TextInput, NumberInput,
@@ -30,7 +30,7 @@ interface Room {
 }
 
 // ============================================================================
-// MOCK DATA
+// CONFIG
 // ============================================================================
 
 const AMENITY_OPTIONS = [
@@ -42,7 +42,7 @@ const AMENITY_OPTIONS = [
     { value: 'audio', label: 'Sistema de Áudio' },
 ];
 
-const MOCK_ROOMS: Room[] = [];
+
 
 const AMENITY_ICONS: Record<string, React.ReactNode> = {
     wifi: <IconWifi size={14} />,
@@ -58,7 +58,8 @@ const AMENITY_ICONS: Record<string, React.ReactNode> = {
 // ============================================================================
 
 export default function RoomManagementPage() {
-    const [rooms, setRooms] = useState<Room[]>(MOCK_ROOMS);
+    const [rooms, setRooms] = useState<Room[]>([]);
+    const [loading, setLoading] = useState(true);
     const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
     const [isCreating, setIsCreating] = useState(false);
 
@@ -70,6 +71,31 @@ export default function RoomManagementPage() {
     const [capacity, setCapacity] = useState<number>(10);
     const [amenities, setAmenities] = useState<string[]>([]);
     const [isActive, setIsActive] = useState(true);
+
+    const fetchRooms = useCallback(async () => {
+        try {
+            setLoading(true);
+            const res = await fetch('/api/rooms');
+            if (!res.ok) return;
+            const json = await res.json();
+            const rows = json.data || [];
+            setRooms(rows.map((r: any) => ({
+                id: r.id,
+                name: r.name || 'Sala',
+                code: r.code || '',
+                capacity: r.capacity || 10,
+                amenities: r.amenities ? (typeof r.amenities === 'string' ? JSON.parse(r.amenities) : r.amenities) : [],
+                isActive: r.isActive !== false && r.isActive !== 0,
+                currentOccupancy: r.currentOccupancy,
+            })));
+        } catch (err) {
+            console.error('Failed to fetch rooms', err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => { fetchRooms(); }, [fetchRooms]);
 
     const handleCreate = () => {
         setIsCreating(true);
@@ -93,29 +119,34 @@ export default function RoomManagementPage() {
         openModal();
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (isCreating) {
-            const newRoom: Room = {
-                id: `room-${Date.now()}`,
-                name,
-                code,
-                capacity,
-                amenities,
-                isActive,
-            };
-            setRooms(prev => [...prev, newRoom]);
+            try {
+                await fetch('/api/rooms', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, code, capacity, amenities: JSON.stringify(amenities), isActive }),
+                });
+                fetchRooms();
+            } catch (err) { console.error('Failed to create room', err); }
         } else if (selectedRoom) {
-            setRooms(prev => prev.map(r =>
-                r.id === selectedRoom.id
-                    ? { ...r, name, code, capacity, amenities, isActive }
-                    : r
-            ));
+            try {
+                await fetch(`/api/rooms/${selectedRoom.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, code, capacity, amenities: JSON.stringify(amenities), isActive }),
+                });
+                fetchRooms();
+            } catch (err) { console.error('Failed to update room', err); }
         }
         closeModal();
     };
 
-    const handleDelete = (id: string) => {
-        setRooms(prev => prev.filter(r => r.id !== id));
+    const handleDelete = async (id: string) => {
+        try {
+            await fetch(`/api/rooms/${id}`, { method: 'DELETE' });
+            fetchRooms();
+        } catch (err) { console.error('Failed to delete room', err); }
     };
 
     const activeRooms = rooms.filter(r => r.isActive);

@@ -96,17 +96,11 @@ const RUBRIC_CRITERIA: RubricCriterion[] = [
 const MAX_TOTAL_SCORE = RUBRIC_CRITERIA.reduce((acc, c) => acc + c.maxScore, 0);
 
 // ============================================================================
-// MOCK DATA
-// ============================================================================
-
-const MOCK_PEER_SUBMISSIONS: PeerSubmission[] = [];
-
-// ============================================================================
 // COMPONENT
 // ============================================================================
 
 export default function StudentPeerReviewPage() {
-    const [submissions, setSubmissions] = useState<PeerSubmission[]>(MOCK_PEER_SUBMISSIONS);
+    const [submissions, setSubmissions] = useState<PeerSubmission[]>([]);
     const [selectedSubmission, setSelectedSubmission] = useState<PeerSubmission | null>(null);
 
     // Review form state

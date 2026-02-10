@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Title, Text, Stack, Group, Card, Badge, Button, SimpleGrid,
     ThemeIcon, Paper, ActionIcon, Modal, TextInput, Textarea, Select,
@@ -36,7 +36,7 @@ interface Course {
 }
 
 // ============================================================================
-// MOCK DATA
+// CONFIG
 // ============================================================================
 
 const DEMOGRAPHICS = [
@@ -48,14 +48,22 @@ const DEMOGRAPHICS = [
     { value: 'seniors', label: '👴 60+', icon: IconUser },
 ];
 
-const MOCK_COURSES: Course[] = [];
-
 // ============================================================================
 // COMPONENT
 // ============================================================================
 
+function parseJsonField(val: unknown): string {
+    if (!val) return '';
+    if (typeof val === 'string') {
+        try { const p = JSON.parse(val); return typeof p === 'object' ? (p['pt-BR'] || p.default || Object.values(p)[0] || '') : String(p); }
+        catch { return val; }
+    }
+    return String(val);
+}
+
 export default function CourseManagementPage() {
-    const [courses, setCourses] = useState<Course[]>(MOCK_COURSES);
+    const [courses, setCourses] = useState<Course[]>([]);
+    const [loading, setLoading] = useState(true);
     const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
     const [isCreating, setIsCreating] = useState(false);
     const [activeTab, setActiveTab] = useState<string | null>('all');
@@ -72,6 +80,38 @@ export default function CourseManagementPage() {
     const [skillLevel, setSkillLevel] = useState<string | null>('beginner');
     const [duration, setDuration] = useState<number | ''>(20);
     const [price, setPrice] = useState<number | ''>(497);
+
+    // Fetch courses from API
+    const fetchCourses = useCallback(async () => {
+        try {
+            setLoading(true);
+            const res = await fetch('/api/courses');
+            if (!res.ok) return;
+            const json = await res.json();
+            const rows = json.data || [];
+            setCourses(rows.map((r: any) => ({
+                id: r.id,
+                name: parseJsonField(r.title),
+                description: parseJsonField(r.description),
+                slug: r.id, // use id as slug fallback
+                targetDemographic: [],
+                ageRange: null,
+                skillLevel: 'all' as const,
+                duration: 0,
+                moduleCount: 0,
+                lessonCount: 0,
+                price: 0,
+                status: r.archivedAt ? 'archived' : r.isPublished ? 'active' : 'draft' as const,
+                enrolledCount: 0,
+            })));
+        } catch (err) {
+            console.error('Failed to fetch courses', err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => { fetchCourses(); }, [fetchCourses]);
 
     const handleCreate = () => {
         setIsCreating(true);
@@ -103,54 +143,64 @@ export default function CourseManagementPage() {
         openModal();
     };
 
-    const handleSave = () => {
-        if (!name || !slug) return;
+    const handleSave = async () => {
+        if (!name) return;
 
         if (isCreating) {
-            const newCourse: Course = {
-                id: `course-${Date.now()}`,
-                name,
-                description,
-                slug,
-                targetDemographic,
-                ageRange: ageMin && ageMax ? { min: Number(ageMin), max: Number(ageMax) } : null,
-                skillLevel: (skillLevel as Course['skillLevel']) || 'beginner',
-                duration: Number(duration) || 20,
-                moduleCount: 0,
-                lessonCount: 0,
-                price: Number(price) || 0,
-                status: 'draft',
-                enrolledCount: 0,
-            };
-            setCourses(prev => [...prev, newCourse]);
+            try {
+                await fetch('/api/courses', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: { 'pt-BR': name },
+                        description: { 'pt-BR': description },
+                        isPublished: false,
+                    }),
+                });
+                fetchCourses();
+            } catch (err) {
+                console.error('Failed to create course', err);
+            }
         } else if (selectedCourse) {
-            setCourses(prev => prev.map(c =>
-                c.id === selectedCourse.id
-                    ? {
-                        ...c,
-                        name,
-                        description,
-                        slug,
-                        targetDemographic,
-                        ageRange: ageMin && ageMax ? { min: Number(ageMin), max: Number(ageMax) } : null,
-                        skillLevel: (skillLevel as Course['skillLevel']) || 'beginner',
-                        duration: Number(duration) || 20,
-                        price: Number(price) || 0,
-                    }
-                    : c
-            ));
+            try {
+                await fetch(`/api/courses/${selectedCourse.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: JSON.stringify({ 'pt-BR': name }),
+                        description: JSON.stringify({ 'pt-BR': description }),
+                    }),
+                });
+                fetchCourses();
+            } catch (err) {
+                console.error('Failed to update course', err);
+            }
         }
         closeModal();
     };
 
-    const handleDelete = (id: string) => {
-        setCourses(prev => prev.filter(c => c.id !== id));
+    const handleDelete = async (id: string) => {
+        try {
+            await fetch(`/api/courses/${id}`, { method: 'DELETE' });
+            fetchCourses();
+        } catch (err) {
+            console.error('Failed to delete course', err);
+        }
     };
 
-    const handleStatusChange = (id: string, status: Course['status']) => {
-        setCourses(prev => prev.map(c =>
-            c.id === id ? { ...c, status } : c
-        ));
+    const handleStatusChange = async (id: string, status: Course['status']) => {
+        try {
+            const isPublished = status === 'active' ? 1 : 0;
+            const archivedAt = status === 'archived' ? Math.floor(Date.now() / 1000) : null;
+            await fetch(`/api/courses/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isPublished, archivedAt }),
+            });
+            fetchCourses();
+        } catch (err) {
+            console.error('Failed to change course status', err);
+        }
     };
 
     const getStatusInfo = (status: string) => {

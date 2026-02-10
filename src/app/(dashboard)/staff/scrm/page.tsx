@@ -87,11 +87,7 @@ const SENTIMENT_CONFIG = {
     negative: { label: 'Negativo', color: 'red', icon: <IconMoodSad size={16} /> },
 };
 
-// ============================================================================
-// MOCK DATA (for demo/dev mode when API is unavailable)
-// ============================================================================
 
-const MOCK_LEADS: Lead[] = [];
 
 // ============================================================================
 // LEAD CARD COMPONENT
@@ -283,37 +279,14 @@ export default function SCRMPipelinePage() {
             setFunnelCounts(data.funnel || { tofu: 0, mofu: 0, bofu: 0, outcome: 0 });
             setStageCounts(data.stages || {});
         } catch (error) {
-            console.error('Error fetching leads, using mock data:', error);
-
-            // Use mock data as fallback
-            let mockFiltered = MOCK_LEADS;
-            if (activeSegment) {
-                mockFiltered = MOCK_LEADS.filter(l => l.funnelSegment === activeSegment);
-            }
-            setLeads(mockFiltered);
-
-            // Calculate funnel counts from mock data
-            const mockFunnelCounts = {
-                tofu: MOCK_LEADS.filter(l => l.funnelSegment === 'tofu').length,
-                mofu: MOCK_LEADS.filter(l => l.funnelSegment === 'mofu').length,
-                bofu: MOCK_LEADS.filter(l => l.funnelSegment === 'bofu').length,
-                outcome: MOCK_LEADS.filter(l => l.funnelSegment === 'outcome').length,
-            };
-            setFunnelCounts(mockFunnelCounts);
-
-            // Calculate stage counts from mock data
-            const mockStageCounts: StageCounts = {};
-            MOCK_LEADS.forEach(l => {
-                if (l.funnelStage) {
-                    mockStageCounts[l.funnelStage] = (mockStageCounts[l.funnelStage] || 0) + 1;
-                }
-            });
-            setStageCounts(mockStageCounts);
-
+            console.error('Error fetching leads:', error);
+            setLeads([]);
+            setFunnelCounts({ tofu: 0, mofu: 0, bofu: 0, outcome: 0 });
+            setStageCounts({});
             notifications.show({
-                title: '📋 Modo Demo',
-                message: 'Exibindo dados de demonstração. Faça login para ver dados reais.',
-                color: 'blue',
+                title: 'Erro',
+                message: 'Não foi possível carregar os leads.',
+                color: 'red',
             });
         } finally {
             setLoading(false);

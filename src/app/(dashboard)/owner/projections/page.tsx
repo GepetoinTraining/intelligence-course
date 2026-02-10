@@ -31,21 +31,57 @@ export default function OwnerProjectionsPage() {
     const fetchProjections = async () => {
         setLoading(true);
         try {
-            // This would fetch from a projections API
-            // For now, generate placeholder data based on current month
+            // Fetch recent transactions to compute projections
+            const res = await fetch('/api/transactions');
             const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
             const currentMonth = new Date().getMonth();
             const horizonNum = parseInt(horizon);
 
+            let avgInflow = 0;
+            let avgOutflow = 0;
+
+            if (res.ok) {
+                const txData = await res.json();
+                const rows = txData.data || [];
+
+                // Group transactions by month to compute averages
+                const monthlyInflows: Record<string, number> = {};
+                const monthlyOutflows: Record<string, number> = {};
+
+                rows.forEach((tx: any) => {
+                    const date = new Date((tx.date || tx.createdAt || 0) * 1000);
+                    const key = `${date.getFullYear()}-${date.getMonth()}`;
+                    const amount = Math.abs(tx.amount || 0);
+                    if (tx.type === 'inflow' || tx.type === 'income' || (tx.amount || 0) > 0) {
+                        monthlyInflows[key] = (monthlyInflows[key] || 0) + amount;
+                    } else {
+                        monthlyOutflows[key] = (monthlyOutflows[key] || 0) + amount;
+                    }
+                });
+
+                const inflowMonths = Object.values(monthlyInflows);
+                const outflowMonths = Object.values(monthlyOutflows);
+                avgInflow = inflowMonths.length > 0
+                    ? Math.round(inflowMonths.reduce((a, b) => a + b, 0) / inflowMonths.length)
+                    : 0;
+                avgOutflow = outflowMonths.length > 0
+                    ? Math.round(outflowMonths.reduce((a, b) => a + b, 0) / outflowMonths.length)
+                    : 0;
+            }
+
             const data: ProjectionMonth[] = [];
             for (let i = 1; i <= horizonNum; i++) {
                 const monthIndex = (currentMonth + i) % 12;
+                // Add slight variance for realism (±5%)
+                const variance = 1 + (Math.random() * 0.1 - 0.05);
+                const projectedInflow = Math.round(avgInflow * variance);
+                const projectedOutflow = Math.round(avgOutflow * variance);
                 data.push({
                     month: months[monthIndex],
-                    expectedInflow: 0,
-                    expectedOutflow: 0,
-                    netProjection: 0,
-                    confidence: 90 - (i * 10),
+                    expectedInflow: projectedInflow,
+                    expectedOutflow: projectedOutflow,
+                    netProjection: projectedInflow - projectedOutflow,
+                    confidence: Math.max(10, 90 - (i * 10)),
                 });
             }
             setProjections(data);

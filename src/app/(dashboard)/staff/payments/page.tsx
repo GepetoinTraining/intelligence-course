@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     Container, Title, Text, Group, Stack, Card, Badge, Paper,
     SimpleGrid, Select, Button, Table, Tabs, ThemeIcon, Progress,
@@ -72,7 +72,7 @@ interface Transaction {
 }
 
 // ============================================================================
-// MOCK DATA
+// CONFIG
 // ============================================================================
 
 const PROVIDERS: PaymentProviderConfig[] = [
@@ -123,9 +123,7 @@ const PROVIDERS: PaymentProviderConfig[] = [
     },
 ];
 
-const MOCK_INVOICES: Invoice[] = [];
 
-const MOCK_TRANSACTIONS: Transaction[] = [];
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -344,13 +342,47 @@ function CreateInvoiceModal({
 // ============================================================================
 
 export default function PaymentsPage() {
-    const [invoices, setInvoices] = useState<Invoice[]>(MOCK_INVOICES);
-    const [transactions] = useState<Transaction[]>(MOCK_TRANSACTIONS);
+    const [invoices, setInvoices] = useState<Invoice[]>([]);
+    const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [providers, setProviders] = useState<PaymentProviderConfig[]>(PROVIDERS);
     const [activeTab, setActiveTab] = useState<string | null>('invoices');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [createModalOpened, { open: openCreateModal, close: closeCreateModal }] = useDisclosure(false);
     const [period, setPeriod] = useState('current');
+    const [loading, setLoading] = useState(true);
+
+    const fetchInvoices = useCallback(async () => {
+        try {
+            setLoading(true);
+            const res = await fetch('/api/invoices');
+            if (res.ok) {
+                const json = await res.json();
+                setInvoices((json.data || []).map((inv: any) => ({
+                    id: inv.id,
+                    studentId: inv.studentId || '',
+                    studentName: inv.studentName || 'Aluno',
+                    description: inv.description || '',
+                    amount: inv.amountCents ? inv.amountCents / 100 : inv.amount || 0,
+                    dueDate: inv.dueDate || '',
+                    status: inv.status || 'pending',
+                    paymentMethod: inv.paymentMethod || undefined,
+                    provider: inv.provider || undefined,
+                    paidAt: inv.paidDate || inv.paidAt || undefined,
+                    pixCode: inv.pixCode || undefined,
+                    boletoCode: inv.boletoCode || undefined,
+                    createdAt: inv.createdAt || '',
+                })));
+            }
+        } catch (err) {
+            console.error('Failed to fetch invoices', err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchInvoices();
+    }, [fetchInvoices]);
 
     // Toggle provider
     const handleToggleProvider = (id: PaymentProvider, enabled: boolean) => {

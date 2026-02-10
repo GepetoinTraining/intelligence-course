@@ -99,12 +99,6 @@ const RUBRIC_CRITERIA: RubricCriterion[] = [
 const MAX_TOTAL_SCORE = RUBRIC_CRITERIA.reduce((acc, c) => acc + c.maxScore, 0);
 
 // ============================================================================
-// MOCK DATA
-// ============================================================================
-
-const MOCK_SUBMISSIONS: CapstoneSubmission[] = [];
-
-// ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
 
@@ -132,7 +126,7 @@ const getScoreColor = (score: number, max: number): string => {
 // ============================================================================
 
 export default function StudentCapstoneSubmissionPage() {
-    const [submissions, setSubmissions] = useState<CapstoneSubmission[]>(MOCK_SUBMISSIONS);
+    const [submissions, setSubmissions] = useState<CapstoneSubmission[]>([]);
     const [selectedSubmission, setSelectedSubmission] = useState<CapstoneSubmission | null>(null);
     const [activeStep, setActiveStep] = useState(0);
 
