@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
             items = await db.select().from(schoolEquipment)
                 .where(and(
                     eq(schoolEquipment.organizationId, orgId),
-                    eq(schoolEquipment.category, category),
+                    eq(schoolEquipment.category, category as any),
                     eq(schoolEquipment.isActive, true),
                 ));
         } else {

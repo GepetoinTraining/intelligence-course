@@ -8,183 +8,218 @@ import {
     Group,
     Badge,
     Table,
-    Button,
     SimpleGrid,
     ThemeIcon,
     Select,
     Loader,
     Alert,
     Center,
+    Stack,
 } from '@mantine/core';
 import {
     IconReportAnalytics,
-    IconDownload,
+    IconAlertCircle,
     IconArrowUpRight,
     IconArrowDownRight,
-    IconAlertCircle,
+    IconEqual,
 } from '@tabler/icons-react';
 import { useApi } from '@/hooks/useApi';
+import { Button } from '@mantine/core';
 
-interface BalanceLine {
+interface BalanceteLine {
     code: string;
-    account: string;
-    level: number;
-    previousBalance: number;
-    debits: number;
-    credits: number;
-    currentBalance: number;
-    type: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense';
+    name: string;
+    type: 'group' | 'subgroup' | 'account';
+    balance: number;
+    debit: number;
+    credit: number;
 }
 
-// Mock data
-const mockBalanceLines: BalanceLine[] = [
-    { code: '1', account: 'ATIVO', level: 0, previousBalance: 250000, debits: 180000, credits: 120000, currentBalance: 310000, type: 'asset' },
-    { code: '1.1', account: 'Ativo Circulante', level: 1, previousBalance: 150000, debits: 160000, credits: 110000, currentBalance: 200000, type: 'asset' },
-    { code: '1.1.1', account: 'Caixa e Equivalentes', level: 2, previousBalance: 80000, debits: 150000, credits: 100000, currentBalance: 130000, type: 'asset' },
-    { code: '1.1.2', account: 'Contas a Receber', level: 2, previousBalance: 45000, debits: 10000, credits: 8000, currentBalance: 47000, type: 'asset' },
-    { code: '2', account: 'PASSIVO', level: 0, previousBalance: 100000, debits: 50000, credits: 80000, currentBalance: 130000, type: 'liability' },
-    { code: '2.1', account: 'Passivo Circulante', level: 1, previousBalance: 60000, debits: 40000, credits: 65000, currentBalance: 85000, type: 'liability' },
-    { code: '3', account: 'PATRIMÔNIO LÍQUIDO', level: 0, previousBalance: 150000, debits: 0, credits: 30000, currentBalance: 180000, type: 'equity' },
-    { code: '4', account: 'RECEITAS', level: 0, previousBalance: 0, debits: 0, credits: 125000, currentBalance: 125000, type: 'revenue' },
-    { code: '5', account: 'DESPESAS', level: 0, previousBalance: 0, debits: 95000, credits: 0, currentBalance: 95000, type: 'expense' },
-];
+interface AccountingReport {
+    data: {
+        balancete?: BalanceteLine[];
+        [key: string]: unknown;
+    };
+}
 
-function formatCurrency(value: number) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+function formatCurrency(reais: number): string {
+    return `R$ ${reais.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 }
 
 export default function BalancetePage() {
-    // API data (falls back to inline demo data below)
-    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/journal-entries');
+    const now = new Date();
+    const [year, setYear] = useState(now.getFullYear().toString());
+    const [month, setMonth] = useState((now.getMonth() + 1).toString().padStart(2, '0'));
 
-    const [lines] = useState<BalanceLine[]>(mockBalanceLines);
+    const { data, isLoading, error, refetch } = useApi<AccountingReport>(
+        `/api/reports/financial?period=${year}-${month}&section=accounting`,
+    );
 
-    const totalAssets = lines.filter(l => l.type === 'asset' && l.level === 0).reduce((acc, l) => acc + l.currentBalance, 0);
-    const totalLiabilities = lines.filter(l => l.type === 'liability' && l.level === 0).reduce((acc, l) => acc + l.currentBalance, 0);
-    const totalEquity = lines.filter(l => l.type === 'equity' && l.level === 0).reduce((acc, l) => acc + l.currentBalance, 0);
+    const lines = data?.data?.balancete || [];
 
+    const totalDebit = lines.reduce((acc, l) => acc + l.debit, 0);
+    const totalCredit = lines.reduce((acc, l) => acc + l.credit, 0);
 
-    if (_apiLoading) {
+    const months = [
+        { value: '01', label: 'Janeiro' }, { value: '02', label: 'Fevereiro' },
+        { value: '03', label: 'Março' }, { value: '04', label: 'Abril' },
+        { value: '05', label: 'Maio' }, { value: '06', label: 'Junho' },
+        { value: '07', label: 'Julho' }, { value: '08', label: 'Agosto' },
+        { value: '09', label: 'Setembro' }, { value: '10', label: 'Outubro' },
+        { value: '11', label: 'Novembro' }, { value: '12', label: 'Dezembro' },
+    ];
+
+    if (isLoading) {
         return <Center h={400}><Loader size="lg" /></Center>;
     }
 
+    if (error) {
+        return (
+            <Alert icon={<IconAlertCircle size={16} />} title="Erro ao carregar" color="red">
+                {error}
+                <Button size="xs" variant="light" ml="md" onClick={refetch}>Tentar novamente</Button>
+            </Alert>
+        );
+    }
+
     return (
-        <div>
-            <Group justify="space-between" mb="xl">
+        <Stack gap="lg">
+            <Group justify="space-between">
                 <div>
-                    <Text c="dimmed" size="sm">Contábil</Text>
-                    <Title order={2}>Balancete</Title>
+                    <Text size="sm" c="dimmed">Contábil</Text>
+                    <Title order={2}>Balancete de Verificação</Title>
                 </div>
                 <Group>
                     <Select
-                        placeholder="Período"
-                        data={[
-                            { value: '2026-02', label: 'Fevereiro 2026' },
-                            { value: '2026-01', label: 'Janeiro 2026' },
-                            { value: '2025-12', label: 'Dezembro 2025' },
-                        ]}
-                        w={180}
-                        defaultValue="2026-02"
+                        value={month}
+                        onChange={(v) => v && setMonth(v)}
+                        data={months}
+                        w={140}
                     />
-                    <Button variant="light" leftSection={<IconDownload size={16} />}>
-                        Exportar PDF
-                    </Button>
+                    <Select
+                        value={year}
+                        onChange={(v) => v && setYear(v)}
+                        data={['2024', '2025', '2026'].map(y => ({ value: y, label: y }))}
+                        w={100}
+                    />
                 </Group>
             </Group>
 
-            <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} mb="xl">
-                <Card withBorder>
+            <SimpleGrid cols={{ base: 1, sm: 3 }} mb="xs">
+                <Card withBorder p="md">
                     <Group>
-                        <ThemeIcon color="blue" size="lg" radius="md">
+                        <ThemeIcon variant="light" color="blue" size="lg">
                             <IconArrowUpRight size={20} />
                         </ThemeIcon>
                         <div>
-                            <Text size="xs" c="dimmed">Total Ativo</Text>
-                            <Text fw={700} size="xl">{formatCurrency(totalAssets)}</Text>
+                            <Text size="xs" c="dimmed">Total Débitos</Text>
+                            <Text fw={700} size="lg">{formatCurrency(totalDebit)}</Text>
                         </div>
                     </Group>
                 </Card>
-
-                <Card withBorder>
+                <Card withBorder p="md">
                     <Group>
-                        <ThemeIcon color="red" size="lg" radius="md">
+                        <ThemeIcon variant="light" color="grape" size="lg">
                             <IconArrowDownRight size={20} />
                         </ThemeIcon>
                         <div>
-                            <Text size="xs" c="dimmed">Total Passivo</Text>
-                            <Text fw={700} size="xl">{formatCurrency(totalLiabilities)}</Text>
+                            <Text size="xs" c="dimmed">Total Créditos</Text>
+                            <Text fw={700} size="lg">{formatCurrency(totalCredit)}</Text>
                         </div>
                     </Group>
                 </Card>
-
-                <Card withBorder>
+                <Card withBorder p="md">
                     <Group>
-                        <ThemeIcon color="green" size="lg" radius="md">
-                            <IconReportAnalytics size={20} />
+                        <ThemeIcon variant="light" color={totalDebit === totalCredit ? 'green' : 'red'} size="lg">
+                            <IconEqual size={20} />
                         </ThemeIcon>
                         <div>
-                            <Text size="xs" c="dimmed">Patrimônio Líquido</Text>
-                            <Text fw={700} size="xl">{formatCurrency(totalEquity)}</Text>
-                        </div>
-                    </Group>
-                </Card>
-
-                <Card withBorder>
-                    <Group>
-                        <ThemeIcon color={totalAssets === totalLiabilities + totalEquity ? 'green' : 'red'} size="lg" radius="md">
-                            <IconReportAnalytics size={20} />
-                        </ThemeIcon>
-                        <div>
-                            <Text size="xs" c="dimmed">Balanceamento</Text>
-                            <Text fw={700} size="xl">
-                                {totalAssets === totalLiabilities + totalEquity ? 'OK' : 'Divergente'}
+                            <Text size="xs" c="dimmed">Diferença</Text>
+                            <Text fw={700} size="lg" c={totalDebit === totalCredit ? 'green' : 'red'}>
+                                {formatCurrency(Math.abs(totalDebit - totalCredit))}
                             </Text>
                         </div>
                     </Group>
                 </Card>
             </SimpleGrid>
 
-            <Card withBorder>
-                <Title order={4} mb="md">Balancete de Verificação</Title>
+            <Card withBorder p="md">
+                <Group justify="space-between" mb="md">
+                    <Text fw={600}>Contas — {months.find(m => m.value === month)?.label}/{year}</Text>
+                    <Badge variant="light">{lines.length} contas</Badge>
+                </Group>
 
-                <Table striped highlightOnHover>
-                    <Table.Thead>
-                        <Table.Tr>
-                            <Table.Th>Código</Table.Th>
-                            <Table.Th>Conta</Table.Th>
-                            <Table.Th>Saldo Anterior</Table.Th>
-                            <Table.Th>Débitos</Table.Th>
-                            <Table.Th>Créditos</Table.Th>
-                            <Table.Th>Saldo Atual</Table.Th>
-                        </Table.Tr>
-                    </Table.Thead>
-                    <Table.Tbody>
-                        {lines.map((line) => (
-                            <Table.Tr key={line.code}>
-                                <Table.Td>
-                                    <Text fw={line.level === 0 ? 700 : 400} size="sm">{line.code}</Text>
+                {lines.length === 0 ? (
+                    <Center py="xl">
+                        <Stack align="center" gap="xs">
+                            <IconReportAnalytics size={48} color="gray" />
+                            <Text c="dimmed">Sem movimentação no período selecionado</Text>
+                            <Text c="dimmed" size="xs">Lançamentos escriturados aparecem aqui.</Text>
+                        </Stack>
+                    </Center>
+                ) : (
+                    <Table striped highlightOnHover>
+                        <Table.Thead>
+                            <Table.Tr>
+                                <Table.Th>Código</Table.Th>
+                                <Table.Th>Conta</Table.Th>
+                                <Table.Th ta="right">Débito</Table.Th>
+                                <Table.Th ta="right">Crédito</Table.Th>
+                                <Table.Th ta="right">Saldo</Table.Th>
+                            </Table.Tr>
+                        </Table.Thead>
+                        <Table.Tbody>
+                            {lines.map((line) => (
+                                <Table.Tr
+                                    key={line.code}
+                                    style={{
+                                        fontWeight: line.type === 'group' ? 700 : line.type === 'subgroup' ? 600 : 400,
+                                        backgroundColor: line.type === 'group' ? 'var(--mantine-color-default-hover)' : undefined,
+                                    }}
+                                >
+                                    <Table.Td>
+                                        <Text ff="monospace" size="sm">{line.code}</Text>
+                                    </Table.Td>
+                                    <Table.Td>
+                                        <Text size="sm" pl={line.type === 'account' ? 'md' : line.type === 'subgroup' ? 'xs' : 0}>
+                                            {line.name}
+                                        </Text>
+                                    </Table.Td>
+                                    <Table.Td ta="right">
+                                        <Text size="sm">{line.debit > 0 ? formatCurrency(line.debit) : '-'}</Text>
+                                    </Table.Td>
+                                    <Table.Td ta="right">
+                                        <Text size="sm">{line.credit > 0 ? formatCurrency(line.credit) : '-'}</Text>
+                                    </Table.Td>
+                                    <Table.Td ta="right">
+                                        <Text size="sm" fw={500} c={line.balance >= 0 ? 'green' : 'red'}>
+                                            {formatCurrency(Math.abs(line.balance))}
+                                            {line.balance < 0 ? ' C' : line.balance > 0 ? ' D' : ''}
+                                        </Text>
+                                    </Table.Td>
+                                </Table.Tr>
+                            ))}
+                            {/* Totals row */}
+                            <Table.Tr style={{ fontWeight: 700, borderTop: '2px solid var(--mantine-color-default-border)' }}>
+                                <Table.Td colSpan={2}>
+                                    <Text fw={700}>TOTAL</Text>
                                 </Table.Td>
-                                <Table.Td style={{ paddingLeft: line.level * 16 + 12 }}>
-                                    <Text fw={line.level === 0 ? 700 : 400} size="sm">{line.account}</Text>
+                                <Table.Td ta="right">
+                                    <Text fw={700}>{formatCurrency(totalDebit)}</Text>
                                 </Table.Td>
-                                <Table.Td>
-                                    <Text size="sm">{formatCurrency(line.previousBalance)}</Text>
+                                <Table.Td ta="right">
+                                    <Text fw={700}>{formatCurrency(totalCredit)}</Text>
                                 </Table.Td>
-                                <Table.Td>
-                                    <Text size="sm" c="red">{formatCurrency(line.debits)}</Text>
-                                </Table.Td>
-                                <Table.Td>
-                                    <Text size="sm" c="green">{formatCurrency(line.credits)}</Text>
-                                </Table.Td>
-                                <Table.Td>
-                                    <Text fw={600} size="sm">{formatCurrency(line.currentBalance)}</Text>
+                                <Table.Td ta="right">
+                                    <Text fw={700} c={totalDebit === totalCredit ? 'green' : 'red'}>
+                                        {formatCurrency(Math.abs(totalDebit - totalCredit))}
+                                    </Text>
                                 </Table.Td>
                             </Table.Tr>
-                        ))}
-                    </Table.Tbody>
-                </Table>
+                        </Table.Tbody>
+                    </Table>
+                )}
             </Card>
-        </div>
+        </Stack>
     );
 }
-

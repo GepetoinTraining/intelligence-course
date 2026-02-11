@@ -6,8 +6,8 @@ import { getApiAuthWithOrg } from '@/lib/auth';
 
 // GET /api/knowledge-nodes - List knowledge nodes
 export async function GET(request: NextRequest) {
-    const { personId } = await getApiAuthWithOrg();
-    if (!personId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
 
     try {
-        const conditions = [eq(knowledgeNodes.personId, personId)];
+        const conditions: any[] = [eq(knowledgeNodes.organizationId, orgId)];
 
         if (nodeType) {
             conditions.push(eq(knowledgeNodes.nodeType, nodeType as any));
@@ -38,28 +38,29 @@ export async function GET(request: NextRequest) {
 
 // POST /api/knowledge-nodes - Create knowledge node
 export async function POST(request: NextRequest) {
-    const { personId } = await getApiAuthWithOrg();
-    if (!personId) {
+    const { personId, orgId } = await getApiAuthWithOrg();
+    if (!personId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     try {
         const body = await request.json();
-        const { title, content, nodeType, sourceLessonId, depth, moduleId, technique } = body;
+        const { title, description, nodeType, wikiArticleId, courseId, moduleId, lessonId } = body;
 
         if (!title) {
             return NextResponse.json({ error: 'title required' }, { status: 400 });
         }
 
         const newNode = await db.insert(knowledgeNodes).values({
-            personId,
+            organizationId: orgId,
             title,
-            content,
+            description,
             nodeType: nodeType || 'concept',
-            sourceLessonId,
-            depth,
+            wikiArticleId,
+            courseId,
             moduleId,
-            technique,
+            lessonId,
+            createdBy: personId,
         }).returning();
 
         return NextResponse.json({ data: newNode[0] }, { status: 201 });
@@ -68,6 +69,3 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create knowledge node' }, { status: 500 });
     }
 }
-
-
-

@@ -1,168 +1,145 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import {
-    Container, Title, Text, Group, ThemeIcon, Stack, Badge,
-    Card, SimpleGrid, Loader, Alert, Paper, Textarea,
-    Button, Select, TextInput,
+    Title, Text, Stack, SimpleGrid, Card, Badge, Group, ThemeIcon,
+    Loader, Alert, Center, Button, Progress,
 } from '@mantine/core';
 import {
-    IconAlertCircle, IconBulb, IconUsers, IconMessageCircle,
-    IconPlus, IconCheck, IconTarget,
+    IconHistory, IconAlertCircle, IconTarget, IconBulb,
+    IconTrendingUp, IconCheck,
 } from '@tabler/icons-react';
 import { useApi } from '@/hooks/useApi';
+import { DiagramToggle } from '@/components/DiagramToggle';
 
 interface Suggestion {
     id: string;
     title: string;
     description: string;
     status: string;
-    netVotes: number;
-    submitterName: string;
+    problemType: string;
+    estimatedImpact: string;
+    upvotes: number;
     createdAt: number;
 }
 
-interface RetroItem {
-    id: string;
-    type: 'went_well' | 'improve' | 'action';
-    text: string;
-    author: string;
-    votes: number;
-}
-
-const TYPE_COLORS: Record<string, string> = { went_well: 'green', improve: 'orange', action: 'blue' };
-const TYPE_LABELS: Record<string, string> = { went_well: '✅ O que foi bem', improve: '🔧 Melhorar', action: '🎯 Ação' };
-
 export default function RetrospectivasPage() {
-    const { data: suggestionsData, isLoading: loading } = useApi<Suggestion[]>('/api/kaizen/suggestions?limit=20&sort=recent');
-    const suggestions = suggestionsData || [];
-    const error: string | null = null;
-    const [retroItems, setRetroItems] = useState<RetroItem[]>([]);
-    const [newText, setNewText] = useState('');
-    const [newType, setNewType] = useState<string | null>('went_well');
+    const { data, isLoading, error, refetch } = useApi<Suggestion[]>('/api/kaizen/suggestions?limit=100');
+    const suggestions = data || [];
 
-    const handleAdd = () => {
-        if (!newText.trim() || !newType) return;
-        setRetroItems(p => [...p, {
-            id: crypto.randomUUID(),
-            type: newType as RetroItem['type'],
-            text: newText.trim(),
-            author: 'Você',
-            votes: 0,
-        }]);
-        setNewText('');
-    };
+    // Group by quarter
+    const quarters = useMemo(() => {
+        const map = new Map<string, Suggestion[]>();
+        suggestions.forEach(s => {
+            const d = new Date((s.createdAt || 0) * 1000);
+            const q = Math.ceil((d.getMonth() + 1) / 3);
+            const key = `${d.getFullYear()} Q${q}`;
+            const arr = map.get(key) || [];
+            arr.push(s);
+            map.set(key, arr);
+        });
+        return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]));
+    }, [suggestions]);
 
-    const handleVote = (id: string) => {
-        setRetroItems(p => p.map(i => i.id === id ? { ...i, votes: i.votes + 1 } : i));
-    };
+    // Category distribution for overall retro
+    const categories = useMemo(() => {
+        const map = new Map<string, number>();
+        suggestions.forEach(s => {
+            map.set(s.problemType, (map.get(s.problemType) || 0) + 1);
+        });
+        return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+    }, [suggestions]);
 
-    const columns = useMemo(() => {
-        const types: RetroItem['type'][] = ['went_well', 'improve', 'action'];
-        return types.map(t => ({
-            type: t,
-            label: TYPE_LABELS[t],
-            color: TYPE_COLORS[t],
-            items: retroItems.filter(i => i.type === t).sort((a, b) => b.votes - a.votes),
-        }));
-    }, [retroItems]);
+    const totalCount = suggestions.length;
+    const implementedCount = suggestions.filter(s => s.status === 'implemented').length;
+    const successRate = totalCount > 0 ? Math.round((implementedCount / totalCount) * 100) : 0;
+    const avgVotes = totalCount > 0 ? Math.round(suggestions.reduce((s, i) => s + i.upvotes, 0) / totalCount) : 0;
 
-    const stats = useMemo(() => ({
-        total: retroItems.length,
-        actions: retroItems.filter(i => i.type === 'action').length,
-        recentSuggestions: suggestions.length,
-    }), [retroItems, suggestions]);
-
-    if (loading) {
-        return <Container size="xl" py="xl"><Group justify="center" py={60}><Loader size="lg" /><Text>Carregando...</Text></Group></Container>;
-    }
+    if (isLoading) return <Center h={400}><Loader size="lg" /></Center>;
+    if (error) return <Alert icon={<IconAlertCircle size={16} />} color="red" title="Erro">{error}<Button size="xs" ml="md" onClick={refetch}>Tentar novamente</Button></Alert>;
 
     return (
-        <Container size="xl" py="xl">
-            <Stack gap="lg">
+        <Stack gap="lg">
+            <Group justify="space-between" align="flex-end">
                 <div>
                     <Group gap="xs" mb={4}><Text size="sm" c="dimmed">Kaizen</Text><Text size="sm" c="dimmed">/</Text><Text size="sm" fw={500}>Retrospectivas</Text></Group>
-                    <Title order={1}>Retrospectivas</Title>
-                    <Text c="dimmed" mt="xs">Facilitação de reuniões de retrospectiva com pautas de melhoria contínua.</Text>
+                    <Title order={2}>Retrospectivas</Title>
+                    <Text size="sm" c="dimmed" mt={4}>Análise periódica das sugestões e melhorias implementadas</Text>
                 </div>
+                <DiagramToggle route="/api/kaizen/suggestions" data={suggestions} forceType="flowchart" title="Análise Retrospectiva" />
+            </Group>
 
-                {error && <Alert icon={<IconAlertCircle size={16} />} color="red" title="Erro">{error}</Alert>}
-
-                <SimpleGrid cols={{ base: 3 }}>
-                    <Card withBorder padding="lg" radius="md">
-                        <Group justify="space-between"><div><Text size="xs" c="dimmed" tt="uppercase" fw={700}>Itens</Text><Text size="xl" fw={700}>{stats.total}</Text></div>
-                            <ThemeIcon size={48} radius="md" variant="light" color="blue"><IconMessageCircle size={24} /></ThemeIcon></Group>
-                    </Card>
-                    <Card withBorder padding="lg" radius="md">
-                        <Group justify="space-between"><div><Text size="xs" c="dimmed" tt="uppercase" fw={700}>Ações Definidas</Text><Text size="xl" fw={700} c="teal">{stats.actions}</Text></div>
-                            <ThemeIcon size={48} radius="md" variant="light" color="teal"><IconTarget size={24} /></ThemeIcon></Group>
-                    </Card>
-                    <Card withBorder padding="lg" radius="md">
-                        <Group justify="space-between"><div><Text size="xs" c="dimmed" tt="uppercase" fw={700}>Sugestões Kaizen</Text><Text size="xl" fw={700}>{stats.recentSuggestions}</Text></div>
-                            <ThemeIcon size={48} radius="md" variant="light" color="violet"><IconBulb size={24} /></ThemeIcon></Group>
-                    </Card>
-                </SimpleGrid>
-
-                {/* Add Item */}
-                <Card withBorder padding="lg" radius="md">
-                    <Text fw={600} mb="md">Adicionar Item</Text>
-                    <Group align="end">
-                        <Select label="Tipo" value={newType} onChange={setNewType} w={200}
-                            data={[{ value: 'went_well', label: '✅ O que foi bem' }, { value: 'improve', label: '🔧 Melhorar' }, { value: 'action', label: '🎯 Ação' }]} />
-                        <TextInput label="Descrição" placeholder="Descreva o item..." value={newText} onChange={e => setNewText(e.currentTarget.value)} style={{ flex: 1 }} />
-                        <Button leftSection={<IconPlus size={16} />} onClick={handleAdd} disabled={!newText.trim()}>Adicionar</Button>
-                    </Group>
+            <SimpleGrid cols={{ base: 2, sm: 4 }}>
+                <Card withBorder p="md">
+                    <Group><ThemeIcon variant="light" color="blue" size="lg"><IconBulb size={20} /></ThemeIcon>
+                        <div><Text size="xs" c="dimmed">Total Sugestões</Text><Text fw={700} size="xl">{totalCount}</Text></div></Group>
                 </Card>
+                <Card withBorder p="md">
+                    <Group><ThemeIcon variant="light" color="green" size="lg"><IconCheck size={20} /></ThemeIcon>
+                        <div><Text size="xs" c="dimmed">Implementadas</Text><Text fw={700} size="xl">{implementedCount}</Text></div></Group>
+                    <Progress value={successRate} color="green" size="xs" mt="xs" />
+                    <Text size="xs" c="dimmed" mt={2}>{successRate}%</Text>
+                </Card>
+                <Card withBorder p="md">
+                    <Group><ThemeIcon variant="light" color="yellow" size="lg"><IconTrendingUp size={20} /></ThemeIcon>
+                        <div><Text size="xs" c="dimmed">Média de Votos</Text><Text fw={700} size="xl">{avgVotes}</Text></div></Group>
+                </Card>
+                <Card withBorder p="md">
+                    <Group><ThemeIcon variant="light" color="grape" size="lg"><IconTarget size={20} /></ThemeIcon>
+                        <div><Text size="xs" c="dimmed">Trimestres</Text><Text fw={700} size="xl">{quarters.length}</Text></div></Group>
+                </Card>
+            </SimpleGrid>
 
-                {/* Retro Board */}
-                <SimpleGrid cols={{ base: 1, md: 3 }}>
-                    {columns.map(col => (
-                        <Card key={col.type} withBorder padding="md" radius="md">
-                            <Group justify="space-between" mb="md">
-                                <Text fw={600} size="sm">{col.label}</Text>
-                                <Badge variant="filled" color={col.color} size="sm" circle>{col.items.length}</Badge>
-                            </Group>
-                            <Stack gap="xs" style={{ minHeight: 200 }}>
-                                {col.items.length === 0 ? (
-                                    <Paper withBorder p="md" radius="md" style={{ border: '2px dashed var(--mantine-color-gray-3)', textAlign: 'center' }}>
-                                        <Text size="sm" c="dimmed">Vazio</Text>
-                                    </Paper>
-                                ) : col.items.map(item => (
-                                    <Paper key={item.id} withBorder p="sm" radius="md">
-                                        <Text size="sm">{item.text}</Text>
-                                        <Group justify="space-between" mt="xs">
-                                            <Text size="xs" c="dimmed">{item.author}</Text>
-                                            <Badge size="sm" variant="light" color={col.color} style={{ cursor: 'pointer' }} onClick={() => handleVote(item.id)}>
-                                                👍 {item.votes}
-                                            </Badge>
-                                        </Group>
-                                    </Paper>
-                                ))}
-                            </Stack>
-                        </Card>
+            {/* Category distribution */}
+            <Card withBorder p="md">
+                <Text fw={600} mb="md">Distribuição por Categoria</Text>
+                <Stack gap="xs">
+                    {categories.map(([cat, count]) => (
+                        <Group key={cat} gap="xs">
+                            <Text size="sm" fw={500} w={120} tt="capitalize">{cat.replace(/_/g, ' ')}</Text>
+                            <Progress value={(count / Math.max(1, totalCount)) * 100} color="blue" size="lg" style={{ flex: 1 }} />
+                            <Badge size="sm" variant="light">{count}</Badge>
+                        </Group>
                     ))}
-                </SimpleGrid>
+                </Stack>
+            </Card>
 
-                {/* Related Kaizen */}
-                {suggestions.length > 0 && (
-                    <Card withBorder padding="lg" radius="md">
-                        <Text fw={600} mb="md">Sugestões Kaizen Recentes (Contexto)</Text>
-                        <Stack gap="xs">
-                            {suggestions.slice(0, 5).map(s => (
-                                <Group key={s.id} justify="space-between">
-                                    <div>
-                                        <Text size="sm" fw={500}>{s.title}</Text>
-                                        <Text size="xs" c="dimmed">{s.submitterName} — {new Date(s.createdAt * 1000).toLocaleDateString('pt-BR')}</Text>
-                                    </div>
-                                    <Badge size="sm" variant="light" color={s.netVotes > 0 ? 'green' : 'gray'}>
-                                        {s.netVotes > 0 ? '+' : ''}{s.netVotes}
-                                    </Badge>
-                                </Group>
+            {/* Quarter breakdown */}
+            {quarters.map(([label, items]) => {
+                const imp = items.filter(s => s.status === 'implemented').length;
+                const rate = items.length > 0 ? Math.round((imp / items.length) * 100) : 0;
+                return (
+                    <Card key={label} withBorder p="md">
+                        <Group justify="space-between" mb="sm">
+                            <Group gap="xs">
+                                <IconHistory size={18} />
+                                <Text fw={600}>{label}</Text>
+                                <Badge size="sm" variant="light">{items.length} sugestões</Badge>
+                            </Group>
+                            <Badge color={rate >= 50 ? 'green' : rate >= 25 ? 'yellow' : 'red'} variant="light">
+                                {rate}% implementadas
+                            </Badge>
+                        </Group>
+                        <SimpleGrid cols={{ base: 2, sm: 4 }}>
+                            {items.slice(0, 4).map(s => (
+                                <Card key={s.id} withBorder p="xs" radius="sm">
+                                    <Text size="sm" fw={500} lineClamp={1}>{s.title}</Text>
+                                    <Group gap={4} mt={4}>
+                                        <Badge size="xs" variant="light">{s.status}</Badge>
+                                        <Text size="xs" c="dimmed">{s.upvotes} 👍</Text>
+                                    </Group>
+                                </Card>
                             ))}
-                        </Stack>
+                        </SimpleGrid>
                     </Card>
-                )}
-            </Stack>
-        </Container>
+                );
+            })}
+
+            {quarters.length === 0 && (
+                <Center py="xl"><Stack align="center" gap="xs">
+                    <IconHistory size={48} color="gray" /><Text c="dimmed">Nenhuma retrospectiva disponível</Text>
+                </Stack></Center>
+            )}
+        </Stack>
     );
 }

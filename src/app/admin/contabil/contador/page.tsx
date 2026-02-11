@@ -2,16 +2,14 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-    Container, Title, Text, Paper, Group, ThemeIcon, Stack, Badge,
-    Card, SimpleGrid, Table, Loader, Alert, Select,
-    Center,
+    Container, Title, Text, Group, ThemeIcon, Stack, Badge,
+    Card, SimpleGrid, Table, Loader, Alert, Select, Center,
 } from '@mantine/core';
 import {
     IconAlertCircle, IconCalculator, IconReceipt, IconBook,
     IconCalendarStats, IconCash, IconArrowUp, IconArrowDown,
 } from '@tabler/icons-react';
 import { ExportButton } from '@/components/shared';
-import { useApi } from '@/hooks/useApi';
 
 interface JournalEntry {
     id: string;
@@ -36,9 +34,6 @@ interface FinancialReport {
 }
 
 export default function ContadorPage() {
-    // API data (falls back to inline demo data below)
-    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/users?role=accountant');
-
     const [entries, setEntries] = useState<JournalEntry[]>([]);
     const [financialData, setFinancialData] = useState<FinancialReport>({});
     const [loading, setLoading] = useState(true);
@@ -110,16 +105,7 @@ export default function ContadorPage() {
     };
 
     if (loading) {
-    
-    if (_apiLoading) {
         return <Center h={400}><Loader size="lg" /></Center>;
-    }
-
-    return (
-            <Container size="xl" py="xl">
-                <Group justify="center" py={60}><Loader size="lg" /><Text>Carregando portal do contador...</Text></Group>
-            </Container>
-        );
     }
 
     return (

@@ -11,6 +11,7 @@ import {
     IconBulb, IconClock, IconCheck, IconX,
 } from '@tabler/icons-react';
 import { useApi } from '@/hooks/useApi';
+import { DiagramToggle } from '@/components/DiagramToggle';
 
 interface Suggestion {
     id: string;
@@ -94,6 +95,7 @@ export default function QuadroPage() {
                             <Title order={1}>Quadro Kaizen</Title>
                             <Badge variant="light" size="lg">{totalItems} itens</Badge>
                         </Group>
+                        <DiagramToggle route="/api/kaizen/suggestions" data={suggestions} forceType="stateDiagram" title="Fluxo Kanban" />
                         <Select
                             size="sm"
                             placeholder="Tipo de Problema"

@@ -1,232 +1,177 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
-    Card,
-    Title,
-    Text,
-    Group,
-    Badge,
-    Table,
-    Button,
-    SimpleGrid,
-    ThemeIcon,
-    ActionIcon,
-    Menu,
-    Avatar,
-    Tabs,
-    Rating,
-    Loader,
-    Alert,
-    Center,
+    Title, Text, Stack, SimpleGrid, Card, Badge, Group, ThemeIcon,
+    Table, Loader, Alert, Center, Tabs, Rating, Button, Modal,
+    TextInput, Select, Textarea,
 } from '@mantine/core';
 import {
-    IconMessage2,
-    IconPlus,
-    IconEye,
-    IconDotsVertical,
-    IconThumbUp,
-    IconThumbDown,
-    IconStar,
-    IconAlertCircle,
+    IconMessage2, IconAlertCircle, IconThumbUp, IconThumbDown,
+    IconStar, IconPlus,
 } from '@tabler/icons-react';
-import { useApi } from '@/hooks/useApi';
+import { useApi, useCreate } from '@/hooks/useApi';
+import { DiagramToggle } from '@/components/DiagramToggle';
 
-interface Feedback {
+interface Suggestion {
     id: string;
-    type: 'positive' | 'negative' | 'suggestion';
-    category: string;
-    message: string;
-    rating?: number;
-    authorName: string;
-    createdAt: string;
-    status: 'new' | 'reviewed' | 'resolved';
+    title: string;
+    description: string;
+    problemType: string;
+    status: string;
+    estimatedImpact: string;
+    upvotes: number;
+    downvotes: number;
+    submitterName?: string;
+    createdAt: number;
+    tags: string;
 }
 
-// Mock data
-const mockFeedback: Feedback[] = [
-    { id: '1', type: 'positive', category: 'Aulas', message: 'Professor muito didático!', rating: 5, authorName: 'Maria Silva', createdAt: '2026-02-05', status: 'new' },
-    { id: '2', type: 'negative', category: 'Estrutura', message: 'Ar condicionado não está funcionando bem', authorName: 'Pedro Santos', createdAt: '2026-02-04', status: 'reviewed' },
-    { id: '3', type: 'suggestion', category: 'Material', message: 'Seria bom ter mais exercícios práticos', authorName: 'Ana Costa', createdAt: '2026-02-03', status: 'resolved' },
-    { id: '4', type: 'positive', category: 'Atendimento', message: 'Secretaria sempre muito prestativa', rating: 5, authorName: 'João Lima', createdAt: '2026-02-02', status: 'new' },
-];
-
-const typeColors: Record<string, string> = {
-    positive: 'green',
-    negative: 'red',
-    suggestion: 'blue',
-};
-
-const typeLabels: Record<string, string> = {
-    positive: 'Positivo',
-    negative: 'Negativo',
-    suggestion: 'Sugestão',
-};
-
 const statusColors: Record<string, string> = {
-    new: 'blue',
-    reviewed: 'yellow',
-    resolved: 'green',
+    submitted: 'blue', under_review: 'yellow', needs_info: 'orange',
+    approved: 'teal', in_progress: 'violet', implemented: 'green',
+    rejected: 'red', deferred: 'gray',
 };
-
 const statusLabels: Record<string, string> = {
-    new: 'Novo',
-    reviewed: 'Revisando',
-    resolved: 'Resolvido',
+    submitted: 'Novo', under_review: 'Revisando', needs_info: 'Info Necessária',
+    approved: 'Aprovado', in_progress: 'Em Progresso', implemented: 'Implementado',
+    rejected: 'Rejeitado', deferred: 'Adiado',
 };
+const impactColors: Record<string, string> = { low: 'gray', medium: 'yellow', high: 'orange', critical: 'red' };
 
 export default function FeedbackPage() {
-    // API data (falls back to inline demo data below)
-    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/reviews');
+    const { data, isLoading, error, refetch } = useApi<Suggestion[]>('/api/kaizen/suggestions?limit=100');
+    const { create, isLoading: creating } = useCreate('/api/kaizen/suggestions');
+    const suggestions = data || [];
 
-    const [feedback] = useState<Feedback[]>(mockFeedback);
-    const [activeTab, setActiveTab] = useState<string | null>('all');
+    const [tab, setTab] = useState<string | null>('all');
+    const [createOpen, setCreateOpen] = useState(false);
+    const [newTitle, setNewTitle] = useState('');
+    const [newDesc, setNewDesc] = useState('');
+    const [newType, setNewType] = useState('communication');
 
-    const filtered = activeTab === 'all'
-        ? feedback
-        : feedback.filter(f => f.type === activeTab);
+    const feedbackItems = useMemo(() => {
+        let items = suggestions;
+        if (tab === 'positive') items = items.filter(s => s.upvotes > s.downvotes);
+        if (tab === 'negative') items = items.filter(s => s.downvotes >= s.upvotes && s.downvotes > 0);
+        if (tab === 'neutral') items = items.filter(s => s.upvotes === 0 && s.downvotes === 0);
+        return items;
+    }, [suggestions, tab]);
 
-    const positiveCount = feedback.filter(f => f.type === 'positive').length;
-    const negativeCount = feedback.filter(f => f.type === 'negative').length;
-    const suggestionCount = feedback.filter(f => f.type === 'suggestion').length;
+    const stats = {
+        total: suggestions.length,
+        positive: suggestions.filter(s => s.upvotes > s.downvotes).length,
+        negative: suggestions.filter(s => s.downvotes >= s.upvotes && s.downvotes > 0).length,
+        resolved: suggestions.filter(s => s.status === 'implemented').length,
+    };
 
+    const handleCreate = async () => {
+        try {
+            await create({ title: newTitle, description: newDesc, problemType: newType });
+            setCreateOpen(false);
+            setNewTitle(''); setNewDesc(''); setNewType('communication');
+            refetch();
+        } catch { /* hook handles */ }
+    };
 
-    if (_apiLoading) {
-        return <Center h={400}><Loader size="lg" /></Center>;
-    }
+    const fmt = (ts: number) => new Date(ts * 1000).toLocaleDateString('pt-BR');
+
+    if (isLoading) return <Center h={400}><Loader size="lg" /></Center>;
 
     return (
-        <div>
-            <Group justify="space-between" mb="xl">
+        <Stack gap="lg">
+            <Group justify="space-between" align="flex-end">
                 <div>
-                    <Text c="dimmed" size="sm">Kaizen</Text>
-                    <Title order={2}>Feedback</Title>
+                    <Group gap="xs" mb={4}><Text size="sm" c="dimmed">Kaizen</Text><Text size="sm" c="dimmed">/</Text><Text size="sm" fw={500}>Feedback</Text></Group>
+                    <Title order={2}>Feedback & Sugestões</Title>
                 </div>
-                <Button leftSection={<IconPlus size={16} />}>
-                    Registrar Feedback
-                </Button>
+                <Group>
+                    <DiagramToggle route="/api/kaizen/suggestions" data={suggestions} forceType="journey" title="Mapa de Feedback" />
+                    <Button leftSection={<IconPlus size={16} />} onClick={() => setCreateOpen(true)}>Novo Feedback</Button>
+                </Group>
             </Group>
 
-            <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} mb="xl">
-                <Card withBorder>
-                    <Group>
-                        <ThemeIcon color="blue" size="lg" radius="md">
-                            <IconMessage2 size={20} />
-                        </ThemeIcon>
-                        <div>
-                            <Text size="xs" c="dimmed">Total</Text>
-                            <Text fw={700} size="xl">{feedback.length}</Text>
-                        </div>
-                    </Group>
-                </Card>
+            {error && <Alert icon={<IconAlertCircle size={16} />} color="red" title="Erro">{error}</Alert>}
 
-                <Card withBorder>
-                    <Group>
-                        <ThemeIcon color="green" size="lg" radius="md">
-                            <IconThumbUp size={20} />
-                        </ThemeIcon>
-                        <div>
-                            <Text size="xs" c="dimmed">Positivos</Text>
-                            <Text fw={700} size="xl">{positiveCount}</Text>
-                        </div>
-                    </Group>
+            <SimpleGrid cols={{ base: 2, sm: 4 }}>
+                <Card withBorder p="md">
+                    <Group><ThemeIcon variant="light" color="blue" size="lg"><IconMessage2 size={20} /></ThemeIcon>
+                        <div><Text size="xs" c="dimmed">Total</Text><Text fw={700} size="xl">{stats.total}</Text></div></Group>
                 </Card>
-
-                <Card withBorder>
-                    <Group>
-                        <ThemeIcon color="red" size="lg" radius="md">
-                            <IconThumbDown size={20} />
-                        </ThemeIcon>
-                        <div>
-                            <Text size="xs" c="dimmed">Negativos</Text>
-                            <Text fw={700} size="xl">{negativeCount}</Text>
-                        </div>
-                    </Group>
+                <Card withBorder p="md">
+                    <Group><ThemeIcon variant="light" color="green" size="lg"><IconThumbUp size={20} /></ThemeIcon>
+                        <div><Text size="xs" c="dimmed">Positivos</Text><Text fw={700} size="xl">{stats.positive}</Text></div></Group>
                 </Card>
-
-                <Card withBorder>
-                    <Group>
-                        <ThemeIcon color="grape" size="lg" radius="md">
-                            <IconStar size={20} />
-                        </ThemeIcon>
-                        <div>
-                            <Text size="xs" c="dimmed">Média Geral</Text>
-                            <Text fw={700} size="xl">4.2</Text>
-                        </div>
-                    </Group>
+                <Card withBorder p="md">
+                    <Group><ThemeIcon variant="light" color="red" size="lg"><IconThumbDown size={20} /></ThemeIcon>
+                        <div><Text size="xs" c="dimmed">Negativos</Text><Text fw={700} size="xl">{stats.negative}</Text></div></Group>
+                </Card>
+                <Card withBorder p="md">
+                    <Group><ThemeIcon variant="light" color="teal" size="lg"><IconStar size={20} /></ThemeIcon>
+                        <div><Text size="xs" c="dimmed">Resolvidos</Text><Text fw={700} size="xl">{stats.resolved}</Text></div></Group>
                 </Card>
             </SimpleGrid>
 
-            <Card withBorder>
-                <Tabs value={activeTab} onChange={setActiveTab} mb="md">
-                    <Tabs.List>
-                        <Tabs.Tab value="all">Todos ({feedback.length})</Tabs.Tab>
-                        <Tabs.Tab value="positive">Positivos ({positiveCount})</Tabs.Tab>
-                        <Tabs.Tab value="negative">Negativos ({negativeCount})</Tabs.Tab>
-                        <Tabs.Tab value="suggestion">Sugestões ({suggestionCount})</Tabs.Tab>
-                    </Tabs.List>
-                </Tabs>
+            <Tabs value={tab} onChange={setTab}>
+                <Tabs.List>
+                    <Tabs.Tab value="all">Todos ({suggestions.length})</Tabs.Tab>
+                    <Tabs.Tab value="positive">Positivos ({stats.positive})</Tabs.Tab>
+                    <Tabs.Tab value="negative">Negativos ({stats.negative})</Tabs.Tab>
+                    <Tabs.Tab value="neutral">Neutros</Tabs.Tab>
+                </Tabs.List>
+            </Tabs>
 
-                <Table striped highlightOnHover>
-                    <Table.Thead>
-                        <Table.Tr>
-                            <Table.Th>Autor</Table.Th>
-                            <Table.Th>Tipo</Table.Th>
-                            <Table.Th>Categoria</Table.Th>
-                            <Table.Th>Mensagem</Table.Th>
-                            <Table.Th>Avaliação</Table.Th>
-                            <Table.Th>Status</Table.Th>
-                            <Table.Th></Table.Th>
-                        </Table.Tr>
-                    </Table.Thead>
-                    <Table.Tbody>
-                        {filtered.map((item) => (
-                            <Table.Tr key={item.id}>
-                                <Table.Td>
-                                    <Group gap="sm">
-                                        <Avatar size="sm" radius="xl" color="blue">
-                                            {item.authorName.charAt(0)}
-                                        </Avatar>
-                                        <Text size="sm">{item.authorName}</Text>
-                                    </Group>
-                                </Table.Td>
-                                <Table.Td>
-                                    <Badge color={typeColors[item.type]} variant="light">
-                                        {typeLabels[item.type]}
-                                    </Badge>
-                                </Table.Td>
-                                <Table.Td>
-                                    <Badge variant="outline" color="gray">{item.category}</Badge>
-                                </Table.Td>
-                                <Table.Td>
-                                    <Text size="sm" truncate style={{ maxWidth: 200 }}>{item.message}</Text>
-                                </Table.Td>
-                                <Table.Td>
-                                    {item.rating ? <Rating value={item.rating} readOnly size="xs" /> : '-'}
-                                </Table.Td>
-                                <Table.Td>
-                                    <Badge color={statusColors[item.status]} variant="light">
-                                        {statusLabels[item.status]}
-                                    </Badge>
-                                </Table.Td>
-                                <Table.Td>
-                                    <Menu position="bottom-end" withArrow>
-                                        <Menu.Target>
-                                            <ActionIcon variant="subtle" color="gray">
-                                                <IconDotsVertical size={16} />
-                                            </ActionIcon>
-                                        </Menu.Target>
-                                        <Menu.Dropdown>
-                                            <Menu.Item leftSection={<IconEye size={14} />}>Ver Detalhes</Menu.Item>
-                                        </Menu.Dropdown>
-                                    </Menu>
-                                </Table.Td>
-                            </Table.Tr>
-                        ))}
-                    </Table.Tbody>
-                </Table>
+            <Card withBorder p="md">
+                {feedbackItems.length > 0 ? (
+                    <Table>
+                        <Table.Thead><Table.Tr>
+                            <Table.Th>Feedback</Table.Th><Table.Th>Tipo</Table.Th><Table.Th>Votos</Table.Th>
+                            <Table.Th>Impacto</Table.Th><Table.Th>Status</Table.Th><Table.Th>Data</Table.Th>
+                        </Table.Tr></Table.Thead>
+                        <Table.Tbody>
+                            {feedbackItems.map(s => (
+                                <Table.Tr key={s.id}>
+                                    <Table.Td><Text fw={500} size="sm">{s.title}</Text>
+                                        <Text size="xs" c="dimmed" lineClamp={1}>{s.description}</Text></Table.Td>
+                                    <Table.Td><Badge size="sm" variant="light">{s.problemType}</Badge></Table.Td>
+                                    <Table.Td>
+                                        <Group gap={4}>
+                                            <IconThumbUp size={14} color="green" /><Text size="sm">{s.upvotes}</Text>
+                                            <IconThumbDown size={14} color="red" /><Text size="sm">{s.downvotes}</Text>
+                                        </Group>
+                                    </Table.Td>
+                                    <Table.Td><Badge size="sm" variant="light" color={impactColors[s.estimatedImpact] || 'gray'}>{s.estimatedImpact}</Badge></Table.Td>
+                                    <Table.Td><Badge size="sm" variant="light" color={statusColors[s.status] || 'gray'}>{statusLabels[s.status] || s.status}</Badge></Table.Td>
+                                    <Table.Td><Text size="sm" c="dimmed">{fmt(s.createdAt)}</Text></Table.Td>
+                                </Table.Tr>
+                            ))}
+                        </Table.Tbody>
+                    </Table>
+                ) : (
+                    <Center py="xl"><Stack align="center" gap="xs">
+                        <IconMessage2 size={48} color="gray" /><Text c="dimmed">Nenhum feedback encontrado</Text>
+                    </Stack></Center>
+                )}
             </Card>
-        </div>
+
+            <Modal opened={createOpen} onClose={() => setCreateOpen(false)} title="Novo Feedback" size="md">
+                <Stack gap="md">
+                    <TextInput label="Título" placeholder="Resumo do feedback" value={newTitle} onChange={e => setNewTitle(e.target.value)} required />
+                    <Select label="Tipo" value={newType} onChange={v => setNewType(v || 'communication')}
+                        data={[
+                            { value: 'communication', label: '💬 Comunicação' },
+                            { value: 'quality', label: '⭐ Qualidade' },
+                            { value: 'inefficiency', label: '⚡ Ineficiência' },
+                            { value: 'safety', label: '🛡️ Segurança' },
+                            { value: 'other', label: '📝 Outro' },
+                        ]} />
+                    <Textarea label="Descrição" placeholder="Detalhes do feedback..." value={newDesc} onChange={e => setNewDesc(e.target.value)} minRows={3} required />
+                    <Group justify="flex-end">
+                        <Button variant="light" onClick={() => setCreateOpen(false)}>Cancelar</Button>
+                        <Button leftSection={<IconPlus size={16} />} disabled={!newTitle.trim() || !newDesc.trim()} loading={creating} onClick={handleCreate}>Enviar</Button>
+                    </Group>
+                </Stack>
+            </Modal>
+        </Stack>
     );
 }
-

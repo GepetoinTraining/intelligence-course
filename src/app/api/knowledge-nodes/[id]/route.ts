@@ -11,7 +11,7 @@ interface RouteParams {
 // GET /api/knowledge-nodes/[id]
 export async function GET(request: NextRequest, { params }: RouteParams) {
     const { personId, orgId } = await getApiAuthWithOrg();
-    if (!personId) {
+    if (!personId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -21,7 +21,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         const result = await db
             .select()
             .from(knowledgeNodes)
-            .where(eq(knowledgeNodes.id, id))
+            .where(and(
+                eq(knowledgeNodes.id, id),
+                eq(knowledgeNodes.organizationId, orgId),
+            ))
             .limit(1);
 
         if (result.length === 0) {
@@ -33,21 +36,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             .select()
             .from(knowledgeEdges)
             .where(or(
-                eq(knowledgeEdges.fromNodeId, id),
-                eq(knowledgeEdges.toNodeId, id)
+                eq(knowledgeEdges.sourceNodeId, id),
+                eq(knowledgeEdges.targetNodeId, id)
             ));
-
-        // Transform edges to use source/target naming
-        const transformedEdges = edges.map(e => ({
-            ...e,
-            sourceNodeId: e.fromNodeId,
-            targetNodeId: e.toNodeId,
-        }));
 
         return NextResponse.json({
             data: {
                 ...result[0],
-                edges: transformedEdges,
+                edges,
             }
         });
     } catch (error) {
@@ -59,7 +55,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // PATCH /api/knowledge-nodes/[id]
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const { personId, orgId } = await getApiAuthWithOrg();
-    if (!personId) {
+    if (!personId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -73,15 +69,20 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         };
 
         if (body.title !== undefined) updateData.title = body.title;
-        if (body.content !== undefined) updateData.content = body.content;
+        if (body.description !== undefined) updateData.description = body.description;
         if (body.nodeType !== undefined) updateData.nodeType = body.nodeType;
-        if (body.mastery !== undefined) updateData.mastery = body.mastery;
         if (body.embedding !== undefined) updateData.embedding = body.embedding;
+        if (body.isActive !== undefined) updateData.isActive = body.isActive;
+        if (body.difficulty !== undefined) updateData.difficulty = body.difficulty;
+        if (body.subjectArea !== undefined) updateData.subjectArea = body.subjectArea;
 
         const updated = await db
             .update(knowledgeNodes)
             .set(updateData)
-            .where(and(eq(knowledgeNodes.id, id), eq(knowledgeNodes.personId, personId)))
+            .where(and(
+                eq(knowledgeNodes.id, id),
+                eq(knowledgeNodes.organizationId, orgId),
+            ))
             .returning();
 
         if (updated.length === 0) {
@@ -98,7 +99,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 // DELETE /api/knowledge-nodes/[id]
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const { personId, orgId } = await getApiAuthWithOrg();
-    if (!personId) {
+    if (!personId || !orgId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -109,14 +110,17 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         await db
             .delete(knowledgeEdges)
             .where(or(
-                eq(knowledgeEdges.fromNodeId, id),
-                eq(knowledgeEdges.toNodeId, id)
+                eq(knowledgeEdges.sourceNodeId, id),
+                eq(knowledgeEdges.targetNodeId, id)
             ));
 
         // Delete the node
         const deleted = await db
             .delete(knowledgeNodes)
-            .where(and(eq(knowledgeNodes.id, id), eq(knowledgeNodes.personId, personId)))
+            .where(and(
+                eq(knowledgeNodes.id, id),
+                eq(knowledgeNodes.organizationId, orgId),
+            ))
             .returning();
 
         if (deleted.length === 0) {

@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import {
     Card,
     Title,
@@ -15,8 +14,8 @@ import {
     Menu,
     Select,
     Loader,
-    Alert,
     Center,
+    Stack,
 } from '@mantine/core';
 import {
     IconFileExport,
@@ -25,59 +24,75 @@ import {
     IconDotsVertical,
     IconCheck,
     IconClock,
-    IconAlertCircle,
 } from '@tabler/icons-react';
 import { useApi } from '@/hooks/useApi';
 
-interface SPEDExport {
+interface FiscalDocument {
     id: string;
-    type: 'ECD' | 'ECF' | 'EFD';
-    period: string;
-    generatedAt?: string;
-    status: 'pending' | 'generating' | 'ready' | 'error';
-    fileSize?: string;
-    hash?: string;
+    documentType: string;
+    documentNumber: string | null;
+    competencyPeriod: string | null;
+    issueDate: number | null;
+    status: string;
+    totalAmountCents: number | null;
+    createdAt: number;
 }
 
-// Mock data
-const mockExports: SPEDExport[] = [
-    { id: '1', type: 'ECD', period: '2025', generatedAt: '2026-01-15', status: 'ready', fileSize: '2.4 MB', hash: 'ABC123...' },
-    { id: '2', type: 'ECF', period: '2025', generatedAt: '2026-01-20', status: 'ready', fileSize: '1.8 MB', hash: 'DEF456...' },
-    { id: '3', type: 'EFD', period: '01/2026', generatedAt: '2026-02-05', status: 'ready', fileSize: '0.5 MB', hash: 'GHI789...' },
-    { id: '4', type: 'EFD', period: '02/2026', status: 'pending' },
-];
-
-const typeDescriptions: Record<string, string> = {
-    ECD: 'Escrituração Contábil Digital',
-    ECF: 'Escrituração Contábil e Fiscal',
-    EFD: 'EFD-Contribuições',
-};
-
 const statusColors: Record<string, string> = {
+    draft: 'gray',
     pending: 'gray',
     generating: 'blue',
+    transmitted: 'green',
+    authorized: 'green',
     ready: 'green',
+    rejected: 'red',
+    cancelled: 'red',
     error: 'red',
 };
 
 const statusLabels: Record<string, string> = {
+    draft: 'Rascunho',
     pending: 'Pendente',
     generating: 'Gerando...',
+    transmitted: 'Transmitido',
+    authorized: 'Autorizado',
     ready: 'Pronto',
+    rejected: 'Rejeitado',
+    cancelled: 'Cancelado',
     error: 'Erro',
 };
 
+const typeLabels: Record<string, string> = {
+    ecd: 'ECD - Escrituração Contábil Digital',
+    ecf: 'ECF - Escrituração Contábil e Fiscal',
+    'efd-contribuicoes': 'EFD-Contribuições',
+    efd: 'EFD-Contribuições',
+    sped: 'SPED',
+    nfse: 'NFS-e',
+};
+
+function formatDate(ts: number | null) {
+    if (!ts) return '-';
+    return new Date(ts).toLocaleDateString('pt-BR');
+}
+
 export default function SPEDPage() {
-    // API data (falls back to inline demo data below)
-    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/fiscal-documents');
+    const { data, isLoading, error, refetch } = useApi<FiscalDocument[]>('/api/fiscal-documents');
 
-    const [exports] = useState<SPEDExport[]>(mockExports);
+    const allDocs = data || [];
+    // Filter for SPED-type documents (not NFS-e)
+    const spedDocs = allDocs.filter(d =>
+        d.documentType !== 'nfse' && d.documentType !== 'nfs-e',
+    );
 
-    const readyCount = exports.filter(e => e.status === 'ready').length;
-    const pendingCount = exports.filter(e => e.status === 'pending').length;
+    const readyCount = spedDocs.filter(d =>
+        d.status === 'transmitted' || d.status === 'authorized' || d.status === 'ready',
+    ).length;
+    const pendingCount = spedDocs.filter(d =>
+        d.status === 'pending' || d.status === 'draft',
+    ).length;
 
-
-    if (_apiLoading) {
+    if (isLoading) {
         return <Center h={400}><Loader size="lg" /></Center>;
     }
 
@@ -89,17 +104,6 @@ export default function SPEDPage() {
                     <Title order={2}>SPED</Title>
                 </div>
                 <Group>
-                    <Select
-                        placeholder="Tipo"
-                        data={[
-                            { value: 'all', label: 'Todos os Tipos' },
-                            { value: 'ECD', label: 'ECD' },
-                            { value: 'ECF', label: 'ECF' },
-                            { value: 'EFD', label: 'EFD-Contribuições' },
-                        ]}
-                        w={180}
-                        defaultValue="all"
-                    />
                     <Button leftSection={<IconFileExport size={16} />}>
                         Gerar Arquivo
                     </Button>
@@ -114,7 +118,7 @@ export default function SPEDPage() {
                         </ThemeIcon>
                         <div>
                             <Text size="xs" c="dimmed">Total Arquivos</Text>
-                            <Text fw={700} size="xl">{exports.length}</Text>
+                            <Text fw={700} size="xl">{spedDocs.length}</Text>
                         </div>
                     </Group>
                 </Card>
@@ -142,89 +146,79 @@ export default function SPEDPage() {
                         </div>
                     </Group>
                 </Card>
-
-                <Card withBorder>
-                    <Group>
-                        <ThemeIcon color="grape" size="lg" radius="md">
-                            <IconFileExport size={20} />
-                        </ThemeIcon>
-                        <div>
-                            <Text size="xs" c="dimmed">Último Envio</Text>
-                            <Text fw={700} size="xl">05/02</Text>
-                        </div>
-                    </Group>
-                </Card>
             </SimpleGrid>
 
             <Card withBorder>
                 <Title order={4} mb="md">Arquivos SPED</Title>
 
-                <Table striped highlightOnHover>
-                    <Table.Thead>
-                        <Table.Tr>
-                            <Table.Th>Tipo</Table.Th>
-                            <Table.Th>Período</Table.Th>
-                            <Table.Th>Gerado em</Table.Th>
-                            <Table.Th>Tamanho</Table.Th>
-                            <Table.Th>Hash</Table.Th>
-                            <Table.Th>Status</Table.Th>
-                            <Table.Th></Table.Th>
-                        </Table.Tr>
-                    </Table.Thead>
-                    <Table.Tbody>
-                        {exports.map((exp) => (
-                            <Table.Tr key={exp.id}>
-                                <Table.Td>
-                                    <div>
-                                        <Text fw={500}>{exp.type}</Text>
-                                        <Text size="xs" c="dimmed">{typeDescriptions[exp.type]}</Text>
-                                    </div>
-                                </Table.Td>
-                                <Table.Td>
-                                    <Text size="sm">{exp.period}</Text>
-                                </Table.Td>
-                                <Table.Td>
-                                    <Text size="sm">{exp.generatedAt || '-'}</Text>
-                                </Table.Td>
-                                <Table.Td>
-                                    <Text size="sm">{exp.fileSize || '-'}</Text>
-                                </Table.Td>
-                                <Table.Td>
-                                    <Text size="sm" c="dimmed">{exp.hash || '-'}</Text>
-                                </Table.Td>
-                                <Table.Td>
-                                    <Badge color={statusColors[exp.status]} variant="light">
-                                        {statusLabels[exp.status]}
-                                    </Badge>
-                                </Table.Td>
-                                <Table.Td>
-                                    <Group gap="xs">
-                                        {exp.status === 'ready' && (
-                                            <ActionIcon variant="light" color="blue" size="sm">
-                                                <IconDownload size={14} />
-                                            </ActionIcon>
-                                        )}
-                                        <Menu position="bottom-end" withArrow>
-                                            <Menu.Target>
-                                                <ActionIcon variant="subtle" color="gray" size="sm">
-                                                    <IconDotsVertical size={14} />
-                                                </ActionIcon>
-                                            </Menu.Target>
-                                            <Menu.Dropdown>
-                                                <Menu.Item leftSection={<IconEye size={14} />}>Ver Detalhes</Menu.Item>
-                                                {exp.status === 'ready' && (
-                                                    <Menu.Item leftSection={<IconDownload size={14} />}>Download</Menu.Item>
-                                                )}
-                                            </Menu.Dropdown>
-                                        </Menu>
-                                    </Group>
-                                </Table.Td>
+                {spedDocs.length === 0 ? (
+                    <Center py="xl">
+                        <Stack align="center" gap="xs">
+                            <IconFileExport size={48} color="gray" />
+                            <Text c="dimmed">Nenhum arquivo SPED encontrado</Text>
+                        </Stack>
+                    </Center>
+                ) : (
+                    <Table striped highlightOnHover>
+                        <Table.Thead>
+                            <Table.Tr>
+                                <Table.Th>Tipo</Table.Th>
+                                <Table.Th>Período</Table.Th>
+                                <Table.Th>Emissão</Table.Th>
+                                <Table.Th>Nº Documento</Table.Th>
+                                <Table.Th>Status</Table.Th>
+                                <Table.Th></Table.Th>
                             </Table.Tr>
-                        ))}
-                    </Table.Tbody>
-                </Table>
+                        </Table.Thead>
+                        <Table.Tbody>
+                            {spedDocs.map((doc) => (
+                                <Table.Tr key={doc.id}>
+                                    <Table.Td>
+                                        <div>
+                                            <Text fw={500} tt="uppercase">{doc.documentType}</Text>
+                                            <Text size="xs" c="dimmed">{typeLabels[doc.documentType] || doc.documentType}</Text>
+                                        </div>
+                                    </Table.Td>
+                                    <Table.Td>
+                                        <Text size="sm">{doc.competencyPeriod || '-'}</Text>
+                                    </Table.Td>
+                                    <Table.Td>
+                                        <Text size="sm">{formatDate(doc.issueDate)}</Text>
+                                    </Table.Td>
+                                    <Table.Td>
+                                        <Text size="sm" c="dimmed">{doc.documentNumber || '-'}</Text>
+                                    </Table.Td>
+                                    <Table.Td>
+                                        <Badge color={statusColors[doc.status] || 'gray'} variant="light">
+                                            {statusLabels[doc.status] || doc.status}
+                                        </Badge>
+                                    </Table.Td>
+                                    <Table.Td>
+                                        <Group gap="xs">
+                                            {(doc.status === 'transmitted' || doc.status === 'authorized' || doc.status === 'ready') && (
+                                                <ActionIcon variant="light" color="blue" size="sm">
+                                                    <IconDownload size={14} />
+                                                </ActionIcon>
+                                            )}
+                                            <Menu position="bottom-end" withArrow>
+                                                <Menu.Target>
+                                                    <ActionIcon variant="subtle" color="gray" size="sm">
+                                                        <IconDotsVertical size={14} />
+                                                    </ActionIcon>
+                                                </Menu.Target>
+                                                <Menu.Dropdown>
+                                                    <Menu.Item leftSection={<IconEye size={14} />}>Ver Detalhes</Menu.Item>
+                                                    <Menu.Item leftSection={<IconDownload size={14} />}>Download</Menu.Item>
+                                                </Menu.Dropdown>
+                                            </Menu>
+                                        </Group>
+                                    </Table.Td>
+                                </Table.Tr>
+                            ))}
+                        </Table.Tbody>
+                    </Table>
+                )}
             </Card>
         </div>
     );
 }
-

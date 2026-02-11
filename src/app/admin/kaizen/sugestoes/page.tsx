@@ -25,6 +25,7 @@ import {
     IconClock,
 } from '@tabler/icons-react';
 import { useApi } from '@/hooks/useApi';
+import { DiagramToggle } from '@/components/DiagramToggle';
 
 interface Suggestion {
     id: string;
@@ -98,9 +99,12 @@ export default function SugestoesPage() {
                     <Text size="sm" c="dimmed">Kaizen</Text>
                     <Title order={2}>Sugestões de Melhoria</Title>
                 </div>
-                <Button leftSection={<IconPlus size={16} />}>
-                    Nova Sugestão
-                </Button>
+                <Group>
+                    <DiagramToggle route="/api/kaizen/suggestions" data={suggestions || []} title="Fluxo de Sugestões" />
+                    <Button leftSection={<IconPlus size={16} />}>
+                        Nova Sugestão
+                    </Button>
+                </Group>
             </Group>
 
             {/* Quick Stats */}

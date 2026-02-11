@@ -18,6 +18,11 @@ import {
     Loader,
     Alert,
     Center,
+    Modal,
+    Stack,
+    TextInput,
+    Textarea,
+    NumberInput,
 } from '@mantine/core';
 import {
     IconReceipt2,
@@ -31,66 +36,144 @@ import {
     IconAlertCircle,
 } from '@tabler/icons-react';
 import { useApi } from '@/hooks/useApi';
+import { useDisclosure } from '@mantine/hooks';
+import { notifications } from '@mantine/notifications';
 
 interface JournalEntry {
     id: string;
-    number: string;
-    date: string;
+    entryNumber: number;
+    referenceDate: number;
+    postingDate: number | null;
+    fiscalYear: number;
+    fiscalMonth: number;
     description: string;
-    debitAccount: string;
-    creditAccount: string;
-    amount: number;
-    type: 'debit' | 'credit';
-    status: 'draft' | 'posted' | 'reversed';
-    createdBy: string;
+    memo: string | null;
+    sourceType: string;
+    status: string;
+    createdBy: string | null;
 }
-
-// Mock data
-const mockEntries: JournalEntry[] = [
-    { id: '1', number: 'LAN-2026-001', date: '2026-02-05', description: 'Receita de mensalidades', debitAccount: '1.1.1 Caixa', creditAccount: '4.1.1 Receitas', amount: 15000, type: 'credit', status: 'posted', createdBy: 'Sistema' },
-    { id: '2', number: 'LAN-2026-002', date: '2026-02-04', description: 'Pagamento aluguel', debitAccount: '3.1.1 Despesas', creditAccount: '1.1.1 Caixa', amount: 5500, type: 'debit', status: 'posted', createdBy: 'Maria' },
-    { id: '3', number: 'LAN-2026-003', date: '2026-02-03', description: 'Compra material didático', debitAccount: '1.2.1 Estoque', creditAccount: '2.1.1 Fornecedores', amount: 3200, type: 'debit', status: 'draft', createdBy: 'João' },
-    { id: '4', number: 'LAN-2026-004', date: '2026-02-02', description: 'Pagamento energia', debitAccount: '3.1.2 Utilidades', creditAccount: '1.1.2 Banco', amount: 1200, type: 'debit', status: 'posted', createdBy: 'Sistema' },
-];
 
 const statusColors: Record<string, string> = {
     draft: 'yellow',
     posted: 'green',
     reversed: 'red',
+    voided: 'gray',
 };
 
 const statusLabels: Record<string, string> = {
     draft: 'Rascunho',
     posted: 'Lançado',
     reversed: 'Estornado',
+    voided: 'Anulado',
 };
 
-function formatCurrency(value: number) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+const sourceLabels: Record<string, string> = {
+    manual: 'Manual',
+    invoice: 'Fatura',
+    payroll: 'Folha',
+    payable: 'Despesa',
+    transfer: 'Transferência',
+    closing: 'Fechamento',
+};
+
+function formatCurrency(cents: number) {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100);
 }
 
-function formatDate(dateStr: string) {
-    return new Date(dateStr).toLocaleDateString('pt-BR');
+function formatDate(ts: number) {
+    return new Date(ts).toLocaleDateString('pt-BR');
 }
 
 export default function LancamentosPage() {
-    // API data (falls back to inline demo data below)
-    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/journal-entries');
+    const now = new Date();
+    const [year, setYear] = useState(now.getFullYear().toString());
+    const [month, setMonth] = useState((now.getMonth() + 1).toString());
 
-    const [entries] = useState<JournalEntry[]>(mockEntries);
+    const { data, isLoading, error, refetch } = useApi<{ data: JournalEntry[] }>(
+        `/api/journal-entries?year=${year}&month=${month}&limit=100`,
+    );
+
     const [activeTab, setActiveTab] = useState<string | null>('all');
+    const [createOpen, createHandlers] = useDisclosure(false);
+
+    // Create form
+    const [description, setDescription] = useState('');
+    const [debitAccountId, setDebitAccountId] = useState('');
+    const [creditAccountId, setCreditAccountId] = useState('');
+    const [amountCents, setAmountCents] = useState<number | string>('');
+    const [creating, setCreating] = useState(false);
+
+    // Accounts for select
+    const { data: accountsData } = useApi<{ data: any[] }>('/api/chart-of-accounts');
+    const accounts = accountsData?.data || [];
+
+    const entries = data?.data || [];
 
     const filtered = activeTab === 'all'
         ? entries
         : entries.filter(e => e.status === activeTab);
 
-    const totalDebits = entries.filter(e => e.type === 'debit' && e.status === 'posted').reduce((acc, e) => acc + e.amount, 0);
-    const totalCredits = entries.filter(e => e.type === 'credit' && e.status === 'posted').reduce((acc, e) => acc + e.amount, 0);
+    const totalEntries = entries.length;
+    const postedCount = entries.filter(e => e.status === 'posted').length;
     const draftCount = entries.filter(e => e.status === 'draft').length;
 
+    const months = [
+        { value: '1', label: 'Janeiro' }, { value: '2', label: 'Fevereiro' },
+        { value: '3', label: 'Março' }, { value: '4', label: 'Abril' },
+        { value: '5', label: 'Maio' }, { value: '6', label: 'Junho' },
+        { value: '7', label: 'Julho' }, { value: '8', label: 'Agosto' },
+        { value: '9', label: 'Setembro' }, { value: '10', label: 'Outubro' },
+        { value: '11', label: 'Novembro' }, { value: '12', label: 'Dezembro' },
+    ];
 
-    if (_apiLoading) {
+    const handleCreate = async () => {
+        if (!description.trim() || !debitAccountId || !creditAccountId || !amountCents) return;
+        setCreating(true);
+        try {
+            const res = await fetch('/api/journal-entries', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    description,
+                    referenceDate: Date.now(),
+                    fiscalYear: parseInt(year),
+                    fiscalMonth: parseInt(month),
+                    autoPost: false,
+                    lines: [
+                        { accountId: debitAccountId, entryType: 'debit', amountCents: Number(amountCents) },
+                        { accountId: creditAccountId, entryType: 'credit', amountCents: Number(amountCents) },
+                    ],
+                }),
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || 'Erro ao criar');
+            }
+            refetch();
+            createHandlers.close();
+            setDescription('');
+            setDebitAccountId('');
+            setCreditAccountId('');
+            setAmountCents('');
+            notifications.show({ title: 'Criado', message: 'Lançamento criado com sucesso', color: 'green' });
+        } catch (err: any) {
+            notifications.show({ title: 'Erro', message: err.message || 'Erro ao criar lançamento', color: 'red' });
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    if (isLoading) {
         return <Center h={400}><Loader size="lg" /></Center>;
+    }
+
+    if (error) {
+        return (
+            <Alert icon={<IconAlertCircle size={16} />} title="Erro ao carregar" color="red">
+                {error}
+                <Button size="xs" variant="light" ml="md" onClick={refetch}>Tentar novamente</Button>
+            </Alert>
+        );
     }
 
     return (
@@ -102,15 +185,18 @@ export default function LancamentosPage() {
                 </div>
                 <Group>
                     <Select
-                        placeholder="Fevereiro 2026"
-                        data={[
-                            { value: '2026-02', label: 'Fevereiro 2026' },
-                            { value: '2026-01', label: 'Janeiro 2026' },
-                        ]}
-                        w={180}
-                        defaultValue="2026-02"
+                        value={month}
+                        onChange={(v) => v && setMonth(v)}
+                        data={months}
+                        w={140}
                     />
-                    <Button leftSection={<IconPlus size={16} />}>
+                    <Select
+                        value={year}
+                        onChange={(v) => v && setYear(v)}
+                        data={['2024', '2025', '2026'].map(y => ({ value: y, label: y }))}
+                        w={100}
+                    />
+                    <Button leftSection={<IconPlus size={16} />} onClick={createHandlers.open}>
                         Novo Lançamento
                     </Button>
                 </Group>
@@ -124,19 +210,7 @@ export default function LancamentosPage() {
                         </ThemeIcon>
                         <div>
                             <Text size="xs" c="dimmed">Total Lançamentos</Text>
-                            <Text fw={700} size="xl">{entries.length}</Text>
-                        </div>
-                    </Group>
-                </Card>
-
-                <Card withBorder>
-                    <Group>
-                        <ThemeIcon color="red" size="lg" radius="md">
-                            <IconArrowUpRight size={20} />
-                        </ThemeIcon>
-                        <div>
-                            <Text size="xs" c="dimmed">Total Débitos</Text>
-                            <Text fw={700} size="xl">{formatCurrency(totalDebits)}</Text>
+                            <Text fw={700} size="xl">{totalEntries}</Text>
                         </div>
                     </Group>
                 </Card>
@@ -144,11 +218,11 @@ export default function LancamentosPage() {
                 <Card withBorder>
                     <Group>
                         <ThemeIcon color="green" size="lg" radius="md">
-                            <IconArrowDownRight size={20} />
+                            <IconArrowUpRight size={20} />
                         </ThemeIcon>
                         <div>
-                            <Text size="xs" c="dimmed">Total Créditos</Text>
-                            <Text fw={700} size="xl">{formatCurrency(totalCredits)}</Text>
+                            <Text size="xs" c="dimmed">Escriturados</Text>
+                            <Text fw={700} size="xl">{postedCount}</Text>
                         </div>
                     </Group>
                 </Card>
@@ -164,79 +238,141 @@ export default function LancamentosPage() {
                         </div>
                     </Group>
                 </Card>
+
+                <Card withBorder>
+                    <Group>
+                        <ThemeIcon color="grape" size="lg" radius="md">
+                            <IconArrowDownRight size={20} />
+                        </ThemeIcon>
+                        <div>
+                            <Text size="xs" c="dimmed">Período</Text>
+                            <Text fw={700} size="xl">{months.find(m => m.value === month)?.label.slice(0, 3)}/{year}</Text>
+                        </div>
+                    </Group>
+                </Card>
             </SimpleGrid>
 
             <Card withBorder>
                 <Tabs value={activeTab} onChange={setActiveTab} mb="md">
                     <Tabs.List>
-                        <Tabs.Tab value="all">Todos ({entries.length})</Tabs.Tab>
-                        <Tabs.Tab value="posted">Lançados</Tabs.Tab>
-                        <Tabs.Tab value="draft">Rascunhos</Tabs.Tab>
+                        <Tabs.Tab value="all">Todos ({totalEntries})</Tabs.Tab>
+                        <Tabs.Tab value="posted">Lançados ({postedCount})</Tabs.Tab>
+                        <Tabs.Tab value="draft">Rascunhos ({draftCount})</Tabs.Tab>
                     </Tabs.List>
                 </Tabs>
 
-                <Table striped highlightOnHover>
-                    <Table.Thead>
-                        <Table.Tr>
-                            <Table.Th>Número</Table.Th>
-                            <Table.Th>Data</Table.Th>
-                            <Table.Th>Descrição</Table.Th>
-                            <Table.Th>Débito</Table.Th>
-                            <Table.Th>Crédito</Table.Th>
-                            <Table.Th>Valor</Table.Th>
-                            <Table.Th>Status</Table.Th>
-                            <Table.Th></Table.Th>
-                        </Table.Tr>
-                    </Table.Thead>
-                    <Table.Tbody>
-                        {filtered.map((entry) => (
-                            <Table.Tr key={entry.id}>
-                                <Table.Td>
-                                    <Text fw={500}>{entry.number}</Text>
-                                </Table.Td>
-                                <Table.Td>
-                                    <Text size="sm">{formatDate(entry.date)}</Text>
-                                </Table.Td>
-                                <Table.Td>
-                                    <Text size="sm" truncate style={{ maxWidth: 200 }}>{entry.description}</Text>
-                                </Table.Td>
-                                <Table.Td>
-                                    <Text size="sm" c="dimmed">{entry.debitAccount}</Text>
-                                </Table.Td>
-                                <Table.Td>
-                                    <Text size="sm" c="dimmed">{entry.creditAccount}</Text>
-                                </Table.Td>
-                                <Table.Td>
-                                    <Text fw={600} c={entry.type === 'credit' ? 'green' : 'red'}>
-                                        {formatCurrency(entry.amount)}
-                                    </Text>
-                                </Table.Td>
-                                <Table.Td>
-                                    <Badge color={statusColors[entry.status]} variant="light">
-                                        {statusLabels[entry.status]}
-                                    </Badge>
-                                </Table.Td>
-                                <Table.Td>
-                                    <Menu position="bottom-end" withArrow>
-                                        <Menu.Target>
-                                            <ActionIcon variant="subtle" color="gray">
-                                                <IconDotsVertical size={16} />
-                                            </ActionIcon>
-                                        </Menu.Target>
-                                        <Menu.Dropdown>
-                                            <Menu.Item leftSection={<IconEye size={14} />}>Ver Detalhes</Menu.Item>
-                                            <Menu.Item leftSection={<IconEdit size={14} />}>Editar</Menu.Item>
-                                            <Menu.Divider />
-                                            <Menu.Item leftSection={<IconTrash size={14} />} color="red">Estornar</Menu.Item>
-                                        </Menu.Dropdown>
-                                    </Menu>
-                                </Table.Td>
+                {filtered.length === 0 ? (
+                    <Center py="xl">
+                        <Stack align="center" gap="xs">
+                            <IconReceipt2 size={48} color="gray" />
+                            <Text c="dimmed">Nenhum lançamento neste período</Text>
+                        </Stack>
+                    </Center>
+                ) : (
+                    <Table striped highlightOnHover>
+                        <Table.Thead>
+                            <Table.Tr>
+                                <Table.Th>Nº</Table.Th>
+                                <Table.Th>Data</Table.Th>
+                                <Table.Th>Descrição</Table.Th>
+                                <Table.Th>Origem</Table.Th>
+                                <Table.Th>Status</Table.Th>
+                                <Table.Th></Table.Th>
                             </Table.Tr>
-                        ))}
-                    </Table.Tbody>
-                </Table>
+                        </Table.Thead>
+                        <Table.Tbody>
+                            {filtered.map((entry) => (
+                                <Table.Tr key={entry.id}>
+                                    <Table.Td>
+                                        <Text fw={500} ff="monospace">{entry.entryNumber}</Text>
+                                    </Table.Td>
+                                    <Table.Td>
+                                        <Text size="sm">{formatDate(entry.referenceDate)}</Text>
+                                    </Table.Td>
+                                    <Table.Td>
+                                        <Text size="sm" truncate style={{ maxWidth: 300 }}>{entry.description}</Text>
+                                        {entry.memo && <Text size="xs" c="dimmed" lineClamp={1}>{entry.memo}</Text>}
+                                    </Table.Td>
+                                    <Table.Td>
+                                        <Badge size="sm" variant="light" color={entry.sourceType === 'manual' ? 'blue' : 'grape'}>
+                                            {sourceLabels[entry.sourceType] || entry.sourceType}
+                                        </Badge>
+                                    </Table.Td>
+                                    <Table.Td>
+                                        <Badge color={statusColors[entry.status] || 'gray'} variant="light">
+                                            {statusLabels[entry.status] || entry.status}
+                                        </Badge>
+                                    </Table.Td>
+                                    <Table.Td>
+                                        <Menu position="bottom-end" withArrow>
+                                            <Menu.Target>
+                                                <ActionIcon variant="subtle" color="gray">
+                                                    <IconDotsVertical size={16} />
+                                                </ActionIcon>
+                                            </Menu.Target>
+                                            <Menu.Dropdown>
+                                                <Menu.Item leftSection={<IconEye size={14} />}>Ver Detalhes</Menu.Item>
+                                                <Menu.Item leftSection={<IconEdit size={14} />}>Editar</Menu.Item>
+                                                <Menu.Divider />
+                                                <Menu.Item leftSection={<IconTrash size={14} />} color="red">Estornar</Menu.Item>
+                                            </Menu.Dropdown>
+                                        </Menu>
+                                    </Table.Td>
+                                </Table.Tr>
+                            ))}
+                        </Table.Tbody>
+                    </Table>
+                )}
             </Card>
+
+            {/* Create Modal */}
+            <Modal opened={createOpen} onClose={createHandlers.close} title="Novo Lançamento" size="lg">
+                <Stack gap="md">
+                    <Textarea
+                        label="Descrição"
+                        placeholder="Descrição do lançamento"
+                        value={description}
+                        onChange={(e) => setDescription(e.currentTarget.value)}
+                        required
+                    />
+                    <Select
+                        label="Conta Débito"
+                        placeholder="Selecionar conta"
+                        data={accounts.map((a: any) => ({ value: a.id, label: `${a.code} - ${a.name}` }))}
+                        value={debitAccountId}
+                        onChange={(v) => setDebitAccountId(v || '')}
+                        searchable
+                        required
+                    />
+                    <Select
+                        label="Conta Crédito"
+                        placeholder="Selecionar conta"
+                        data={accounts.map((a: any) => ({ value: a.id, label: `${a.code} - ${a.name}` }))}
+                        value={creditAccountId}
+                        onChange={(v) => setCreditAccountId(v || '')}
+                        searchable
+                        required
+                    />
+                    <NumberInput
+                        label="Valor (centavos)"
+                        placeholder="Ex: 150000 (= R$ 1.500,00)"
+                        value={amountCents}
+                        onChange={setAmountCents}
+                        min={1}
+                        required
+                    />
+                    <Group justify="flex-end">
+                        <Button variant="default" onClick={createHandlers.close}>Cancelar</Button>
+                        <Button
+                            onClick={handleCreate}
+                            loading={creating}
+                            disabled={!description.trim() || !debitAccountId || !creditAccountId || !amountCents}
+                        >
+                            Criar Lançamento
+                        </Button>
+                    </Group>
+                </Stack>
+            </Modal>
         </div>
     );
 }
-

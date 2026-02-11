@@ -1,7 +1,0 @@
-104: name: d.name,
-105: daysPast: d.daysPast,
-106: amount: formatCurrency(d.amount),
-261: <Table.Td>{d.name}</Table.Td>
-263: <Badge color={d.daysPast > 30 ? 'red' : d.daysPast > 14 ? 'orange' : 'yellow'} variant="light">
-264: {d.daysPast} dias
-268: <Text fw={600}>R$ {d.amount.toLocaleString('pt-BR')}</Text>

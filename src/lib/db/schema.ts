@@ -31,6 +31,7 @@ export const organizations = sqliteTable('organizations', {
     name: text('name').notNull(),
     slug: text('slug').unique().notNull(),  // URL slug (e.g., "intelligence-course")
     displayName: text('display_name'),       // "Intelligence Course"
+    handle: text('handle').unique(),          // #handle for trans-school communication (auto-generated from slug, user-editable)
 
     // Clerk integration (optional)
     clerkOrgId: text('clerk_org_id').unique(),
@@ -120,6 +121,7 @@ export const organizations = sqliteTable('organizations', {
     updatedAt: integer('updated_at').default(timestamp()),
 }, (table) => [
     uniqueIndex('idx_orgs_slug').on(table.slug),
+    uniqueIndex('idx_orgs_handle').on(table.handle),
     uniqueIndex('idx_orgs_clerk').on(table.clerkOrgId),
     index('idx_orgs_status').on(table.status),
     index('idx_orgs_type').on(table.type),
@@ -1114,6 +1116,9 @@ export const courses = sqliteTable('courses', {
     version: text('version').default('1.0'),
     language: text('language').default('pt-BR'),
 
+    // Wiki linkage (Pipeline B: Course → Wiki)
+    wikiArticleId: text('wiki_article_id'),
+
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
     archivedAt: integer('archived_at'),
@@ -1149,6 +1154,9 @@ export const lessons = sqliteTable('lessons', {
 
     orderIndex: integer('order_index').notNull().default(0),
     lessonType: text('lesson_type', { enum: ['standard', 'practice', 'capstone'] }).default('standard'),
+
+    // Wiki linkage (Pipeline B: Course → Wiki)
+    wikiArticleId: text('wiki_article_id'),
 
     createdAt: integer('created_at').default(timestamp()),
     updatedAt: integer('updated_at').default(timestamp()),
@@ -1629,59 +1637,7 @@ export const challengeAttempts = sqliteTable('challenge_attempts', {
 ]);
 
 // ============================================================================
-// STUDENT TOOLBOX: Knowledge Graph (for Constellation)
-// ============================================================================
-
-export const knowledgeNodes = sqliteTable('knowledge_nodes', {
-    id: text('id').primaryKey().default(uuid()),
-    personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
-
-    // Content
-    title: text('title').notNull(),
-    content: text('content'), // Longer description
-
-    // Type determines visualization
-    nodeType: text('node_type', {
-        enum: ['concept', 'insight', 'pattern', 'question', 'skill', 'belief']
-    }).notNull().default('concept'),
-
-    // Depth (0 = core belief, higher = peripheral)
-    depth: integer('depth').default(1),
-
-    // Source tracking
-    sourceRunId: text('source_run_id').references(() => promptRuns.id),
-    sourceLessonId: text('source_lesson_id').references(() => lessons.id),
-
-    // Module association
-    moduleId: text('module_id').references(() => modules.id),
-    technique: text('technique'), // Which technique this relates to
-
-    createdAt: integer('created_at').default(timestamp()),
-    updatedAt: integer('updated_at').default(timestamp()),
-}, (table) => [
-    index('idx_knowledge_person').on(table.personId, table.nodeType),
-]);
-
-export const knowledgeEdges = sqliteTable('knowledge_edges', {
-    id: text('id').primaryKey().default(uuid()),
-    personId: text('person_id').notNull().references(() => persons.id, { onDelete: 'cascade' }),
-
-    fromNodeId: text('from_node_id').notNull().references(() => knowledgeNodes.id, { onDelete: 'cascade' }),
-    toNodeId: text('to_node_id').notNull().references(() => knowledgeNodes.id, { onDelete: 'cascade' }),
-
-    // Relationship type
-    edgeType: text('edge_type', {
-        enum: ['supports', 'contradicts', 'extends', 'requires', 'inspires', 'related']
-    }).default('related'),
-
-    // Weight (strength of connection)
-    weight: real('weight').default(1),
-
-    createdAt: integer('created_at').default(timestamp()),
-}, (table) => [
-    uniqueIndex('idx_edge_unique').on(table.fromNodeId, table.toNodeId),
-    index('idx_edge_person').on(table.personId),
-]);
+// Knowledge Graph tables moved to end of file (org-scoped institutional version)
 
 // ============================================================================
 // STUDENT TOOLBOX: Badges & Achievements
@@ -2274,7 +2230,8 @@ export const paymentGateways = sqliteTable('payment_gateways', {
 
     // Provider
     provider: text('provider', {
-        enum: ['pagarme', 'asaas', 'iugu', 'pagbank', 'stripe', 'mercadopago', 'manual']
+        enum: ['pagarme', 'asaas', 'iugu', 'pagbank', 'stripe', 'mercadopago', 'manual',
+            'inter', 'bb', 'itau', 'bradesco', 'santander', 'caixa', 'sicredi', 'sicoob', 'safra', 'c6bank']
     }).notNull(),
 
     // Credentials (encrypted)
@@ -10368,8 +10325,7 @@ export type CapstoneSubmission = typeof capstoneSubmissions.$inferSelect;
 export type PeerReview = typeof peerReviews.$inferSelect;
 export type Challenge = typeof challenges.$inferSelect;
 export type ChallengeAttempt = typeof challengeAttempts.$inferSelect;
-export type KnowledgeNode = typeof knowledgeNodes.$inferSelect;
-export type KnowledgeEdge = typeof knowledgeEdges.$inferSelect;
+// KnowledgeNode / KnowledgeEdge types exported at end of file
 export type Badge = typeof badges.$inferSelect;
 export type UserBadge = typeof userBadges.$inferSelect;
 
@@ -12390,6 +12346,23 @@ export const wikiArticles = sqliteTable('wiki_articles', {
 
     // Vector embedding for semantic search
     embedding: text('embedding'), // JSON array
+
+    // Mermaid visualization
+    mermaidSyntax: text('mermaid_syntax'),     // Generated Mermaid code
+    mermaidType: text('mermaid_type', {
+        enum: ['mindmap', 'flowchart', 'graph', 'stateDiagram', 'erDiagram', 'journey', 'sequenceDiagram']
+    }),
+
+    // Code snippets (STEM articles)
+    codeSnippet: text('code_snippet'),
+    codeLanguage: text('code_language'),       // 'python', 'javascript', etc.
+
+    // Course linkage (Pipeline B: Course → Wiki)
+    courseId: text('course_id').references(() => courses.id),
+    lessonId: text('lesson_id').references(() => lessons.id),
+
+    // AI enrichment tracking
+    aiEnrichmentCount: integer('ai_enrichment_count').default(0),
 }, (table) => [
     index('idx_wiki_article_org').on(table.organizationId),
     index('idx_wiki_article_category').on(table.categoryId),
@@ -14278,3 +14251,155 @@ export type SchoolEquipment = typeof schoolEquipment.$inferSelect;
 export type SchoolEquipmentInsert = typeof schoolEquipment.$inferInsert;
 export type EquipmentBooking = typeof equipmentBookings.$inferSelect;
 export type EquipmentBookingInsert = typeof equipmentBookings.$inferInsert;
+
+// ============================================================================
+// KNOWLEDGE GRAPH — Concept vertices & relationship edges
+// Four sources feed this graph: Procedures, Courses, Wiki, Anunciação
+// ============================================================================
+
+/**
+ * Knowledge Nodes — Vertices in the concept graph
+ * Every wiki article, course lesson, or Anunciação can back a node
+ */
+export const knowledgeNodes = sqliteTable('knowledge_nodes', {
+    id: text('id').primaryKey().default(uuid()),
+    organizationId: text('organization_id').notNull().references(() => organizations.id),
+
+    // Node classification
+    nodeType: text('node_type', {
+        enum: ['concept', 'insight', 'skill', 'belief']
+    }).notNull(),
+
+    // Content
+    title: text('title').notNull(),
+    description: text('description'),
+
+    // Source linkage — a node is backed by ONE of these (or standalone)
+    wikiArticleId: text('wiki_article_id').references(() => wikiArticles.id),
+    courseId: text('course_id').references(() => courses.id),
+    moduleId: text('module_id').references(() => modules.id),
+    lessonId: text('lesson_id').references(() => lessons.id),
+    procedureId: text('procedure_id').references(() => procedureTemplates.id),
+    stepId: text('step_id').references(() => procedureSteps.id),
+    anunciacaoId: text('anunciacao_id'), // FK added after anunciacoes table
+
+    // Academic metadata
+    difficulty: text('difficulty', {
+        enum: ['introductory', 'intermediate', 'advanced']
+    }),
+    subjectArea: text('subject_area'),
+    gradeLevel: text('grade_level'),
+    bnccCode: text('bncc_code'),          // Brazilian curriculum standard code
+
+    // Semantic search
+    embedding: text('embedding'),          // JSON: 768-dim vector
+
+    // Status
+    isActive: integer('is_active', { mode: 'boolean' }).default(true),
+
+    createdBy: text('created_by').references(() => persons.id),
+    createdAt: integer('created_at').default(timestamp()),
+    updatedAt: integer('updated_at').default(timestamp()),
+}, (table) => [
+    index('idx_kn_org').on(table.organizationId),
+    index('idx_kn_type').on(table.nodeType),
+    index('idx_kn_wiki').on(table.wikiArticleId),
+    index('idx_kn_course').on(table.courseId),
+    index('idx_kn_lesson').on(table.lessonId),
+    index('idx_kn_procedure').on(table.procedureId),
+    index('idx_kn_anunciacao').on(table.anunciacaoId),
+]);
+
+/**
+ * Knowledge Edges — Directed relationships between nodes
+ * Supports: prerequisite chains, concept extensions, contradictions, inspiration links
+ */
+export const knowledgeEdges = sqliteTable('knowledge_edges', {
+    id: text('id').primaryKey().default(uuid()),
+
+    sourceNodeId: text('source_node_id').notNull().references(() => knowledgeNodes.id, { onDelete: 'cascade' }),
+    targetNodeId: text('target_node_id').notNull().references(() => knowledgeNodes.id, { onDelete: 'cascade' }),
+
+    // Relationship semantics
+    relationship: text('relationship', {
+        enum: ['supports', 'contradicts', 'extends', 'requires', 'inspires', 'inverse', 'contains']
+    }).notNull(),
+
+    // Edge weight (for graph layout / ranking)
+    weight: real('weight').default(1.0),
+
+    // Provenance
+    aiSuggested: integer('ai_suggested', { mode: 'boolean' }).default(false),
+    aiConfidence: real('ai_confidence'),   // 0.0–1.0 if AI-suggested
+
+    createdBy: text('created_by').references(() => persons.id),
+    createdAt: integer('created_at').default(timestamp()),
+}, (table) => [
+    index('idx_ke_source').on(table.sourceNodeId),
+    index('idx_ke_target').on(table.targetNodeId),
+    index('idx_ke_rel').on(table.relationship),
+    uniqueIndex('idx_ke_pair').on(table.sourceNodeId, table.targetNodeId, table.relationship),
+]);
+
+/**
+ * Student Knowledge — Personal mastery tracking per concept
+ * Powers the toolkit's "My Knowledge Graph" Mermaid visualization
+ */
+export const studentKnowledge = sqliteTable('student_knowledge', {
+    id: text('id').primaryKey().default(uuid()),
+    organizationId: text('organization_id').notNull().references(() => organizations.id),
+
+    personId: text('person_id').notNull().references(() => persons.id),
+    nodeId: text('node_id').notNull().references(() => knowledgeNodes.id),
+
+    // Mastery level
+    mastery: text('mastery', {
+        enum: ['not_started', 'introduced', 'practicing', 'mastered']
+    }).default('not_started'),
+
+    // How was mastery established
+    source: text('source', {
+        enum: ['lesson', 'assessment', 'wiki_view', 'ai_recommendation', 'manual']
+    }),
+
+    // Engagement metrics
+    viewCount: integer('view_count').default(0),
+    timeSpentSeconds: integer('time_spent_seconds').default(0),
+    assessmentScore: real('assessment_score'),    // 0.0–1.0 if from assessment
+
+    lastInteractedAt: integer('last_interacted_at'),
+    createdAt: integer('created_at').default(timestamp()),
+    updatedAt: integer('updated_at').default(timestamp()),
+}, (table) => [
+    index('idx_sk_org').on(table.organizationId),
+    index('idx_sk_person').on(table.personId),
+    index('idx_sk_node').on(table.nodeId),
+    uniqueIndex('idx_sk_person_node').on(table.personId, table.nodeId),
+    index('idx_sk_mastery').on(table.mastery),
+]);
+
+// ============================================================================
+// ANUNCIAÇÃO — Leadership mythos-writing & team gating
+// Leaders write personal declarations; AI co-authors the final quarter
+// ============================================================================
+
+
+// ============================================================================
+// TYPE EXPORTS - Knowledge Graph
+// ============================================================================
+
+export type KnowledgeNode = typeof knowledgeNodes.$inferSelect;
+export type KnowledgeNodeInsert = typeof knowledgeNodes.$inferInsert;
+export type KnowledgeEdge = typeof knowledgeEdges.$inferSelect;
+export type KnowledgeEdgeInsert = typeof knowledgeEdges.$inferInsert;
+export type StudentKnowledge = typeof studentKnowledge.$inferSelect;
+export type StudentKnowledgeInsert = typeof studentKnowledge.$inferInsert;
+
+// ============================================================================
+// TYPE EXPORTS - Anunciação
+// ============================================================================
+
+export type OrgAnunciacaoSettings = typeof orgAnunciacaoSettings.$inferSelect;
+export type OrgAnunciacaoSettingsInsert = typeof orgAnunciacaoSettings.$inferInsert;
+export type Anunciacao = typeof anunciacoes.$inferSelect;
+export type AnunciacaoInsert = typeof anunciacoes.$inferInsert;

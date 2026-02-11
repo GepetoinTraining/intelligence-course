@@ -45,4 +45,46 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# ─── Build / Debug / Migration Output ───
+# These get created by dev scripts, tsc runs, migration tools, etc.
+# NEVER commit these.
+*.log
+*_output.txt
+*-output.txt
+*_errors.txt
+*-errors.txt
+*_check.txt
+*-check.txt
+*-status.txt
+*_status.txt
+*-analysis.txt
+*-remnants.txt
+*-discovery.json
+*-report.json
+audit-report.json
+build_log*.txt
+tsc-out.txt
+_hits*.txt
+
+# databases (local dev)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# one-off migration/wiring scripts (keep seeds)
+scripts/*-wire-*.mjs
+scripts/wire-*.mjs
+scripts/audit-*.mjs
+scripts/bulk-replace-*.ps1
+scripts/fix-*.ps1
+scripts/normalize-*.ps1
+
+# windows artifacts
 nul
+-w
+Thumbs.db
+desktop.ini

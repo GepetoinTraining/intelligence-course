@@ -1,164 +1,138 @@
 'use client';
 
+import { useMemo } from 'react';
 import {
-    Title,
-    Text,
-    Stack,
-    SimpleGrid,
-    Card,
-    Badge,
-    Group,
-    ThemeIcon,
-    Button,
-    Table,
-    ActionIcon,
-    Loader,
-    Alert,
-    Center,
+    Title, Text, Stack, SimpleGrid, Card, Badge, Group, ThemeIcon,
+    Table, Loader, Alert, Center, Button, Timeline,
 } from '@mantine/core';
 import {
-    IconClipboardList,
-    IconPlus,
-    IconPencil,
-    IconCheck,
-    IconClock,
-    IconX,
-    IconAlertCircle,
+    IconHistory, IconAlertCircle, IconCheck, IconX, IconClock,
 } from '@tabler/icons-react';
 import { useApi } from '@/hooks/useApi';
+import { DiagramToggle } from '@/components/DiagramToggle';
 
-// Demo Kaizen history
-const kaizenHistory = [
-    { id: 1, title: 'Automatizar cobrança de inadimplentes', author: 'Ana Costa', date: '15/01/2026', votes: 24, status: 'implemented', impact: 'high' },
-    { id: 2, title: 'Dashboard de métricas em tempo real', author: 'Carlos Lima', date: '10/12/2025', votes: 18, status: 'implemented', impact: 'high' },
-    { id: 3, title: 'Check-in via QR Code na recepção', author: 'Julia Ferreira', date: '01/11/2025', votes: 31, status: 'implemented', impact: 'medium' },
-    { id: 4, title: 'Notificação automática de aniversários', author: 'Roberto Silva', date: '15/10/2025', votes: 12, status: 'implemented', impact: 'low' },
-    { id: 5, title: 'Integração com Google Calendar', author: 'Mariana Santos', date: '01/10/2025', votes: 15, status: 'rejected', impact: 'medium' },
-];
+interface Suggestion {
+    id: string;
+    title: string;
+    description: string;
+    status: string;
+    estimatedImpact: string;
+    upvotes: number;
+    createdAt: number;
+    implementedAt?: number;
+    reviewedAt?: number;
+}
 
-export default function HistoricoKaizenPage() {
-    // API data (falls back to inline demo data below)
-    const { data: _apiData, isLoading: _apiLoading, error: _apiError } = useApi<any[]>('/api/kaizen/suggestions?status=resolved');
+const statusColors: Record<string, string> = {
+    implemented: 'green', rejected: 'red', deferred: 'gray',
+    submitted: 'blue', under_review: 'yellow', approved: 'teal',
+    in_progress: 'violet', needs_info: 'orange',
+};
+const statusLabels: Record<string, string> = {
+    implemented: 'Implementada', rejected: 'Rejeitada', deferred: 'Adiada',
+    submitted: 'Enviada', under_review: 'Em Revisão', approved: 'Aprovada',
+    in_progress: 'Em Progresso', needs_info: 'Info Necessária',
+};
 
-    const implemented = kaizenHistory.filter(k => k.status === 'implemented').length;
-    const highImpact = kaizenHistory.filter(k => k.impact === 'high' && k.status === 'implemented').length;
+export default function HistoricoPage() {
+    const { data, isLoading, error, refetch } = useApi<Suggestion[]>('/api/kaizen/suggestions?limit=100');
+    const suggestions = data || [];
 
+    const allSorted = useMemo(() =>
+        [...suggestions].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)),
+        [suggestions]);
 
-    if (_apiLoading) {
-        return <Center h={400}><Loader size="lg" /></Center>;
-    }
+    const stats = {
+        total: allSorted.length,
+        implemented: allSorted.filter(s => s.status === 'implemented').length,
+        rejected: allSorted.filter(s => s.status === 'rejected').length,
+        deferred: allSorted.filter(s => s.status === 'deferred').length,
+    };
+
+    const fmt = (ts: number) => new Date(ts * 1000).toLocaleDateString('pt-BR');
+
+    // Group by month
+    const byMonth = useMemo(() => {
+        const map = new Map<string, Suggestion[]>();
+        allSorted.forEach(s => {
+            const d = new Date((s.createdAt || 0) * 1000);
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            const arr = map.get(key) || [];
+            arr.push(s);
+            map.set(key, arr);
+        });
+        return Array.from(map.entries());
+    }, [allSorted]);
+
+    const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+    if (isLoading) return <Center h={400}><Loader size="lg" /></Center>;
+    if (error) return <Alert icon={<IconAlertCircle size={16} />} color="red" title="Erro">{error}<Button size="xs" ml="md" onClick={refetch}>Tentar novamente</Button></Alert>;
 
     return (
         <Stack gap="lg">
-            {/* Header */}
             <Group justify="space-between" align="flex-end">
                 <div>
-                    <Text size="sm" c="dimmed">Kaizen</Text>
-                    <Title order={2}>Histórico de Melhorias</Title>
+                    <Group gap="xs" mb={4}><Text size="sm" c="dimmed">Kaizen</Text><Text size="sm" c="dimmed">/</Text><Text size="sm" fw={500}>Histórico</Text></Group>
+                    <Title order={2}>Histórico de Sugestões</Title>
                 </div>
-                <Badge size="lg" variant="light" color="green">
-                    {implemented} implementadas
-                </Badge>
+                <DiagramToggle route="/api/kaizen/suggestions" data={allSorted} title="Linha do Tempo Kaizen" />
             </Group>
 
-            {/* Quick Stats */}
             <SimpleGrid cols={{ base: 2, sm: 4 }}>
                 <Card withBorder p="md">
-                    <Group>
-                        <ThemeIcon variant="light" color="green" size="lg">
-                            <IconCheck size={20} />
-                        </ThemeIcon>
-                        <div>
-                            <Text size="xs" c="dimmed">Implementadas</Text>
-                            <Text fw={700} size="lg">{implemented}</Text>
-                        </div>
-                    </Group>
+                    <Group><ThemeIcon variant="light" color="blue" size="lg"><IconHistory size={20} /></ThemeIcon>
+                        <div><Text size="xs" c="dimmed">Total</Text><Text fw={700} size="xl">{stats.total}</Text></div></Group>
                 </Card>
                 <Card withBorder p="md">
-                    <Group>
-                        <ThemeIcon variant="light" color="purple" size="lg">
-                            <IconClipboardList size={20} />
-                        </ThemeIcon>
-                        <div>
-                            <Text size="xs" c="dimmed">Alto Impacto</Text>
-                            <Text fw={700} size="lg">{highImpact}</Text>
-                        </div>
-                    </Group>
+                    <Group><ThemeIcon variant="light" color="green" size="lg"><IconCheck size={20} /></ThemeIcon>
+                        <div><Text size="xs" c="dimmed">Implementadas</Text><Text fw={700} size="xl">{stats.implemented}</Text></div></Group>
                 </Card>
                 <Card withBorder p="md">
-                    <Group>
-                        <ThemeIcon variant="light" color="blue" size="lg">
-                            <IconClipboardList size={20} />
-                        </ThemeIcon>
-                        <div>
-                            <Text size="xs" c="dimmed">Total Votos</Text>
-                            <Text fw={700} size="lg">{kaizenHistory.reduce((sum, k) => sum + k.votes, 0)}</Text>
-                        </div>
-                    </Group>
+                    <Group><ThemeIcon variant="light" color="red" size="lg"><IconX size={20} /></ThemeIcon>
+                        <div><Text size="xs" c="dimmed">Rejeitadas</Text><Text fw={700} size="xl">{stats.rejected}</Text></div></Group>
                 </Card>
                 <Card withBorder p="md">
-                    <Group>
-                        <ThemeIcon variant="light" color="red" size="lg">
-                            <IconX size={20} />
-                        </ThemeIcon>
-                        <div>
-                            <Text size="xs" c="dimmed">Rejeitadas</Text>
-                            <Text fw={700} size="lg">{kaizenHistory.filter(k => k.status === 'rejected').length}</Text>
-                        </div>
-                    </Group>
+                    <Group><ThemeIcon variant="light" color="gray" size="lg"><IconClock size={20} /></ThemeIcon>
+                        <div><Text size="xs" c="dimmed">Adiadas</Text><Text fw={700} size="xl">{stats.deferred}</Text></div></Group>
                 </Card>
             </SimpleGrid>
 
-            {/* History Table */}
-            <Card withBorder p="md">
-                <Table>
-                    <Table.Thead>
-                        <Table.Tr>
-                            <Table.Th>Melhoria</Table.Th>
-                            <Table.Th>Autor</Table.Th>
-                            <Table.Th>Data</Table.Th>
-                            <Table.Th>Votos</Table.Th>
-                            <Table.Th>Impacto</Table.Th>
-                            <Table.Th>Status</Table.Th>
-                        </Table.Tr>
-                    </Table.Thead>
-                    <Table.Tbody>
-                        {kaizenHistory.map((item) => (
-                            <Table.Tr key={item.id}>
-                                <Table.Td>
-                                    <Text fw={500}>{item.title}</Text>
-                                </Table.Td>
-                                <Table.Td>{item.author}</Table.Td>
-                                <Table.Td>{item.date}</Table.Td>
-                                <Table.Td>
-                                    <Text fw={500}>{item.votes}</Text>
-                                </Table.Td>
-                                <Table.Td>
-                                    <Badge
-                                        variant="light"
-                                        color={
-                                            item.impact === 'high' ? 'red' :
-                                                item.impact === 'medium' ? 'yellow' : 'gray'
-                                        }
-                                    >
-                                        {item.impact === 'high' ? 'Alto' :
-                                            item.impact === 'medium' ? 'Médio' : 'Baixo'}
-                                    </Badge>
-                                </Table.Td>
-                                <Table.Td>
-                                    <Badge
-                                        color={item.status === 'implemented' ? 'green' : 'red'}
-                                        variant="light"
-                                    >
-                                        {item.status === 'implemented' ? 'Implementada' : 'Rejeitada'}
-                                    </Badge>
-                                </Table.Td>
-                            </Table.Tr>
-                        ))}
-                    </Table.Tbody>
-                </Table>
-            </Card>
+            {byMonth.map(([monthKey, items]) => {
+                const [y, m] = monthKey.split('-');
+                const label = `${monthNames[parseInt(m) - 1]} ${y}`;
+                return (
+                    <Card key={monthKey} withBorder p="md">
+                        <Group justify="space-between" mb="sm">
+                            <Text fw={600}>{label}</Text>
+                            <Badge size="sm" variant="light">{items.length} sugestões</Badge>
+                        </Group>
+                        <Table>
+                            <Table.Thead><Table.Tr>
+                                <Table.Th>Sugestão</Table.Th><Table.Th>Tipo</Table.Th>
+                                <Table.Th>Status</Table.Th><Table.Th>Votos</Table.Th><Table.Th>Data</Table.Th>
+                            </Table.Tr></Table.Thead>
+                            <Table.Tbody>
+                                {items.slice(0, 10).map(s => (
+                                    <Table.Tr key={s.id}>
+                                        <Table.Td><Text size="sm" fw={500}>{s.title}</Text></Table.Td>
+                                        <Table.Td><Badge size="xs" variant="light">{s.estimatedImpact}</Badge></Table.Td>
+                                        <Table.Td><Badge size="xs" variant="light" color={statusColors[s.status]}>{statusLabels[s.status] || s.status}</Badge></Table.Td>
+                                        <Table.Td><Text size="sm">{s.upvotes} 👍</Text></Table.Td>
+                                        <Table.Td><Text size="xs" c="dimmed">{fmt(s.createdAt)}</Text></Table.Td>
+                                    </Table.Tr>
+                                ))}
+                            </Table.Tbody>
+                        </Table>
+                    </Card>
+                );
+            })}
+
+            {allSorted.length === 0 && (
+                <Center py="xl"><Stack align="center" gap="xs">
+                    <IconHistory size={48} color="gray" /><Text c="dimmed">Nenhum histórico encontrado</Text>
+                </Stack></Center>
+            )}
         </Stack>
     );
 }
-
