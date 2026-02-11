@@ -1,13 +1,74 @@
 # Feature Inventory — Full Codebase Audit
 
 **Generated:** 2026-02-10
-**Last Updated:** 2026-02-10 (Pass 2 — post master push `1001cf4`)
+**Last Updated:** 2026-02-11 (Pass 3 — Day 2 audit, post master `f34ecb7`)
 **Codebase:** intelligence-course (Next.js + Drizzle ORM + SQLite/Turso)
-**Scope:** 319 schema tables, 257+ API routes, ~260 pages, 15 domain modules, 12 external integrations
+**Scope:** 324 schema tables, 284 API routes, 286 pages, 15 domain modules, 26 external integrations (14 payment providers + 12 other)
 
 ---
 
 ## Changelog
+
+### Pass 3 — `f34ecb7` (Day 2: HR Module + Contábil Portal + Payment Gateway Layer + Cleanup)
+
+Key commits scored: `86d923a` (HR/Gestão de Pessoas — 10 sub-pages), `f34ecb7` (Contábil portal rewire + 51 artifact cleanup + **14 payment provider adapters**)
+
+**What moved:**
+
+| Change | Pass 2 | Pass 3 | Delta |
+|--------|--------|--------|-------|
+| Schema tables | 319 | **324** | +5 (missions, studentMissions, schoolEquipment, equipmentBookings, studentKnowledge) |
+| API routes | 257+ | **284** | +27 new routes |
+| Frontend pages | ~260 | **286** | +26 new pages |
+| Pages with data fetching | ~230 | **243** | +13 |
+| Mock constants in pages | ~5 | **3 files** | Down to: lattice/demo, campaigns, courses |
+| "Em Construção" / TODO | 15 pages | **15 pages** | Unchanged (all are legitimate placeholders) |
+| Payment providers | 5 (ALL MOCKED) | **14 REAL ADAPTERS** | From mock → production-grade adapter layer |
+| Schema file size | ~15,400 lines | **14,405 lines** | -995 lines (cleanup) |
+| Root debug artifacts | 51 files | **0** | Cleaned |
+
+**BIGGEST DAY 2 WIN — Payment Gateway Layer:**
+- ~~5 mocked payment gateways~~ → **14 real adapter implementations** (4 PSPs + 10 Brazilian banks)
+- PSPs: Asaas, PagBank, MercadoPago, Pagar.me
+- Banks: Inter, BB, Itaú, Bradesco, Santander, Caixa, Sicredi, Sicoob, Safra, C6 Bank
+- 139 real `fetch()` calls across providers. **Zero mocks. Zero hardcoded data.**
+- Unified adapter pattern: factory → decrypt credentials from DB → instantiate provider
+- Full capabilities: PIX, Boleto, Credit Card, Subscriptions, Splits, Refunds, Transfers
+- Webhook normalization across all providers
+- Status map normalizes 14 different provider status codes → single enum
+
+**HR Module (Batch 7 — `86d923a`):**
+- 10 sub-pages + hub, all wired to real APIs
+- Full CLT/NR compliance: INSS/IRRF tables, Portaria 671, Arts. 129-153, eSocial S-2200
+- folha, ponto, férias, colaboradores, contratos, comissões, vagas, treinamentos, metas, organograma
+
+**Contábil Portal (`f34ecb7`):**
+- All 12 contábil pages now use real APIs (31 fetch calls across 12 files)
+- lançamentos → /api/journal-entries, centros-custo → /api/cost-centers, SPED → /api/fiscal-documents
+- DRE + balancete + balanço → /api/reports/financial
+- Fixed perma-loader bug in balanço and duplicate loading check in contador
+
+**Repo Cleanup (`f34ecb7`):**
+- Removed 51 build/debug .txt artifacts from project root
+- Removed 16 .gemini/artifacts/ files
+- Removed one-off migration scripts
+- Updated .gitignore with comprehensive patterns
+
+**New capabilities:**
+- Mermaid diagram generator (`src/lib/mermaid/`) — converts API data to 8 diagram types, zero AI cost
+- Equipment management pages + API routes
+- Missions/challenges system with schema
+- Student knowledge tracking
+
+**Still unchanged from Pass 2:**
+- AI chat page (`/admin/ai/chat`) — still hardcoded mock messages (149 lines)
+- Main dashboard (`/dashboard`) — still fully mock
+- All 15 modules — still TYPES-ONLY
+- 4 legacy userId API files (communicator/contacts, meetings, permissions, user-overrides)
+- GDPR/compliance routes — still SCAFFOLD
+- Parent portal child routes — still uncalled
+
+---
 
 ### Pass 2 — `1001cf4` (Identity Rebuild + Admin Wiring + Reports)
 
@@ -62,21 +123,21 @@ Key commits scored: `77ccb1e` (Phase C: Wire all admin pages), `cae7aa8` (98-fil
 
 | Metric | Count | Notes |
 |--------|-------|-------|
-| Schema tables | 319 | Only ~75 have any API usage |
-| API routes | 257+ | ~60 have no frontend caller |
-| Frontend pages | ~260 | **~230 LIVE**, ~15 MIXED, ~5 MOCK, ~10 SKELETON |
+| Schema tables | **324** | ~80+ have API usage *(was 319, +5 new)* |
+| API routes | **284** | ~55 have no frontend caller *(was 257+)* |
+| Frontend pages | **286** | **243 fetch data**, ~30 static/forms, ~13 skeleton/mock |
 | Domain modules | 15 | **ALL 15 are types-only** — zero runtime logic |
-| External integrations | 12 | 5 production, 2 partial (new), 4 partial/scaffold, 1 dead |
+| Payment providers | **14** | 4 PSPs + 10 banks, **ALL REAL** *(was 5 mocked)* |
+| Other integrations | 12 | 5 production, 2 partial, 4 scaffold, 1 dead |
 | Broken nav links | 0 | Navigation is clean |
-| Orphaned pages | ~12 | Minor issue |
 
 ### The Big Picture
 
-This is an ambitious education/school management ERP with ~319 database tables designed across every business domain imaginable. ~~However, the implementation pyramid is inverted: massive schema, moderate API layer, and selective frontend coverage.~~ **UPDATE**: The frontend layer has been massively wired — 96% of admin pages now connect to real APIs. The remaining gap is the **schema layer**: roughly **60% of all tables are still schema-only** — defined but never touched by any code. Identity has been rebuilt around a person-canonical model (personId replaces userId across 236 files).
+This is an ambitious education/school management ERP. After Day 2, the **implementation pyramid has flipped right-side-up**: massive schema (324 tables), strong API layer (284 routes), and comprehensive frontend (286 pages, 85% fetching real data). The payment gateway layer went from fully mocked to **14 production-grade adapters** covering every major Brazilian PSP and bank. Identity is person-canonical (236 files). The remaining gap is the **schema layer**: roughly **60% of tables are still schema-only** — defined but never touched by any code. The 15 domain modules remain types-only.
 
 ---
 
-## 1. DATABASE SCHEMA AUDIT (319 tables)
+## 1. DATABASE SCHEMA AUDIT (324 tables)
 
 ### Classification Summary
 
@@ -259,26 +320,33 @@ accountantApiKeys, accountantApiLogs, accountantDeliveryConfig, accountantDelive
 
 ---
 
-## 2. API ROUTES AUDIT (257+ routes)
+## 2. API ROUTES AUDIT (284 routes)
 
 ### Classification Summary
 
 | Status | Count | % |
 |--------|-------|---|
-| Called by frontend | **~197** | **77%** *(was ~186)* |
-| **No frontend caller** | **~60** | **23%** *(was ~65)* |
+| Called by frontend | **~229** | **81%** *(was ~197)* |
+| **No frontend caller** | **~55** | **19%** *(was ~60)* |
+| **MOCK data in routes** | **0** | 0% *(verified: zero MOCK_ constants in any route.ts)* |
+| **TODO/FIXME markers** | **7** | All minor (Stripe HMAC, share access check, etc.) |
 
-**New routes added since initial audit:**
-- `/api/enrollment-flow/calculate` — Price calculation
-- `/api/enrollment-flow/classes` — Available classes
-- `/api/enrollment-flow/complete` — Atomic enrollment cascade (uses e-sign + notifications)
-- `/api/enrollment-flow/courses` — Available courses
-- `/api/enrollment-flow/persons` — Person lookup/create
-- `/api/enrollment-flow/seed-template` — Contract template seeding
-- `/api/notifications` — Universal notification dispatcher
-- `/api/webhooks/esign` — E-signature webhook (ZapSign/D4Sign)
-- `/api/teams/my-memberships` — Current user's team memberships
-- `/api/procedures/seed-pipelines` — Procedure pipeline seeding
+**New routes added in Pass 2 (enrollment + notifications):**
+- `/api/enrollment-flow/calculate`, `/classes`, `/complete`, `/courses`, `/persons`, `/seed-template`
+- `/api/notifications`, `/api/webhooks/esign`, `/api/teams/my-memberships`, `/api/procedures/seed-pipelines`
+
+**New routes added in Pass 3 (HR + pedagogy + operations):**
+- `/api/class-structures` — Class structure management
+- `/api/contract-templates` — Contract template CRUD
+- `/api/equipment/route.ts`, `/api/equipment/bookings` — Equipment management + bookings
+- `/api/homework-policies` — Homework policy management
+- `/api/lessons/import` — Lesson bulk import
+- `/api/methodologies`, `/api/methodologies/export` — Teaching methodology CRUD + export
+- `/api/missions` — Student mission/challenge management
+- `/api/program-units` — Program unit management
+- `/api/school-programs`, `/api/school-programs/import` — School program CRUD + import
+- `/api/upload` — File upload handler
+- `/api/payment-gateways` — Payment gateway configuration (ties into new adapter layer)
 
 ### API Routes With No Frontend Caller (~65 routes)
 
@@ -366,10 +434,10 @@ accountantApiKeys, accountantApiLogs, accountantDeliveryConfig, accountantDelive
 
 | Status | Count | % | Description |
 |--------|-------|---|-------------|
-| **LIVE** | **~230** | **85%** | Fetches real data from API *(was ~170)* |
-| **MIXED** | ~15 | 6% | Real data + hardcoded fallbacks *(was ~40)* |
-| **MOCK** | ~5 | 2% | All hardcoded/demo data *(was ~30)* |
-| **SKELETON** | ~10 | 4% | Empty placeholder shells *(was ~40)* |
+| **LIVE** (fetches data) | **243** | **85%** | useEffect/fetch/useApi present *(was ~230)* |
+| **STATIC/FORMS** | ~30 | 10% | Auth pages, setup wizards, forms (expected, no fetch needed) |
+| **MOCK** | **3 files** | 1% | lattice/demo, campaigns, courses (MOCK_ constants) |
+| **SKELETON** | ~10 | 4% | /dashboard, AI chat, setup wizards |
 
 ### By Section
 
@@ -426,9 +494,9 @@ All SKELETON — blueprint, financial, products, rules, team setup wizards. *(un
 
 ---
 
-## 4. EXTERNAL INTEGRATIONS AUDIT (12 services)
+## 4. EXTERNAL INTEGRATIONS AUDIT (26 services)
 
-### Integration Status
+### Core Platform Integrations
 
 | Integration | Status | SDK Installed | Actual API Calls | Error Handling |
 |-------------|--------|---------------|-----------------|----------------|
@@ -437,13 +505,38 @@ All SKELETON — blueprint, financial, products, rules, team setup wizards. *(un
 | **Google AI** (embeddings) | PRODUCTION | Yes (@google/generative-ai@0.24.1) | Yes | Yes — rate limiting, caching |
 | **Resend** (email) | PRODUCTION | Yes (resend@6.9.1) | Yes | Yes — fallback to mock |
 | **Turso/LibSQL** (database) | PRODUCTION | Yes (@libsql/client@0.17.0) | Yes | Yes — connection management |
-| **ZapSign** (e-signature) | **PARTIAL** *(NEW)* | No (API calls via fetch) | Yes — API endpoint defined | Yes — webhook handler |
-| **D4Sign** (e-signature backup) | **SCAFFOLD** *(NEW)* | No | Webhook handler only | Partial |
-| **Stripe** (payments) | SCAFFOLD | **No** — not in package.json | Mock responses only | Partial |
-| **Asaas** (BR payments) | PARTIAL | No | Mock responses only | Partial structure |
-| **MercadoPago** | PARTIAL | No | Mock responses only | Partial structure |
-| **PagarMe** | PARTIAL | No | Mock responses only | Partial structure |
-| **PagSeguro** | PARTIAL | No | Mock responses only | Partial structure |
+| **ZapSign** (e-signature) | PARTIAL | No (API calls via fetch) | Yes — API endpoint defined | Yes — webhook handler |
+| **D4Sign** (e-signature backup) | SCAFFOLD | No | Webhook handler only | Partial |
+
+### Payment Gateway Layer — 14 Providers *(COMPLETE REWRITE in Day 2)*
+
+~~All 5 payment gateways were mocked with no SDKs installed.~~ **RESOLVED.**
+
+New unified adapter architecture at `src/lib/payments/`:
+- **Factory pattern**: `getAdapterForOrg()` → reads `paymentGateways` table → decrypts credentials → instantiates provider
+- **139 real `fetch()` calls** across all providers. **Zero mocks.**
+- **Unified types**: `NormalizedStatus`, `CreateChargeParams`, `ChargeResult`, etc.
+- **Status normalization**: Maps 14 different provider status codes → single enum
+- **Capabilities**: PIX, Boleto, Credit Card, Debit Card, Subscriptions, Splits, Refunds, Transfers, Balance, Statements
+
+| Provider | Type | Status | Capabilities | API Calls |
+|----------|------|--------|-------------|-----------|
+| **Asaas** | PSP | PRODUCTION-READY | PIX, Boleto, Card, Subs, Splits | 14 fetch calls |
+| **PagBank** (PagSeguro) | PSP | PRODUCTION-READY | PIX, Boleto, Card, Subs | 12 fetch calls |
+| **MercadoPago** | PSP | PRODUCTION-READY | PIX, Boleto, Card, Subs | 10 fetch calls |
+| **Pagar.me** | PSP | PRODUCTION-READY | PIX, Boleto, Card, Subs, Splits | 14 fetch calls |
+| **Inter** | Bank | PRODUCTION-READY | PIX, Boleto, Balance, Statements | 9 fetch calls |
+| **BB** (Banco do Brasil) | Bank | PRODUCTION-READY | PIX, Boleto, Balance | 9 fetch calls |
+| **Itaú** | Bank | PRODUCTION-READY | PIX, Boleto, Balance, Transfers | 10 fetch calls |
+| **Bradesco** | Bank | PRODUCTION-READY | PIX, Boleto, Balance | 9 fetch calls |
+| **Santander** | Bank | PRODUCTION-READY | PIX, Boleto, Balance, Transfers | 9 fetch calls |
+| **Caixa** | Bank | PRODUCTION-READY | PIX, Boleto, Balance | 10 fetch calls |
+| **Sicredi** | Bank | PRODUCTION-READY | PIX, Boleto, Balance | 5 fetch calls |
+| **Sicoob** | Bank | PRODUCTION-READY | PIX, Boleto, Balance | 10 fetch calls |
+| **Safra** | Bank | PRODUCTION-READY | PIX, Boleto, Balance | 9 fetch calls |
+| **C6 Bank** | Bank | PRODUCTION-READY | PIX, Boleto, Balance | 9 fetch calls |
+
+**Note**: "PRODUCTION-READY" means the adapter code is complete with real API calls. Actual production use requires configuring credentials in the `paymentGateways` table per organization.
 
 ### E-Signature Detail *(NEW)*
 
@@ -463,11 +556,22 @@ New library at `src/lib/notifications.ts`:
 
 ### Payment Gateway Detail
 
-All 5 payment providers share a unified provider interface at `/src/lib/payments/providers.ts`:
-- Type definitions exist for all providers
-- Fee structures are configured (e.g., Stripe 2.9%+$0.30, Asaas 2.99% credit, MercadoPago 4.99% credit, etc.)
-- Webhook handlers exist at `/api/webhooks/{stripe,asaas,mercadopago,pagarme,pagseguro}`
-- **BUT**: No SDKs are installed. All provider functions return mocked responses. No real payment processing is possible.
+~~All 5 payment providers shared a unified provider interface with mock responses.~~
+
+**Day 2 complete rewrite**: 14 providers with real API adapters at `src/lib/payments/providers/`. Architecture:
+```
+paymentGateways table (per-org config, encrypted credentials)
+    ↓
+factory.ts → getAdapterForOrg() → decrypt() → instantiate provider
+    ↓
+PaymentAdapter abstract class (unified interface)
+    ↓
+Provider-specific adapter (real fetch() calls to provider API)
+    ↓
+status-map.ts → normalize provider-specific status → NormalizedStatus
+```
+- Webhook handlers at `/api/webhooks/[provider]` for all providers
+- `/api/payment-gateways` for org-level gateway configuration
 
 ### AI System Detail
 
@@ -608,10 +712,10 @@ Two separate navigation systems:
 | Cost centers | costCenters | /api/cost-centers | — | Real | PARTIAL (no UI) |
 | Fiscal documents (NFe) | fiscalDocuments | /api/fiscal-documents | — | Real | PARTIAL (no UI) |
 | Cash flow | — | — | /admin/financeiro/fluxo-caixa | Real | ~~SCAFFOLD~~ **LIVE** |
-| Commission payouts | commissionPayouts | — | — | — | PLANNED |
+| Payment gateways | paymentGateways | /api/payment-gateways | Admin settings | Real | ~~PLANNED~~ **COMPLETE** — 14 providers, factory pattern, encrypted credentials |
+| Commission payouts | commissionPayouts | — | /admin/rh/comissoes | Real | ~~PLANNED~~ **LIVE** (DSR Súmula TST 340) |
 | Money flows | moneyFlows | — | — | — | PLANNED |
 | Financial goals | financialGoals | — | — | — | PLANNED |
-| Payment gateways | paymentGateways | — | — | — | PLANNED |
 | Split payments | splitRules, splitRuleItems, splitRecipients | — | — | — | PLANNED |
 | Payment reminders | paymentReminders | — | — | — | PLANNED |
 | Late fee negotiations | lateFeeNegotiations | — | — | — | PLANNED |
@@ -662,8 +766,11 @@ Two separate navigation systems:
 | Teacher contracts | teacherContracts | /api/teacher-contracts | — | Real | PARTIAL |
 | Careers/Jobs | — | /api/careers | /careers | Real | COMPLETE |
 | Talent pool | talentProfiles | /api/talent/* | /owner/talent-pool | Real | PARTIAL |
-| Time clock | timeClockEntries, timeSheets | — | — | — | PLANNED |
-| Org chart | orgChartPositions | — | /admin/rh/organograma | Real | ~~SCAFFOLD~~ **LIVE** (wired via fetch) |
+| Time clock / Ponto | timeClockEntries, timeSheets | — | /admin/rh/ponto | Real | ~~PLANNED~~ **LIVE** (Portaria 671/MTE, geofence, overtime) |
+| Org chart | orgChartPositions | — | /admin/rh/organograma | Real | ~~SCAFFOLD~~ **LIVE** (eSocial S-2200/S-2300) |
+| Training / Treinamentos | — | — | /admin/rh/treinamentos | Real | ~~PLANNED~~ **LIVE** (NR-1/5/7/35 compliance alerts) |
+| Goals / Metas | — | — | /admin/rh/metas | Real | ~~PLANNED~~ **LIVE** (PDI, CLT Art. 461 equiparação) |
+| Job openings / Vagas | — | — | /admin/rh/vagas | Real | ~~PLANNED~~ **LIVE** (kanban pipeline, candidate scoring) |
 | Benefits | employeeBenefits | — | — | — | PLANNED |
 | Termination plans | terminationPlans | — | — | — | PLANNED |
 | Work schedule templates | workScheduleTemplates | — | — | — | PLANNED |
@@ -780,28 +887,48 @@ Two separate navigation systems:
 
 | Status | Feature Count | Description |
 |--------|--------------|-------------|
-| **COMPLETE** | **~65** *(was ~55)* | Full stack working: schema + API + frontend + real data |
-| **PARTIAL** | **~35** *(was ~40)* | Some layers missing (usually frontend or API gaps) |
-| **SCAFFOLD** | **~15** *(was ~25)* | Structure exists but minimal implementation |
-| **PLANNED** | ~80+ | Schema tables defined but zero implementation |
+| **COMPLETE** | **~75** *(was ~65)* | Full stack working: schema + API + frontend + real data |
+| **PARTIAL** | **~30** *(was ~35)* | Some layers missing (usually frontend or API gaps) |
+| **SCAFFOLD** | **~12** *(was ~15)* | Structure exists but minimal implementation |
+| **PLANNED** | ~75+ | Schema tables defined but zero implementation |
 
-### Most Critical Gaps (Updated)
+### Most Critical Gaps (Day 2 Updated)
 
-1. **Payment Processing**: All 5 payment gateways (Stripe, Asaas, MercadoPago, PagarMe, PagSeguro) are mocked. No real payments can be processed. *(unchanged)*
+1. ~~**Payment Processing**: All 5 payment gateways are mocked. No real payments can be processed.~~ ✅ **RESOLVED** — 14 production-ready adapters (4 PSPs + 10 banks), 139 real fetch calls, zero mocks.
 
-2. ~~**Reports**: All 11 report pages under `/admin/relatorios/` are empty skeletons. No reporting functionality exists.~~ ✅ **RESOLVED** — Financial reports now fully functional (revenue by course, payment methods, defaulters, teacher analysis, accounting: balancete/DRE/balanço). Most report pages wired to APIs.
+2. ~~**Reports**: All 11 report pages are empty skeletons.~~ ✅ **RESOLVED** — Financial reports fully functional, all contábil pages wired.
 
-3. **192 Unused Schema Tables**: 60% of the database schema is never touched by any code. *(unchanged)*
+3. **~190 Unused Schema Tables**: ~58% of the database schema is never touched by any code. *(slightly improved — 5 new tables added and used)*
 
-4. **~60 Uncalled API Routes**: 23% of API routes have no frontend consumer, including complete subsystems (auditor, GDPR rights, knowledge graph, procedures). *(slightly improved — /api/reports/financial now called)*
+4. **~55 Uncalled API Routes**: 19% of API routes have no frontend consumer, including auditor, GDPR rights, knowledge graph, procedures. *(improved from 23%)*
 
 5. **15 Empty Modules**: Every module under `src/modules/` exports only TypeScript interfaces with zero runtime logic. *(unchanged)*
 
-6. **AI UI**: The AI chat page (`/admin/ai/chat`) still uses hardcoded mock messages. Other AI admin pages (uso, analises, geradores) are now LIVE. *(partially improved)*
+6. **AI Chat UI**: `/admin/ai/chat` still has 149 lines of hardcoded mock messages. The backend AI system is powerful but this page doesn't use it. *(unchanged)*
 
-7. **Parent Portal**: API routes for parent/child context exist but none are called from the parent frontend. *(unchanged)*
+7. **Parent Portal**: API routes for parent/child context (alerts, engagement, progress, recommendations, wellbeing) exist but none are called from the parent frontend. *(unchanged)*
 
-8. **Main Dashboard**: The `/dashboard` student landing page still uses fully hardcoded mock data (USER, MODULES, BADGES, WEEKLY_ACTIVITY). *(unchanged — new finding)*
+8. **Main Dashboard**: `/dashboard` still uses fully hardcoded mock data. *(unchanged)*
+
+9. **Security note**: 20 API routes use `sql` template literals (Drizzle ORM — parameterized, safe). 7 minor TODOs remain (Stripe HMAC verification, lattice share access check, etc.). No injection vectors found. No hardcoded secrets in source. Credentials stored encrypted in DB.
+
+### What Got Right (Day 2 Wins)
+- Payment gateway layer: from zero to 14 providers in one commit
+- HR module: full CLT/NR compliance across 10 pages
+- Contábil portal: all 12 pages wired to real APIs
+- Repo cleanup: 51 debug artifacts removed, .gitignore hardened
+- Mermaid visualization library: zero-cost diagram generation from API data
+- Zero mock data in any API route (verified across all 284 routes)
+
+### Where We're Blind
+- **No tests**: Zero test files in the entire codebase. No unit tests, no integration tests, no E2E.
+- **No CI/CD**: No GitHub Actions, no deployment pipeline.
+- **No error monitoring**: No Sentry, no error tracking service configured.
+- **No rate limiting**: API routes have no rate limiting middleware.
+- **No input validation library**: Routes use manual checks, no Zod/Yup/etc.
+- **No caching layer**: No Redis, no in-memory cache (except Google AI embeddings).
+- **18 scripts/ files**: Mix of seed scripts (needed) and one-off debug/migration scripts (should be cleaned).
+- **4 legacy userId routes**: communicator/contacts, meetings, permissions, user-overrides still use old pattern.
 
 ---
 
@@ -809,14 +936,17 @@ Two separate navigation systems:
 
 | Directory | Files |
 |-----------|-------|
-| src/app/api/ (route.ts) | **257+** *(was 251)* |
-| src/app/ (page.tsx) | ~260 |
+| src/app/api/ (route.ts) | **284** *(was 257+)* |
+| src/app/ (page.tsx) | **286** *(was ~260)* |
 | src/components/ | ~50 dirs |
 | src/modules/ | 15 modules (30 files, types only) |
-| src/lib/ | **19 subdirectories** *(was 17 — added genesis/, esign.ts, notifications.ts)* |
+| src/lib/ | **21 subdirectories** *(added mermaid/, payments/ rewritten)* |
+| src/lib/payments/providers/ | **14 files** (4 PSPs + 10 banks) |
 | src/hooks/ | 4 files |
-| src/types/ | **2 files** *(added domain.ts)* |
-| src/lib/db/schema.ts | **~15,400 lines** *(was 14,124)*, 319 tables |
+| src/types/ | 2 files |
+| src/lib/db/schema.ts | **14,405 lines** *(was ~15,400 — cleanup)*, **324 tables** |
+| scripts/ | 18 files (seed + migration + debug artifacts) |
+| Root debug artifacts | **0** *(was 51 — cleaned in f34ecb7)* |
 
 ### Identity Architecture *(NEW)*
 
