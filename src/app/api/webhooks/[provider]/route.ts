@@ -19,9 +19,9 @@ const VALID_PROVIDERS = ['asaas', 'pagbank', 'mercadopago', 'pagarme', 'inter'];
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { provider: string } },
+    { params }: { params: Promise<{ provider: string }> },
 ) {
-    const provider = params.provider;
+    const { provider } = await params;
 
     // Validate provider name
     if (!VALID_PROVIDERS.includes(provider)) {
