@@ -12,16 +12,17 @@ import { getAdapterForOrg, PaymentAdapterError } from '@/lib/payments';
 
 export async function GET(
     _request: NextRequest,
-    { params }: { params: { id: string } },
+    { params }: { params: Promise<{ id: string }> },
 ) {
     try {
+        const { id } = await params;
         const { orgId } = await getApiAuthWithOrg();
         if (!orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const adapter = await getAdapterForOrg(orgId);
-        const charge = await adapter.getCharge(params.id);
+        const charge = await adapter.getCharge(id);
 
         return NextResponse.json({ success: true, charge });
     } catch (error) {
@@ -37,16 +38,17 @@ export async function GET(
 
 export async function DELETE(
     _request: NextRequest,
-    { params }: { params: { id: string } },
+    { params }: { params: Promise<{ id: string }> },
 ) {
     try {
+        const { id } = await params;
         const { orgId } = await getApiAuthWithOrg();
         if (!orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const adapter = await getAdapterForOrg(orgId);
-        await adapter.cancelCharge(params.id);
+        await adapter.cancelCharge(id);
 
         return NextResponse.json({ success: true, cancelled: true });
     } catch (error) {
@@ -62,9 +64,10 @@ export async function DELETE(
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { id: string } },
+    { params }: { params: Promise<{ id: string }> },
 ) {
     try {
+        const { id } = await params;
         const { orgId } = await getApiAuthWithOrg();
         if (!orgId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -76,7 +79,7 @@ export async function POST(
         const adapter = await getAdapterForOrg(orgId);
 
         if (action === 'refund') {
-            const result = await adapter.refundCharge(params.id, body.amountCents);
+            const result = await adapter.refundCharge(id, body.amountCents);
             return NextResponse.json({ success: true, refund: result });
         }
 
